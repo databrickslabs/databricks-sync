@@ -1,7 +1,7 @@
 import json
 from jinja2 import Template
 
-from core import AWSAttributes, template_string
+from core import AWSAttributes, template_string, genTFValidName
 
 jsonString="""
 {
@@ -52,20 +52,10 @@ class PoolTFResource:
         self.id = id
         self.template = Template(template_string)
         self.attribute_map = attribute_map
-
-        print(attribute_map['preloaded_spark_versions'])
-        print(attribute_map['preloaded_spark_versions'][0].replace('\'',"\""))
-        # REST returns an array for preloaded_spark_versions, need only the first cell
-        print(type(attribute_map['preloaded_spark_versions']))
-        print(type(attribute_map['preloaded_spark_versions'][0]))
-        #attribute_map['preloaded_spark_versions'][0] = '{}'.format(', '.join(map('{}'.format, attribute_map['preloaded_spark_versions'])))
-        print(attribute_map['preloaded_spark_versions'])
-        print("[\"5.4.x-scala2.11\"]")
-
         self.blocks = blocks
 
     def render(self):
-        resource_name=self.attribute_map['instance_pool_name'].replace(" ","_").replace('.','_').replace('/','_')
+        resource_name=genTFValidName(self.attribute_map['instance_pool_name'])
         return self.template.render(resource_type="databricks_instance_pool", resource_name=resource_name, resource_id=self.id,
                                     attribute_map=self.attribute_map,
                                     blocks=[block.render() for block in self.blocks])

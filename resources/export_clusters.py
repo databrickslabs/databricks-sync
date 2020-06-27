@@ -9,6 +9,7 @@ from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.configure.provider import get_config_for_profile
 
+from core import provider
 from instance_pool import InstacePool,PoolTFResource
 from cluster import Cluster,ClusterTFResource
 
@@ -62,11 +63,6 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
             for diff in diffs:
                 print(diff['type'] + ': ' + diff['message'])
 
-def provider():
-    return """
-                provider "databricks" { 
-                }
-             """
 
 
 config = get_config_for_profile('demo')

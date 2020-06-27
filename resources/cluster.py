@@ -1,7 +1,7 @@
 import json
 from jinja2 import Template
 
-from core import AWSAttributes, template_string, core_resource_blocks
+from core import AWSAttributes, template_string, core_resource_blocks, genTFValidName
 
 jsonString = """
 {
@@ -276,7 +276,7 @@ class ClusterAutoScaleBlock:
         return ClusterAutoScaleBlock(input_dictionary, None)
 
     def render(self):
-        return self.template.render(property_name="spark_conf", attributes=self.attribute_map)
+        return self.template.render(property_name="autoscale", attributes=self.attribute_map)
 
 
 
@@ -307,7 +307,8 @@ class ClusterTFResource:
         self.blocks = blocks
 
     def render(self):
-        return self.template.render(resource_name="databricks_cluster", resource_id=self.id,
+        resource_name=genTFValidName(self.attribute_map['cluster_name'])
+        return self.template.render(resource_type="databricks_cluster", resource_name=resource_name, resource_id=self.id,
                                     attribute_map=self.attribute_map,
                                     blocks=[block.render() for block in self.blocks])
 

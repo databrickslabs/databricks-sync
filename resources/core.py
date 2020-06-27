@@ -1,7 +1,44 @@
 from jinja2 import Template
+import re
+
+def deEmojify(text):
+    regrex_pattern = re.compile("["
+                               u"\U0001F600-\U0001F64F"  # emoticons
+                               u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                               u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                               u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                               u"\U00002500-\U00002BEF"  # chinese char
+                               u"\U00002702-\U000027B0"
+                               u"\U00002702-\U000027B0"
+                               u"\U000024C2-\U0001F251"
+                               u"\U0001f926-\U0001f937"
+                               u"\U00010000-\U0010ffff"
+                               u"\u2640-\u2642"
+                               u"\u2600-\u2B55"
+                               u"\u200d"
+                               u"\u23cf"
+                               u"\u23e9"
+                               u"\u231a"
+                               u"\ufe0f"  # dingbats
+                               u"\u3030"
+                               "]+", flags=re.UNICODE)
+
+    return regrex_pattern.sub(r'',text)
+
+
+def genTFValidName(name):
+    prefix=""
+    if name[0].isdigit():
+        prefix +="_"
+    return prefix+deEmojify(name).replace(" ","_").replace('.','_').replace('/','_')
+
+def provider():
+    return """
+                provider "databricks" { 
+                }
+             """
 
 template_string = """
-
 resource "{{ resource_type }}" "{{ resource_name }}_{{ resource_id }}" {
     {%- for key, value in attribute_map.items() %}
     {% if value == True or value == False %}{{ key }} = {{ value|lower }}
