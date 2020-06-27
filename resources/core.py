@@ -4,7 +4,9 @@ template_string = """
 
 resource "{{ resource_type }}" "{{ resource_name }}_{{ resource_id }}" {
     {%- for key, value in attribute_map.items() %}
-    {% if value == True or value == False %}{{ key }} = {{ value|lower }}{% else %}{{ key }} = "{{ value }}"{% endif -%}
+    {% if value == True or value == False %}{{ key }} = {{ value|lower }}
+    {% elif value is iterable and value is not string %}{%- for value2 in value %} {{ key }} = ["{{ value2 }}"]{% endfor -%}
+    {% else %}{{ key }} = "{{ value }}"{% endif -%}
     {% endfor -%}
     {%- for block in blocks -%}
     {{ block }}
@@ -13,13 +15,6 @@ resource "{{ resource_type }}" "{{ resource_name }}_{{ resource_id }}" {
 """
 
 core_resource_blocks = {
-    # "autoscale": """
-    # autoscale {
-    #          min_workers = {{min_workers}}
-    #          max_workers = {{max_workers}}
-    #
-    #     }
-    # """,
     "flat_map": """
     {{property_name}} ={
         {%- for key, value in attributes.items() %}

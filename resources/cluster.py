@@ -1,18 +1,7 @@
 import json
 from jinja2 import Template
 
-# jsonString = """
-# {
-#   "cluster_id": "someclusterid-1243",
-#   "cluster_name": "my-cluster",
-#   "spark_version": "5.3.x-scala2.11",
-#   "node_type_id": "i3.xlarge",
-#   "autoscale": {
-#         "min_workers": 2,
-#         "max_workers": 8
-#   }
-# }
-# """
+from core import AWSAttributes, template_string, core_resource_blocks
 
 jsonString = """
 {
@@ -100,70 +89,119 @@ jsonString = """
          "init_scripts_safe_mode":false
       }
 """
-# Left hand side is the cluster json resp
-# Right hand side is the cluster terraform argument keys
-# clusterResponseKeyToTFKeyMapping = {
-#     "cluster_name": "cluster_name",
-#     "spark_version": "spark_version",
-#     "node_type_identity": "node_type_id",
-#     "num_workers": "r_num_workers"
-# }
-cluster_resource_blocks = {
-    "autoscale": """
+
+cluster_resource_blocks2 = core_resource_blocks
+cluster_resource_blocks2["autoscale"] = {"""
     autoscale {
              min_workers = {{min_workers}}
              max_workers = {{max_workers}}
-             
-        }
-    """,
-    "flat_map": """
-    {{property_name}} ={
-        {%- for key, value in attributes.items() %}
-        "{{ key }}" = "{{ value }}"
-        {%- endfor %}
-    }
-    """,
-    "flat_block": """
-    {{property_name}} {
-        {%- for key, value in attributes.items() %}
-        {{ key }} = "{{ value }}"
-        {%- endfor %}
-    }
-    """,
-    "init_scripts": """
-    {% for script in init_scripts -%}
-    init_scripts {
-            {% if script.dbfs %}dbfs {
-                destination = "{{ script.dbfs.destination }}"
-            }{%- endif %}
-            {% if script.s3 %}s3 ={
-            destination = "{{ script.s3.destination }}"
-            {% if script.s3.region %}region = "{{ script.s3.region }}"{%- endif -%}
-            {% if script.s3.endpoint %}endpoint = "{{ script.s3.endpoint }}"{%- endif -%}
-            {% if script.s3.enable_encryption %}enable_encryption = "{{ script.s3.enable_encryption }}"{%- endif -%}
-            {% if script.s3.encryption_type %}encryption_type = "{{ script.s3.encryption_type }}"{%- endif -%}
-            {% if script.s3.kms_key %}kms_key = "{{ script.s3.kms_key }}"{%- endif -%}
-            {% if script.s3.canned_acl %}canned_acl = "{{ script.s3.canned_acl }}"{%- endif -%}
-           }{%- endif %}
-    }
-    {% endfor %}
-    """,
-    "custom_tags": """
-    """
-}
-template_string = """
-provider "databricks" { 
-}
+         }
+     """}
+cluster_resource_blocks2["init_scripts"] = {"""
+ {% for script in init_scripts -%}
+ init_scripts {
+         {% if script.dbfs %}dbfs {
+             destination = "{{ script.dbfs.destination }}"
+         }{%- endif %}
+         {% if script.s3 %}s3 ={
+         destination = "{{ script.s3.destination }}"
+         {% if script.s3.region %}region = "{{ script.s3.region }}"{%- endif -%}
+         {% if script.s3.endpoint %}endpoint = "{{ script.s3.endpoint }}"{%- endif -%}
+         {% if script.s3.enable_encryption %}enable_encryption = "{{ script.s3.enable_encryption }}"{%- endif -%}
+         {% if script.s3.encryption_type %}encryption_type = "{{ script.s3.encryption_type }}"{%- endif -%}
+         {% if script.s3.kms_key %}kms_key = "{{ script.s3.kms_key }}"{%- endif -%}
+         {% if script.s3.canned_acl %}canned_acl = "{{ script.s3.canned_acl }}"{%- endif -%}
+        }{%- endif %}
+ }
+ {% endfor %}
+ """}
 
-resource "{{ resource_name }}" "{{ resource_name }}_{{ resource_id }}" {
-    {%- for key, value in attribute_map.items() %}
-    {% if value == True or value == False %}{{ key }} = {{ value|lower }}{% else %}{{ key }} = "{{ value }}"{% endif -%}
-    {% endfor -%}
-    {%- for block in blocks -%}
-    {{ block }}
+cluster_resource_blocks = {
+    "autoscale": """
+     autoscale {
+              min_workers = {{min_workers}}
+              max_workers = {{max_workers}}
+         }
+     """,
+    "flat_map": """
+     {{property_name}} ={
+         {%- for key, value in attributes.items() %}
+         "{{ key }}" = "{{ value }}"
+         {%- endfor %}
+     }
+     """,
+    "flat_block": """
+     {{property_name}} {
+         {%- for key, value in attributes.items() %}
+         {{ key }} = "{{ value }}"
+         {%- endfor %}
+     }
+     """,
+    "init_scripts": """
+     {% for script in init_scripts -%}
+     init_scripts {
+             {% if script.dbfs %}dbfs {
+                 destination = "{{ script.dbfs.destination }}"
+             }{%- endif %}
+             {% if script.s3 %}s3 ={
+             destination = "{{ script.s3.destination }}"
+             {% if script.s3.region %}region = "{{ script.s3.region }}"{%- endif -%}
+             {% if script.s3.endpoint %}endpoint = "{{ script.s3.endpoint }}"{%- endif -%}
+             {% if script.s3.enable_encryption %}enable_encryption = "{{ script.s3.enable_encryption }}"{%- endif -%}
+             {% if script.s3.encryption_type %}encryption_type = "{{ script.s3.encryption_type }}"{%- endif -%}
+             {% if script.s3.kms_key %}kms_key = "{{ script.s3.kms_key }}"{%- endif -%}
+             {% if script.s3.canned_acl %}canned_acl = "{{ script.s3.canned_acl }}"{%- endif -%}
+            }{%- endif %}
+     }
+     {% endfor %}
+     """,
+    "custom_tags": """
+     """,
+    "2dim_block": """
+{{property_name}} {
+    {%- for key, value in attributes.items() %}
+        {%- if value is not string %}
+            {{ key }} {
+                {%- for key2, value2 in value.items() %}
+                {{ key2 }} = "{{ value2 }}"
+                {%- endfor %}
+            }
+        {% else %}
+            {{ key }} = "{{ value }}"
+        {%- endif %}
     {%- endfor %}
 }
 """
+}
+
+class ClusterDockerImage:
+    def __init__(self, attribute_map, blocks):
+        self.attribute_map = attribute_map
+        assert "url" in attribute_map
+        self.blocks = blocks
+        self.template = Template(cluster_resource_blocks["2dim_block"])
+
+
+    @staticmethod
+    def parse(input_dictionary):
+        return ClusterDockerImage(input_dictionary, None)
+
+    def render(self):
+        return self.template.render(property_name="docker_image",attributes=self.attribute_map)
+
+class ClusterLogConf:
+    def __init__(self, attribute_map, blocks):
+        self.attribute_map = attribute_map
+        self.blocks = blocks
+        self.template = Template(cluster_resource_blocks["2dim_block"])
+
+
+    @staticmethod
+    def parse(input_dictionary):
+        return ClusterLogConf(input_dictionary, None)
+
+    def render(self):
+        return self.template.render(property_name="cluster_log_conf",attributes=self.attribute_map)
 
 class ClusterSparkEnvVars:
     def __init__(self, attribute_map, blocks):
@@ -171,13 +209,12 @@ class ClusterSparkEnvVars:
         self.blocks = blocks
         self.template = Template(cluster_resource_blocks["flat_map"])
 
-
     @staticmethod
     def parse(input_dictionary):
         return ClusterCustomTags(input_dictionary, None)
 
     def render(self):
-        return self.template.render(property_name="spark_env_vars",attributes=self.attribute_map)
+        return self.template.render(property_name="spark_env_vars", attributes=self.attribute_map)
 
 
 class ClusterCustomTags:
@@ -186,13 +223,12 @@ class ClusterCustomTags:
         self.blocks = blocks
         self.template = Template(cluster_resource_blocks["flat_map"])
 
-
     @staticmethod
     def parse(input_dictionary):
         return ClusterCustomTags(input_dictionary, None)
 
     def render(self):
-        return self.template.render(property_name="custom_tags",attributes=self.attribute_map)
+        return self.template.render(property_name="custom_tags", attributes=self.attribute_map)
 
 
 class ClusterSparkConf:
@@ -201,33 +237,19 @@ class ClusterSparkConf:
         self.blocks = blocks
         self.template = Template(cluster_resource_blocks["flat_map"])
 
-
     @staticmethod
     def parse(input_dictionary):
         return ClusterSparkConf(input_dictionary, None)
 
     def render(self):
-        return self.template.render(property_name="spark_conf",attributes=self.attribute_map)
+        return self.template.render(property_name="spark_conf", attributes=self.attribute_map)
 
-
-class ClusterAWSAttributes:
-    def __init__(self, attribute_map, blocks):
-        self.attribute_map = attribute_map
-        self.template = Template(cluster_resource_blocks["flat_block"])
-        assert "zone_id" in attribute_map
-        assert "availability" in attribute_map
-        self.blocks = blocks
-
-    @staticmethod
-    def parse(input_dictionary):
-        return ClusterAWSAttributes(input_dictionary, None)
-
-    def render(self):
-        return self.template.render(property_name="aws_attributes",attributes=self.attribute_map)
 
 class ClusterInitScript:
     def __init__(self, attribute_map, blocks):
         self.attribute_map = attribute_map
+        print(cluster_resource_blocks["init_scripts"])
+        print(cluster_resource_blocks2["init_scripts"])
         self.template = Template(cluster_resource_blocks["init_scripts"])
         for item in attribute_map:
             assert (("dbfs" in item) or ("s3" in item))
@@ -244,7 +266,7 @@ class ClusterInitScript:
 class ClusterAutoScaleBlock:
     def __init__(self, attribute_map, blocks):
         self.attribute_map = attribute_map
-        self.template = Template(cluster_resource_blocks["autoscale"])
+        self.template = Template(cluster_resource_blocks["flat_block"])
         assert "min_workers" in attribute_map
         assert "max_workers" in attribute_map
         self.blocks = blocks
@@ -254,24 +276,28 @@ class ClusterAutoScaleBlock:
         return ClusterAutoScaleBlock(input_dictionary, None)
 
     def render(self):
-        return self.template.render(min_workers=self.attribute_map["min_workers"], max_workers=self.attribute_map["max_workers"])
+        return self.template.render(property_name="spark_conf", attributes=self.attribute_map)
+
+
 
 class ClusterTFResource:
     block_key_map = {
         "autoscale": ClusterAutoScaleBlock,
-        "aws_attributes": ClusterAWSAttributes,
+        "aws_attributes": AWSAttributes,
         "spark_conf": ClusterSparkConf,
         "init_scripts": ClusterInitScript,
         "custom_tags": ClusterCustomTags,
-        "spark_env_vars": ClusterSparkEnvVars
+        "spark_env_vars": ClusterSparkEnvVars,
+        "cluster_log_conf": ClusterLogConf,
+        "docker_image": ClusterDockerImage,
     }
     ignore_block_key = {
-        "driver", "executors", "default_tags"
+        "driver", "executors", "default_tags","cluster_log_status"
     }
     ignore_attribute_key = {
-        "spark_context_id", "jdbc_port", "cluster_source","state", "state_message", "start_time","terminated_time",
-        "last_state_loss_time","last_activity_time","cluster_memory_mb","cluster_cores","creator_user_name",
-        "pinned_by_user_name","init_scripts_safe_mode","enable_local_disk_encryption","cluster_id"
+        "spark_context_id", "jdbc_port", "cluster_source", "state", "state_message", "start_time", "terminated_time",
+        "last_state_loss_time", "last_activity_time", "cluster_memory_mb", "cluster_cores", "creator_user_name",
+        "pinned_by_user_name", "init_scripts_safe_mode", "enable_local_disk_encryption", "cluster_id","termination_reason","policy_id"
     }
 
     def __init__(self, id, attribute_map, blocks):
@@ -284,12 +310,14 @@ class ClusterTFResource:
         return self.template.render(resource_name="databricks_cluster", resource_id=self.id,
                                     attribute_map=self.attribute_map,
                                     blocks=[block.render() for block in self.blocks])
+
+
 class Cluster:
 
     def __init__(self, cluster_json):
-        self.cluster_id = ""
-        self.cluster_resource = {}
-        self.cluster_blocks = []
+        self.id = ""
+        self.resource = {}
+        self.blocks = []
         self.parse(cluster_json)
 
     def parse(self, cluster_json):
@@ -298,15 +326,18 @@ class Cluster:
             # Catch all blocks
             if key in ClusterTFResource.block_key_map:
                 # clusterResp[key] is the value in the json and the block_key map will point to the class to handle the block
-                self.cluster_blocks += [ClusterTFResource.block_key_map[key].parse(cluster_json[key])]
+                self.blocks += [ClusterTFResource.block_key_map[key].parse(cluster_json[key])]
             elif key not in ClusterTFResource.ignore_block_key and key not in ClusterTFResource.ignore_attribute_key:
-                assert type(cluster_json[key]) is not dict
-                self.cluster_resource[key] = cluster_json[key]
+                assert type(cluster_json[key]) is not dict, "key is {key}".format(key=key)
+                self.resource[key] = cluster_json[key]
 
 
 def test():
     clusterResp = json.loads(jsonString)
     cluster = Cluster(clusterResp)
 
-    output_cluster = ClusterTFResource(clusterResp["cluster_id"], cluster.cluster_resource, cluster.cluster_blocks)
+    output_cluster = ClusterTFResource(clusterResp["cluster_id"], cluster.resource, cluster.blocks)
     print(output_cluster.render())
+
+
+test()
