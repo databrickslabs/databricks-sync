@@ -8,6 +8,7 @@ from databricks_cli.sdk import ApiClient
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.configure.provider import get_config_for_profile
+from databricks_cli.libraries.api import LibrariesApi
 
 from core import provider
 from instance_pool import InstacePool,PoolTFResource
@@ -64,20 +65,25 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
                 print(diff['type'] + ': ' + diff['message'])
 
 
+OUTPUT_PATH= '../output/'
 
 config = get_config_for_profile('demo')
 api_client = ApiClient(host=config.host, token=config.token)
-poolList = InstancePoolsApi(api_client).list_instance_pools()
-print(type(poolList))
-for pool in poolList['instance_pools']:
-    print(pool)
 
-OUTPUT_PATH= '../output/'
+libList = LibrariesApi(api_client).all_cluster_statuses()
+clusterLibs ={}
+for lib in libList['statuses']:
+    print(lib)
+    print(lib['cluster_id'])
+    clusterLibs[lib['cluster_id']] = lib['library_statuses']
 
 poolList = InstancePoolsApi(api_client).list_instance_pools()
+pools = {}
 for pl in poolList['instance_pools']:
     print(pl)
     pool = InstacePool(pl)
+    print (pool.id)
+    pools[pool.id] = pool
     output_pool = PoolTFResource(pl["instance_pool_id"], pool.resource, pool.blocks)
     Path(OUTPUT_PATH + '/instance_pools').mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH + '/instance_pools/' + pl["instance_pool_name"].replace(' ', '_').replace('/', '_') + pl["instance_pool_id"] + '.tf',
@@ -91,12 +97,18 @@ with open(OUTPUT_PATH+'Provider.tf', 'w') as outfile:
     outfile.write(provider())
     outfile.close()
 
-clusters = []
+clusters = {}
 for cl in clusterList['clusters']:
     print(cl)
     print(cl['cluster_source'])
     if cl['cluster_source'] != "JOB":
         cluster = Cluster(cl)
+
+        if cluster.id in clusterLibs.keys():
+            print("in libs")
+            cluster.add_libs(clusterLibs[cluster.id])
+
+        clusters[cluster.id] = cluster
 
         output_cluster = ClusterTFResource(cl["cluster_id"], cluster.resource, cluster.blocks)
         Path(OUTPUT_PATH + '/clusters').mkdir(parents=True, exist_ok=True)
@@ -106,9 +118,13 @@ for cl in clusterList['clusters']:
             outfile.close()
         print(output_cluster.render())
 
-    #clusters += resources(cl)
+
+print(pools)
+print(clusters)
 
 
+
+print(clusterLibs)
 
 
 #writeJson()

@@ -61,22 +61,21 @@ class PoolTFResource:
                                     blocks=[block.render() for block in self.blocks])
 class InstacePool:
 
-    def __init__(self, pool_json):
-        self.id = ""
+    def __init__(self, json):
+        self.id=json["instance_pool_id"]
         self.resource = {}
         self.blocks = []
-        self.parse(pool_json)
+        self.parse(json)
 
-    def parse(self, pool_json):
-        for key in pool_json.keys():
-            print(key)
+    def parse(self, json):
+        for key in json.keys():
             # Catch all blocks
             if key in PoolTFResource.block_key_map:
                 # poolResp[key] is the value in the json and the block_key map will point to the class to handle the block
-                self.blocks += [PoolTFResource.block_key_map[key].parse(pool_json[key])]
+                self.blocks += [PoolTFResource.block_key_map[key].parse(json[key])]
             elif key not in PoolTFResource.ignore_block_key and key not in PoolTFResource.ignore_attribute_key:
-                assert type(pool_json[key]) is not dict, "key is {key}".format(key=key)
-                self.resource[key] = pool_json[key]
+                assert type(json[key]) is not dict, "key is {key}".format(key=key)
+                self.resource[key] = json[key]
 
 def test():
     instancePoolResp = json.loads(jsonString)
@@ -86,4 +85,3 @@ def test():
     print(output_pool.render())
 
 
-test()

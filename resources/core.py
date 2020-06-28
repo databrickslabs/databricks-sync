@@ -94,6 +94,19 @@ core_resource_blocks = {
             {%- endif %}
         {%- endfor %}
     }
+    """,
+    "flat_block_in_array": """
+{% for attributes in array -%}
+    {%- for key, value in attributes.items() %}
+    {%- for key2, value2 in value.items() %}        
+        {{key}}_{{key2}} {
+        {%- for key3, value3 in value2.items() %}
+            {{ key3 }} = "{{ value3 }}"
+        {%- endfor %}
+    {%- endfor %}
+    {%- endfor %}
+}
+{%- endfor %}
     """
 }
 

@@ -174,6 +174,39 @@ cluster_resource_blocks = {
 """
 }
 
+listOfLibs = ['maven' , 'cran', 'pypi', 'whl', 'jar', 'egg']
+
+class LibraryDetails:
+    def __init__(self, attribute_map, blocks):
+        self.attribute_map = attribute_map
+        for i in range(len(attribute_map)):
+            for item in attribute_map[i]['library']:
+                assert item in listOfLibs
+                # JAR JSON is different, need to add a dict around it
+                if item == 'jar':
+                    attribute_map[i]['library'] = { "jar": {
+                                                      "path": attribute_map[i]['library'][item]
+                                                        }
+                                                    }
+
+            if 'status' in attribute_map[i]:
+                del attribute_map[i]['status']
+            if 'is_library_for_all_clusters' in attribute_map[i]:
+                del attribute_map[i]['is_library_for_all_clusters']
+            if 'messages' in attribute_map[i]:
+                del attribute_map[i]['messages']
+
+        self.blocks = blocks
+        self.template = Template(core_resource_blocks["flat_block_in_array"])
+
+    @staticmethod
+    def parse(input_dictionary):
+        return LibraryDetails(input_dictionary, None)
+
+    def render(self):
+        print(self.attribute_map)
+        return self.template.render(property_name="library", array=self.attribute_map)
+
 class ClusterDockerImage:
     def __init__(self, attribute_map, blocks):
         self.attribute_map = attribute_map
@@ -248,8 +281,6 @@ class ClusterSparkConf:
 class ClusterInitScript:
     def __init__(self, attribute_map, blocks):
         self.attribute_map = attribute_map
-        print(cluster_resource_blocks["init_scripts"])
-        print(cluster_resource_blocks2["init_scripts"])
         self.template = Template(cluster_resource_blocks["init_scripts"])
         for item in attribute_map:
             assert (("dbfs" in item) or ("s3" in item))
@@ -290,6 +321,7 @@ class ClusterTFResource:
         "spark_env_vars": ClusterSparkEnvVars,
         "cluster_log_conf": ClusterLogConf,
         "docker_image": ClusterDockerImage,
+        "library": LibraryDetails
     }
     ignore_block_key = {
         "driver", "executors", "default_tags","cluster_log_status"
@@ -315,23 +347,25 @@ class ClusterTFResource:
 
 class Cluster:
 
-    def __init__(self, cluster_json):
-        self.id = ""
+    def __init__(self, json):
+        self.id=json["cluster_id"]
         self.resource = {}
         self.blocks = []
-        self.parse(cluster_json)
+        self.parse(json)
 
-    def parse(self, cluster_json):
-        for key in cluster_json.keys():
-            print(key)
+    def parse(self, json):
+        for key in json.keys():
             # Catch all blocks
             if key in ClusterTFResource.block_key_map:
                 # clusterResp[key] is the value in the json and the block_key map will point to the class to handle the block
-                self.blocks += [ClusterTFResource.block_key_map[key].parse(cluster_json[key])]
+                self.blocks += [ClusterTFResource.block_key_map[key].parse(json[key])]
             elif key not in ClusterTFResource.ignore_block_key and key not in ClusterTFResource.ignore_attribute_key:
-                assert type(cluster_json[key]) is not dict, "key is {key}".format(key=key)
-                self.resource[key] = cluster_json[key]
+                assert type(json[key]) is not dict, "key is {key}".format(key=key)
+                self.resource[key] = json[key]
 
+    def add_libs(self,libs):
+        print(self.id+" has libs")
+        self.blocks += [ClusterTFResource.block_key_map["library"].parse(libs)]
 
 def test():
     clusterResp = json.loads(jsonString)
@@ -341,4 +375,3 @@ def test():
     print(output_cluster.render())
 
 
-test()
