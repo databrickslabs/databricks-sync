@@ -1,7 +1,9 @@
 import json
 from jinja2 import Template
 
-from core import AWSAttributes, template_string, core_resource_blocks, genTFValidName
+from core import AWSAttributes, template_string, core_resource_blocks, genTFValidName, get_client
+from databricks_cli.libraries.api import LibrariesApi
+
 
 jsonString = """
 {
@@ -183,11 +185,11 @@ class LibraryDetails:
             for item in attribute_map[i]['library']:
                 assert item in listOfLibs
                 # JAR JSON is different, need to add a dict around it
-                if item == 'jar':
-                    attribute_map[i]['library'] = { "jar": {
-                                                      "path": attribute_map[i]['library'][item]
-                                                        }
-                                                    }
+                if item in ('jar','whl','egg'):
+                    attribute_map[i]['library'] = { item: {
+                                                       'path': attribute_map[i]['library'][item]
+                                                         }
+                                                     }
 
             if 'status' in attribute_map[i]:
                 del attribute_map[i]['status']
@@ -204,8 +206,7 @@ class LibraryDetails:
         return LibraryDetails(input_dictionary, None)
 
     def render(self):
-        print(self.attribute_map)
-        return self.template.render(property_name="library", array=self.attribute_map)
+        return self.template.render( array=self.attribute_map)
 
 class ClusterDockerImage:
     def __init__(self, attribute_map, blocks):
@@ -344,7 +345,6 @@ class ClusterTFResource:
                                     attribute_map=self.attribute_map,
                                     blocks=[block.render() for block in self.blocks])
 
-
 class Cluster:
 
     def __init__(self, json):
@@ -352,6 +352,7 @@ class Cluster:
         self.resource = {}
         self.blocks = []
         self.parse(json)
+        self.add_cluster_libraries()
 
     def parse(self, json):
         for key in json.keys():
@@ -363,9 +364,10 @@ class Cluster:
                 assert type(json[key]) is not dict, "key is {key}".format(key=key)
                 self.resource[key] = json[key]
 
-    def add_libs(self,libs):
-        print(self.id+" has libs")
-        self.blocks += [ClusterTFResource.block_key_map["library"].parse(libs)]
+    def add_cluster_libraries(self):
+        lib_list = LibrariesApi(get_client()).cluster_status(self.id)
+        if 'library_statuses' in lib_list:
+            self.blocks += [ClusterTFResource.block_key_map["library"].parse(lib_list['library_statuses'])]
 
 def test():
     clusterResp = json.loads(jsonString)

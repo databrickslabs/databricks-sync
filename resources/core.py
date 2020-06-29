@@ -1,6 +1,10 @@
 from jinja2 import Template
 import re
 
+from databricks_cli.configure.provider import get_config_for_profile
+from databricks_cli.sdk import ApiClient
+
+
 def deEmojify(text):
     regrex_pattern = re.compile("["
                                u"\U0001F600-\U0001F64F"  # emoticons
@@ -125,3 +129,13 @@ class AWSAttributes:
 
     def render(self):
         return self.template.render(property_name="aws_attributes", attributes=self.attribute_map)
+
+api_client = None
+
+def get_client():
+    global api_client
+    if api_client is None:
+        config = get_config_for_profile('demo')
+        api_client = ApiClient(host=config.host, token=config.token)
+
+    return api_client

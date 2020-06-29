@@ -3,14 +3,11 @@ from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 
 
-from databricks_cli.sdk import ApiClient
 #TODO Why do I have to fully describe this?
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.clusters.api import ClusterApi
-from databricks_cli.configure.provider import get_config_for_profile
-from databricks_cli.libraries.api import LibrariesApi
 
-from core import provider
+from core import provider,get_client
 from instance_pool import InstacePool,PoolTFResource
 from cluster import Cluster,ClusterTFResource
 
@@ -66,16 +63,7 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
 
 
 OUTPUT_PATH= '../output/'
-
-config = get_config_for_profile('demo')
-api_client = ApiClient(host=config.host, token=config.token)
-
-libList = LibrariesApi(api_client).all_cluster_statuses()
-clusterLibs ={}
-for lib in libList['statuses']:
-    print(lib)
-    print(lib['cluster_id'])
-    clusterLibs[lib['cluster_id']] = lib['library_statuses']
+api_client = get_client()
 
 poolList = InstancePoolsApi(api_client).list_instance_pools()
 pools = {}
@@ -104,10 +92,6 @@ for cl in clusterList['clusters']:
     if cl['cluster_source'] != "JOB":
         cluster = Cluster(cl)
 
-        if cluster.id in clusterLibs.keys():
-            print("in libs")
-            cluster.add_libs(clusterLibs[cluster.id])
-
         clusters[cluster.id] = cluster
 
         output_cluster = ClusterTFResource(cl["cluster_id"], cluster.resource, cluster.blocks)
@@ -121,10 +105,6 @@ for cl in clusterList['clusters']:
 
 print(pools)
 print(clusters)
-
-
-
-print(clusterLibs)
 
 
 #writeJson()
