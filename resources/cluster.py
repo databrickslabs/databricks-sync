@@ -1,7 +1,7 @@
 import json
 from jinja2 import Template
 
-from core import AWSAttributes, template_string, core_resource_blocks, genTFValidName, get_client
+from .core import AWSAttributes, template_string, core_resource_blocks, genTFValidName, get_client
 from databricks_cli.libraries.api import LibrariesApi
 
 
@@ -330,9 +330,11 @@ class ClusterTFResource:
     ignore_attribute_key = {
         "spark_context_id", "jdbc_port", "cluster_source", "state", "state_message", "start_time", "terminated_time",
         "last_state_loss_time", "last_activity_time", "cluster_memory_mb", "cluster_cores", "creator_user_name",
-        "pinned_by_user_name", "init_scripts_safe_mode", "enable_local_disk_encryption", "cluster_id","termination_reason","policy_id"
+        "pinned_by_user_name", "init_scripts_safe_mode", "enable_local_disk_encryption","termination_reason"
     }
-
+    comment_attributes_key = {
+        "cluster_id"
+    }
     def __init__(self, id, attribute_map, blocks):
         self.id = id
         self.template = Template(template_string)
@@ -342,7 +344,7 @@ class ClusterTFResource:
     def render(self):
         resource_name=genTFValidName(self.attribute_map['cluster_name'])
         return self.template.render(resource_type="databricks_cluster", resource_name=resource_name, resource_id=self.id,
-                                    attribute_map=self.attribute_map,
+                                    attribute_map=self.attribute_map,comment_attributes=self.comment_attributes_key,
                                     blocks=[block.render() for block in self.blocks])
 
 class Cluster:

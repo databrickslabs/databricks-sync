@@ -4,6 +4,15 @@ import re
 from databricks_cli.configure.provider import get_config_for_profile
 from databricks_cli.sdk import ApiClient
 
+# MODULE_PATH = "/Users/itaiweiss/PycharmProjects/databricks-cli/databricks_cli"
+# MODULE_NAME = "databricks_cli"
+# import importlib
+# import sys
+# spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)
+# module = importlib.util.module_from_spec(spec)
+# sys.modules[spec.name] = module
+# spec.loader.exec_module(module)
+
 
 def deEmojify(text):
     regrex_pattern = re.compile("["
@@ -47,6 +56,7 @@ resource "{{ resource_type }}" "{{ resource_name }}_{{ resource_id }}" {
     {%- for key, value in attribute_map.items() %}
     {% if value == True or value == False %}{{ key }} = {{ value|lower }}
     {% elif value is iterable and value is not string %}{%- for value2 in value %} {{ key }} = ["{{ value2 }}"]{% endfor -%}
+    {% elif key in comment_attributes %} #{{ key }} = "{{ value }}"
     {% else %}{{ key }} = "{{ value }}"{% endif -%}
     {% endfor -%}
     {%- for block in blocks -%}

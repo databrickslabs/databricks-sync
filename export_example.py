@@ -6,10 +6,11 @@ from pathlib import Path
 #TODO Why do I have to fully describe this?
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.clusters.api import ClusterApi
+#from databricks_cli.clusters_policies import ClusterPolicyApi
 
-from core import provider,get_client
-from instance_pool import InstacePool,PoolTFResource
-from cluster import Cluster,ClusterTFResource
+from resources import *
+#from resources.instance_pool import InstacePool,PoolTFResource
+#from resources.cluster import Cluster,ClusterTFResource
 
 #from .resources import Cluster
 
@@ -23,6 +24,8 @@ from cluster import Cluster,ClusterTFResource
 #TODO test idempotency_token
 
 # read DB config file and get a client
+
+api_client = None
 
 def writeTF(outputfile):
     file_loader = FileSystemLoader('../templates')
@@ -62,49 +65,68 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
                 print(diff['type'] + ': ' + diff['message'])
 
 
-OUTPUT_PATH= '../output/'
-api_client = get_client()
 
-poolList = InstancePoolsApi(api_client).list_instance_pools()
-pools = {}
-for pl in poolList['instance_pools']:
-    print(pl)
-    pool = InstacePool(pl)
-    print (pool.id)
-    pools[pool.id] = pool
-    output_pool = PoolTFResource(pl["instance_pool_id"], pool.resource, pool.blocks)
-    Path(OUTPUT_PATH + '/instance_pools').mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PATH + '/instance_pools/' + pl["instance_pool_name"].replace(' ', '_').replace('/', '_') + pl["instance_pool_id"] + '.tf',
-              'w') as outfile:
-        outfile.write(output_pool.render())
-        outfile.close()
-    print(output_pool.render())
+def export_pools(output_dir,prt=False):
+    global api_client
+    if api_client is None:
+        api_client = get_client()
 
-clusterList = ClusterApi(api_client).list_clusters()
-with open(OUTPUT_PATH+'Provider.tf', 'w') as outfile:
-    outfile.write(provider())
-    outfile.close()
-
-clusters = {}
-for cl in clusterList['clusters']:
-    print(cl)
-    print(cl['cluster_source'])
-    if cl['cluster_source'] != "JOB":
-        cluster = Cluster(cl)
-
-        clusters[cluster.id] = cluster
-
-        output_cluster = ClusterTFResource(cl["cluster_id"], cluster.resource, cluster.blocks)
-        Path(OUTPUT_PATH + '/clusters').mkdir(parents=True, exist_ok=True)
-
-        with open(OUTPUT_PATH+ '/clusters/' + cl["cluster_name"].replace(' ', '_').replace('/','_') + cl["cluster_id"] + '.tf', 'w') as outfile:
-            outfile.write(output_cluster.render())
+    poolList = InstancePoolsApi(api_client).list_instance_pools()
+    pools = {}
+    for pl in poolList['instance_pools']:
+        print(pl)
+        pool = InstacePool(pl)
+        print (pool.id)
+        pools[pool.id] = pool
+        output_pool = PoolTFResource(pl["instance_pool_id"], pool.resource, pool.blocks)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        with open(output_dir + pl["instance_pool_name"].replace(' ', '_').replace('/', '_') +"_"+ pl["instance_pool_id"] + '.tf',
+                  'w') as outfile:
+            outfile.write(output_pool.render())
             outfile.close()
-        print(output_cluster.render())
+        #print(output_pool.render())
+
+    if prt:
+        print(pools)
 
 
-print(pools)
-print(clusters)
+def export_clusters(output_dir, prt=False):
+    global api_client
+    if api_client is None:
+        api_client = get_client()
+
+    clusterList = ClusterApi(api_client).list_clusters()
+    with open(output_dir+'Provider.tf', 'w') as outfile:
+        outfile.write(provider())
+        outfile.close()
+
+    clusters = {}
+    for cl in clusterList['clusters']:
+        print(cl)
+        print(cl['cluster_source'])
+        if cl['cluster_source'] != "JOB":
+            cluster = Cluster(cl)
+
+            clusters[cluster.id] = cluster
+
+            output_cluster = ClusterTFResource(cl["cluster_id"], cluster.resource, cluster.blocks)
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+            with open(output_dir + cl["cluster_name"].replace(' ', '_').replace('/','_') + cl["cluster_id"] + '.tf', 'w') as outfile:
+                outfile.write(output_cluster.render())
+                outfile.close()
+            print(output_cluster.render())
+
+    if prt:
+        print(clusters)
+
+
+def test():
+    OUTPUT_PATH = '../output/'
+    api_client = get_client()
+    export_pools(OUTPUT_PATH,prt=True)
+    export_clusters(OUTPUT_PATH,prt=True)
+
 
 
 #writeJson()

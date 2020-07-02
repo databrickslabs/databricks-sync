@@ -1,7 +1,7 @@
 import json
 from jinja2 import Template
 
-from .core import AWSAttributes, template_string, genTFValidName
+from core import AWSAttributes, template_string, genTFValidName
 
 jsonString="""
 {
