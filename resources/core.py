@@ -1,17 +1,10 @@
+import subprocess
+
 from jinja2 import Template
 import re
 
 from databricks_cli.configure.provider import get_config_for_profile
 from databricks_cli.sdk import ApiClient
-
-# MODULE_PATH = "/Users/itaiweiss/PycharmProjects/databricks-cli/databricks_cli"
-# MODULE_NAME = "databricks_cli"
-# import importlib
-# import sys
-# spec = importlib.util.spec_from_file_location(MODULE_NAME, MODULE_PATH)
-# module = importlib.util.module_from_spec(spec)
-# sys.modules[spec.name] = module
-# spec.loader.exec_module(module)
 
 
 def deEmojify(text):
@@ -45,14 +38,17 @@ def genTFValidName(name):
         prefix +="_"
     return prefix+deEmojify(name).replace(" ","_").replace('.','_').replace('/','_')
 
-def provider():
-    return """
-                provider "databricks" { 
+def genProvider(workdir):
+    with open(workdir + 'provider.tf','w') as outfile:
+        outfile.write("""
+                provider "databricks" {
+                  config_file = "~/.databrickscfg"
+                  profile     = "demo"
                 }
-             """
+             """)
+        outfile.close()
 
-template_string = """
-resource "{{ resource_type }}" "{{ resource_name }}_{{ resource_id }}" {
+template_string = """resource "{{ resource_type }}" "{{ resource_name }}_{{ resource_id }}" {
     {%- for key, value in attribute_map.items() %}
     {% if value == True or value == False %}{{ key }} = {{ value|lower }}
     {% elif value is iterable and value is not string %}{%- for value2 in value %} {{ key }} = ["{{ value2 }}"]{% endfor -%}
@@ -149,3 +145,33 @@ def get_client():
         api_client = ApiClient(host=config.host, token=config.token)
 
     return api_client
+
+
+def clean_product(working_dir):
+    exec_print_output(False,True,'rm', working_dir + "*")
+
+
+def exec_print_output(only_error=False, shell=False, *argv):
+
+    ret,process = exec(shell,argv)
+
+    if only_error and ret != 0:
+        print(process.stderr)
+    elif process is not None:
+        print(process.stdout)
+
+
+def exec(shell=False,*argv):
+
+    if shell:
+        process = subprocess.call(' '.join(argv[0][0:]),shell=True)
+        return process,None
+
+    else:
+        print(' '.join(argv[0]))
+        process = subprocess.run(argv[0],
+                                 stdout=subprocess.PIPE,
+                                 universal_newlines=True)
+        process
+
+    return process.returncode,process

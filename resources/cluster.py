@@ -245,7 +245,7 @@ class ClusterSparkEnvVars:
 
     @staticmethod
     def parse(input_dictionary):
-        return ClusterCustomTags(input_dictionary, None)
+        return ClusterSparkEnvVars(input_dictionary, None)
 
     def render(self):
         return self.template.render(property_name="spark_env_vars", attributes=self.attribute_map)
@@ -324,10 +324,8 @@ class ClusterTFResource:
         "docker_image": ClusterDockerImage,
         "library": LibraryDetails
     }
-    ignore_block_key = {
-        "driver", "executors", "default_tags","cluster_log_status"
-    }
     ignore_attribute_key = {
+        "driver", "executors", "default_tags","cluster_log_status",
         "spark_context_id", "jdbc_port", "cluster_source", "state", "state_message", "start_time", "terminated_time",
         "last_state_loss_time", "last_activity_time", "cluster_memory_mb", "cluster_cores", "creator_user_name",
         "pinned_by_user_name", "init_scripts_safe_mode", "enable_local_disk_encryption","termination_reason"
@@ -362,7 +360,7 @@ class Cluster:
             if key in ClusterTFResource.block_key_map:
                 # clusterResp[key] is the value in the json and the block_key map will point to the class to handle the block
                 self.blocks += [ClusterTFResource.block_key_map[key].parse(json[key])]
-            elif key not in ClusterTFResource.ignore_block_key and key not in ClusterTFResource.ignore_attribute_key:
+            elif key not in ClusterTFResource.ignore_attribute_key:
                 assert type(json[key]) is not dict, "key is {key}".format(key=key)
                 self.resource[key] = json[key]
 
@@ -370,6 +368,9 @@ class Cluster:
         lib_list = LibrariesApi(get_client()).cluster_status(self.id)
         if 'library_statuses' in lib_list:
             self.blocks += [ClusterTFResource.block_key_map["library"].parse(lib_list['library_statuses'])]
+
+    def render(self):
+        return ClusterTFResource(self["cluster_id"], self.resource, self.blocks)
 
 def test():
     clusterResp = json.loads(jsonString)

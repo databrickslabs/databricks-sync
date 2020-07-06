@@ -14,6 +14,8 @@
 .idea/**/dictionaries
 .idea/**/shelf
 output
+.env
+.gitignore
 
 # Generated files
 .idea/**/contentModel.xml

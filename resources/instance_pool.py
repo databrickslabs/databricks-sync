@@ -39,13 +39,9 @@ jsonString="""
 class PoolTFResource:
     block_key_map = {
         "aws_attributes": AWSAttributes,
-
-    }
-    ignore_block_key = {
-        "stats"
     }
     ignore_attribute_key = {
-        "state","status","default_tags"
+        "stats","state","status","default_tags"
     }
     comment_attributes_key = {
         "instance_pool_id"
@@ -76,7 +72,7 @@ class InstacePool:
             if key in PoolTFResource.block_key_map:
                 # poolResp[key] is the value in the json and the block_key map will point to the class to handle the block
                 self.blocks += [PoolTFResource.block_key_map[key].parse(json[key])]
-            elif key not in PoolTFResource.ignore_block_key and key not in PoolTFResource.ignore_attribute_key:
+            elif key not in PoolTFResource.ignore_attribute_key:
                 assert type(json[key]) is not dict, "key is {key}".format(key=key)
                 self.resource[key] = json[key]
 

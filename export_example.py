@@ -6,13 +6,9 @@ from pathlib import Path
 #TODO Why do I have to fully describe this?
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.clusters.api import ClusterApi
-#from databricks_cli.clusters_policies import ClusterPolicyApi
 
 from resources import *
-#from resources.instance_pool import InstacePool,PoolTFResource
-#from resources.cluster import Cluster,ClusterTFResource
 
-#from .resources import Cluster
 
 #TODO test SSH_PUBLIC_KEY
 #TODO test cluster_log_conf with S3
