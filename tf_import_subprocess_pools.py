@@ -1,17 +1,16 @@
-import re, os
+import re, glob, os
 from pathlib import Path
 
 
 from databricks_cli.instance_pools.api import InstancePoolsApi
-from resources.core import genProvider, clean_product, exec_print_output, get_client
+from resources.core import genProvider, clean_product, exec_print_output, get_client, genTFValidName
 from resources.instance_pool import InstacePool,PoolTFResource
 
 def export_pools(output_dir,prt=False):
-    global api_client
-    if api_client is None:
-        api_client = get_client()
+    source_profile = 'demo'
+    source_api_client = get_client(source_profile)
 
-    poolList = InstancePoolsApi(api_client).list_instance_pools()
+    poolList = InstancePoolsApi(source_api_client).list_instance_pools()
     pools = {}
     for pl in poolList['instance_pools']:
         print(pl)
@@ -29,7 +28,7 @@ def export_pools(output_dir,prt=False):
         print(pools)
 
 working_dir='./output/instance_pools/'
-api_client = None
+source_api_client = None
 
 clean_product(working_dir)
 
@@ -41,14 +40,14 @@ exec_print_output(False, False, 'terraform', 'init', working_dir)
 
 exec_print_output(False, False, 'terraform', 'validate', working_dir)
 
-tf_files = os.listdir(working_dir)
+tf_files = files = glob.glob(working_dir+"*.tf")
 regex = r"#instance_pool_id = .*"
 
 for file in tf_files:
-    if file != 'provider.tf' :
+    if os.path.basename(file) != 'provider.tf':
         print("*****\n working on file:"+file+"\n****\n")
         instance_pool_id = None
-        for line in open(working_dir+file).readlines():
+        for line in open(file).readlines():
             if re.search(regex, line):
                 instance_pool_id = line.split("=")[1].replace('"','').replace(' ','').replace('\n','')
                 print(line)
@@ -56,7 +55,7 @@ for file in tf_files:
         exec_print_output(False, False, 'terraform', 'import',
                             '-config=' + working_dir,
                             '-state=' + working_dir +'terraform.state',
-                            "databricks_instance_pool." + file.split('.')[0],
+                            "databricks_instance_pool." + genTFValidName(os.path.basename(file)[:-3]),
                           instance_pool_id)
 
 exec_print_output(False, False, 'terraform', 'plan',
