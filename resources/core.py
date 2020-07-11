@@ -32,11 +32,14 @@ def deEmojify(text):
     return regrex_pattern.sub(r'',text)
 
 
-def genTFValidName(name):
-    prefix=""
-    if name[0].isdigit():
-        prefix +="_"
-    return prefix+deEmojify(name).replace(" ","_").replace('.','_').replace('/','_')
+def genTFValidName(resource_name):
+    return_name=deEmojify(resource_name)
+    if resource_name[0].isdigit():
+        return_name ="_"+resource_name
+
+    # for char in ' ./():-':
+    #     return_name = return_name.replace(char,'_')
+    return re.sub("[^a-zA-Z0-9_]+", "_",return_name)
 
 def genProvider(workdir):
     with open(workdir + 'provider.tf','w') as outfile:
@@ -53,7 +56,7 @@ template_string = """resource "{{ resource_type }}" "{{ resource_name }}_{{ reso
     {% if value == True or value == False %}{{ key }} = {{ value|lower }}
     {% elif value is iterable and value is not string %}{%- for value2 in value %} {{ key }} = ["{{ value2 }}"]{% endfor -%}
     {% elif key in comment_attributes %} #{{ key }} = "{{ value }}"
-    {% else %}{{ key }} = "{{ value }}"{% endif -%}
+    {% else %}{{ key }} = "{{ value|escape }}"{% endif -%}
     {% endfor -%}
     {%- for block in blocks -%}
     {{ block }}
@@ -72,7 +75,7 @@ core_resource_blocks = {
     "flat_block": """
     {{property_name}} {
         {%- for key, value in attributes.items() %}
-        {{ key }} = "{{ value }}"
+        {{ key }} = "{{ value|escape }}"
         {%- endfor %}
     }
     """,
@@ -106,18 +109,49 @@ core_resource_blocks = {
     }
     """,
     "flat_block_in_array": """
-{% for attributes in array -%}
-    {%- for key, value in attributes.items() %}
-    {%- for key2, value2 in value.items() %}        
-        {{key}}_{{key2}} {
-        {%- for key3, value3 in value2.items() %}
-            {{ key3 }} = "{{ value3 }}"
+    {% for attributes in array -%}
+        {%- for key, value in attributes.items() %}
+        {%- for key2, value2 in value.items() %}        
+            {{key}}_{{key2}} {
+            {%- for key3, value3 in value2.items() %}
+                {{ key3 }} = "{{ value3 }}"
+            {%- endfor %}
         {%- endfor %}
+        {%- endfor %}
+    }
     {%- endfor %}
+        """,
+    "nested_array": """
+     {% for script in init_scripts -%}
+     init_scripts {
+             {% if script.dbfs %}dbfs {
+                 destination = "{{ script.dbfs.destination }}"
+             }{%- endif %}
+             {% if script.s3 %}s3 ={
+             destination = "{{ script.s3.destination }}"
+             {% if script.s3.region %}region = "{{ script.s3.region }}"{%- endif -%}
+             {% if script.s3.endpoint %}endpoint = "{{ script.s3.endpoint }}"{%- endif -%}
+             {% if script.s3.enable_encryption %}enable_encryption = "{{ script.s3.enable_encryption }}"{%- endif -%}
+             {% if script.s3.encryption_type %}encryption_type = "{{ script.s3.encryption_type }}"{%- endif -%}
+             {% if script.s3.kms_key %}kms_key = "{{ script.s3.kms_key }}"{%- endif -%}
+             {% if script.s3.canned_acl %}canned_acl = "{{ script.s3.canned_acl }}"{%- endif -%}
+            }{%- endif %}
+     }
+     {% endfor %}
+     """,
+    "complex_struct": """ {{ resource_name }} {
+    {%- for key, value in attribute_map.items() %}
+    {% if value == True or value == False %}{{ key }} = {{ value|lower }}
+    {% elif value is iterable and value is not string %}{%- for value2 in value %} {{ key }} = ["{{ value2 }}"]{% endfor -%}
+    {% elif key in comment_attributes %} #{{ key }} = "{{ value }}"
+    {% else %}{{ key }} = "{{ value|escape }}"{% endif -%}
+    {% endfor -%}
+    {%- for block in blocks -%}
+    {{ block }}
     {%- endfor %}
 }
-{%- endfor %}
-    """
+"""
+
 }
 
 
@@ -125,8 +159,6 @@ class AWSAttributes:
     def __init__(self, attribute_map, blocks):
         self.attribute_map = attribute_map
         self.template = Template(core_resource_blocks["flat_block"])
-        assert "zone_id" in attribute_map
-        assert "availability" in attribute_map
         self.blocks = blocks
 
     @staticmethod
@@ -138,10 +170,10 @@ class AWSAttributes:
 
 api_client = None
 
-def get_client():
+def get_client(profile='demo'):
     global api_client
     if api_client is None:
-        config = get_config_for_profile('demo')
+        config = get_config_for_profile(profile)
         api_client = ApiClient(host=config.host, token=config.token)
 
     return api_client

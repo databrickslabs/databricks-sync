@@ -60,8 +60,8 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
 
 
 config = get_config_for_profile('demo')
-api_client = ApiClient(host=config.host, token=config.token)
-clusterList = ClusterApi(api_client).list_clusters()
+source_api_client = ApiClient(host=config.host, token=config.token)
+clusterList = ClusterApi(source_api_client).list_clusters()
 
 
 #writeJson()

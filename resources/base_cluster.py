@@ -11,11 +11,11 @@ class LibraryDetails:
             for item in attribute_map[i]['library']:
                 assert item in listOfLibs
                 # JAR JSON is different, need to add a dict around it
-                if item in ('jar','whl','egg'):
-                    attribute_map[i]['library'] = { item: {
-                                                       'path': attribute_map[i]['library'][item]
-                                                         }
-                                                     }
+                if item in ('jar', 'whl', 'egg'):
+                    attribute_map[i]['library'] = {item: {
+                        'path': attribute_map[i]['library'][item]
+                    }
+                    }
 
             if 'status' in attribute_map[i]:
                 del attribute_map[i]['status']
@@ -23,6 +23,7 @@ class LibraryDetails:
                 del attribute_map[i]['is_library_for_all_clusters']
             if 'messages' in attribute_map[i]:
                 del attribute_map[i]['messages']
+
 
         self.blocks = blocks
         self.template = Template(core_resource_blocks["flat_block_in_array"])
@@ -169,6 +170,7 @@ class ClusterTFResource:
 
     def render(self):
         resource_name=genTFValidName(self.attribute_map['cluster_name'])
-        return self.template.render(resource_type="databricks_cluster", resource_name=resource_name, resource_id=self.id,
+        resource_id=genTFValidName(self.id)
+        return self.template.render(resource_type="databricks_cluster", resource_name=resource_name, resource_id=resource_id,
                                     attribute_map=self.attribute_map,comment_attributes=self.comment_attributes_key,
                                     blocks=[block.render() for block in self.blocks])

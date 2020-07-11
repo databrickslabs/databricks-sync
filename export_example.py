@@ -20,8 +20,9 @@ from resources import *
 #TODO test idempotency_token
 
 # read DB config file and get a client
+from resources import ClusterTFResource
 
-api_client = None
+source_api_client = None
 
 def writeTF(outputfile):
     file_loader = FileSystemLoader('../templates')
@@ -63,7 +64,7 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
 
 
 def export_pools(output_dir,prt=False):
-    global api_client
+    global source_api_client
     if api_client is None:
         api_client = get_client()
 
@@ -87,7 +88,7 @@ def export_pools(output_dir,prt=False):
 
 
 def export_clusters(output_dir, prt=False):
-    global api_client
+    global source_api_client
     if api_client is None:
         api_client = get_client()
 

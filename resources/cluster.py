@@ -92,32 +92,6 @@ jsonString = """
       }
 """
 
-cluster_resource_blocks2 = core_resource_blocks
-cluster_resource_blocks2["autoscale"] = {"""
-    autoscale {
-             min_workers = {{min_workers}}
-             max_workers = {{max_workers}}
-         }
-     """}
-cluster_resource_blocks2["init_scripts"] = {"""
- {% for script in init_scripts -%}
- init_scripts {
-         {% if script.dbfs %}dbfs {
-             destination = "{{ script.dbfs.destination }}"
-         }{%- endif %}
-         {% if script.s3 %}s3 ={
-         destination = "{{ script.s3.destination }}"
-         {% if script.s3.region %}region = "{{ script.s3.region }}"{%- endif -%}
-         {% if script.s3.endpoint %}endpoint = "{{ script.s3.endpoint }}"{%- endif -%}
-         {% if script.s3.enable_encryption %}enable_encryption = "{{ script.s3.enable_encryption }}"{%- endif -%}
-         {% if script.s3.encryption_type %}encryption_type = "{{ script.s3.encryption_type }}"{%- endif -%}
-         {% if script.s3.kms_key %}kms_key = "{{ script.s3.kms_key }}"{%- endif -%}
-         {% if script.s3.canned_acl %}canned_acl = "{{ script.s3.canned_acl }}"{%- endif -%}
-        }{%- endif %}
- }
- {% endfor %}
- """}
-
 
 class Cluster:
 
@@ -129,6 +103,11 @@ class Cluster:
         self.add_cluster_libraries()
 
     def parse(self, json):
+        if 'instance_pool_id' in json:
+            json.pop('node_type_id')
+            json.pop('driver_node_type_id')
+            json.pop('aws_attributes')
+
         for key in json.keys():
             # Catch all blocks
             if key in ClusterTFResource.block_key_map:

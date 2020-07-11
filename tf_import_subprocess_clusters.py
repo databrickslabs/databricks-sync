@@ -25,7 +25,7 @@ def export_clusters(output_dir, prt=False):
             clusters[cluster.id] = cluster
             output_cluster = ClusterTFResource(cl["cluster_id"], cluster.resource, cluster.blocks)
             Path(output_dir).mkdir(parents=True, exist_ok=True)
-            with open(output_dir + cl["cluster_name"].replace(' ', '_').replace('/', '_') +"_"+ cl["cluster_id"] + '.tf',
+            with open(output_dir + genTFValidName(cl["cluster_name"]) +"_"+ genTFValidName(cl["cluster_id"]) + '.tf',
                       'w') as outfile:
                 outfile.write(output_cluster.render())
                 outfile.close()
