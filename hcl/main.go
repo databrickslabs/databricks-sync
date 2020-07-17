@@ -99,7 +99,7 @@ func WriteHCLFromMap(objectType string, input map[string]interface{}, resourceIn
 
 
 //export CreateResourceHCL
-func CreateResourceHCL(objectType, objectName, objectIdentifier, jsonData *C.char, debug C.bool) (*C.char, *C.char) {
+func CreateResourceHCL(objectType, objectName, objectIdentifier, jsonData *C.char) (*C.char, *C.char) {
 
 	r := HCLObject{
 		Type: C.GoString(objectName),
