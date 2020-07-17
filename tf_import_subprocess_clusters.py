@@ -66,7 +66,7 @@ for file in tf_files:
 
 exec_print_output(False, False, 'terraform', 'plan',
                         '-state=' + working_dir +'terraform.state',
-                        '-out=' + working_dir + "terrafrom.tfplan",
+                        '-out=' + working_dir + "terraform.tfplan",
                   working_dir)
 
 

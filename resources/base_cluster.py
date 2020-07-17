@@ -159,8 +159,9 @@ class ClusterTFResource:
         "last_state_loss_time", "last_activity_time", "cluster_memory_mb", "cluster_cores", "creator_user_name",
         "pinned_by_user_name", "init_scripts_safe_mode", "enable_local_disk_encryption","termination_reason"
     }
+    #TODO implement pocliy
     comment_attributes_key = {
-        "cluster_id"
+        "cluster_id","policy_id"
     }
     def __init__(self, id, attribute_map, blocks):
         self.id = id
