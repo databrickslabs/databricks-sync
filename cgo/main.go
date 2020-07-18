@@ -6,6 +6,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"log"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -31,24 +32,32 @@ func mapInterfaceInterfaceToStringInterface(m map[interface{}]interface{}) map[s
 	return resp
 }
 
-func ProcessBody(resourceBody *hclwrite.Body, input map[string]interface{}) {
+func ProcessBody(resourceBody *hclwrite.Body, input map[string]interface{}, debug bool) {
 	prefix := "@block:"
-	for key, val := range input {
+	keys := make([]string, 0, len(input))
+	for k := range input {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		val := input[key]
 		if strings.HasPrefix(key, prefix) {
 			block := resourceBody.AppendNewBlock(strings.Replace(key, prefix,"", 1), nil)
 			valCasted, ok := val.(map[string]interface{})
 			if ok {
-				ProcessBody(block.Body(), valCasted)
+				ProcessBody(block.Body(), valCasted, debug)
 			}
 			valInterfaceCasted, ok := val.(map[interface{}]interface{})
 			if ok {
-				ProcessBody(block.Body(), mapInterfaceInterfaceToStringInterface(valInterfaceCasted))
+				ProcessBody(block.Body(), mapInterfaceInterfaceToStringInterface(valInterfaceCasted), debug)
 			}
 
 		}
 		valType := reflect.TypeOf(val)
-		log.Printf("%v is of type %v", key, valType)
-		log.Printf("%v is of kind %v", key, valType.Kind())
+		if debug == true {
+			log.Printf("%v is of type %v", key, valType)
+			log.Printf("%v is of kind %v", key, valType.Kind())
+		}
 		switch valType.Kind() {
 		case reflect.Map:
 			if !strings.HasPrefix(key, prefix) {
@@ -83,7 +92,7 @@ func ProcessBody(resourceBody *hclwrite.Body, input map[string]interface{}) {
 	}
 }
 
-func WriteHCLFromMap(objectType string, input map[string]interface{}, resourceInfo HCLObject) string {
+func WriteHCLFromMap(objectType string, input map[string]interface{}, resourceInfo HCLObject, debug bool) string {
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
 	resourceBlock := rootBody.AppendNewBlock(objectType, []string{resourceInfo.Type, resourceInfo.Name})
@@ -92,25 +101,27 @@ func WriteHCLFromMap(objectType string, input map[string]interface{}, resourceIn
 	if input == nil {
 		return ""
 	}
-	ProcessBody(resourceBody, input)
+	ProcessBody(resourceBody, input, debug)
 
 	return strings.Replace(string(f.Bytes()), "$${", "${", 1)
 }
 
-
-//export CreateResourceHCL
-func CreateResourceHCL(objectType, objectName, objectIdentifier, jsonData *C.char) (*C.char, *C.char) {
+//export CreateHCLFromJson
+func CreateHCLFromJson(objectType, objectName, objectIdentifier, jsonData string, debug bool) (*C.char, *C.char)  {
 
 	r := HCLObject{
-		Type: C.GoString(objectName),
-		Name: C.GoString(objectIdentifier),
+		Type: objectName,
+		Name: objectIdentifier,
 	}
 	var unJson map[string]interface{}
-	err := json.Unmarshal([]byte(C.GoString(jsonData)), &unJson)
+	err := json.Unmarshal([]byte(jsonData), &unJson)
 	if err != nil {
-		return C.CString(""), C.CString(err.Error())
+		return C.CString(""),C.CString(err.Error())
 	}
-	return C.CString(WriteHCLFromMap(C.GoString(objectType), unJson, r)), C.CString("")
+	if debug {
+		return C.CString(WriteHCLFromMap(objectType, unJson, r, true)), C.CString("")
+	}
+	return C.CString(WriteHCLFromMap(objectType, unJson, r, false)), C.CString("")
 }
 
 func main() {}

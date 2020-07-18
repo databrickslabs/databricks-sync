@@ -4,8 +4,8 @@ from pathlib import Path
 from databricks_cli.jobs.api import JobsApi
 from databricks_cli.clusters.api import ClusterApi
 
-from resources import *
-from resources.core import genProvider, clean_product, exec_print_output, genTFValidName
+from databricks_terraformer import *
+from databricks_terraformer.core import genProvider, clean_product, exec_print_output, genTFValidName
 
 
 working_dir='./output/jobs/'

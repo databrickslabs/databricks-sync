@@ -44,7 +44,7 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
     infile.close()
 
     #workspace = json.dumps(clusterList, sort_keys=True)
-    # filter out jobs resources
+    # filter out jobs databricks_terraformer
     # modify to use "cluster_source":"JOB",
     workspace = {k: v for k, v in clusterList['clusters'].items() if not k.startswith('job-')}
 

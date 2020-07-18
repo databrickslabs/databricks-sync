@@ -110,6 +110,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.h
 
 # Distribution / packaging
 .Python
@@ -248,4 +249,5 @@ dmypy.json
 # Ignore all local history of files
 .history
 
+tmp
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python,visualstudiocode

@@ -3,9 +3,9 @@ from pathlib import Path
 
 
 from databricks_cli.clusters.api import ClusterApi
-from resources.core import genProvider, clean_product, exec_print_output, get_client, genTFValidName
-from resources.cluster import Cluster
-from resources import ClusterTFResource
+from databricks_terraformer.core import genProvider, clean_product, exec_print_output, get_client, genTFValidName
+from databricks_terraformer.cluster import Cluster
+from databricks_terraformer import ClusterTFResource
 
 
 def export_clusters(output_dir, prt=False):

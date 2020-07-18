@@ -1,6 +1,6 @@
 from jinja2 import Template
 
-from resources.core import core_resource_blocks, AWSAttributes, template_string, genTFValidName
+from databricks_terraformer.core import core_resource_blocks, AWSAttributes, template_string, genTFValidName
 
 class LibraryDetails:
     def __init__(self, attribute_map, blocks):

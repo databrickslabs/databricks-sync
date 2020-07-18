@@ -7,7 +7,7 @@ from pathlib import Path
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.clusters.api import ClusterApi
 
-from resources import *
+from databricks_terraformer import *
 
 
 #TODO test SSH_PUBLIC_KEY
@@ -20,7 +20,7 @@ from resources import *
 #TODO test idempotency_token
 
 # read DB config file and get a client
-from resources import ClusterTFResource
+from databricks_terraformer import ClusterTFResource
 
 source_api_client = None
 
@@ -49,7 +49,7 @@ def compareWithWorkspace(file="/tmp/clusters.json"):
     infile.close()
 
     #workspace = json.dumps(clusterList, sort_keys=True)
-    # filter out jobs resources
+    # filter out jobs databricks_terraformer
     # modify to use "cluster_source":"JOB",
     workspace = {k: v for k, v in clusterList['clusters'].items() if not k.startswith('job-')}
 

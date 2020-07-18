@@ -3,8 +3,8 @@ from pathlib import Path
 
 
 from databricks_cli.instance_pools.api import InstancePoolsApi
-from resources.core import genProvider, clean_product, exec_print_output, get_client, genTFValidName
-from resources.instance_pool import InstacePool,PoolTFResource
+from databricks_terraformer.core import genProvider, clean_product, exec_print_output, get_client, genTFValidName
+from databricks_terraformer.instance_pool import InstacePool,PoolTFResource
 
 def export_pools(output_dir,prt=False):
     source_profile = 'demo'
