@@ -2,6 +2,7 @@ import click as click
 import click_log
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
+from databricks_terraformer.dbfs.cli import dbfs_group
 from databricks_terraformer.policies.cli import cluster_policies_group
 from databricks_terraformer.version import print_version_callback, version
 
@@ -15,6 +16,7 @@ def cli():
 
 
 cli.add_command(cluster_policies_group, name="cluster-policies")
+cli.add_command(dbfs_group, name="dbfs")
 
 
 if __name__ == "__main__":
