@@ -3,6 +3,7 @@ import os
 import tempfile
 from typing import Text, List
 
+import click
 import git
 
 from databricks_terraformer import log
@@ -11,9 +12,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 class GitHandler:
-    def __init__(self, git_url, directory, custom_commit_message=None, ignore_deletes=False):
+    def __init__(self, git_url, directory, custom_commit_message=None, delete_not_found=False, dry_run=False):
+        self.dry_run = dry_run
         self.custom_commit_message = custom_commit_message
-        self.ignore_deletes = ignore_deletes
+        self.delete_not_found = delete_not_found
         self.directory = directory
         self.git_url = git_url
         self.files_created = []
@@ -46,6 +48,7 @@ class GitHandler:
 
     def _get_repo(self):
         try:
+
             repo = git.Repo.clone_from(self.git_url, self.local_repo_path.name,
                                        branch='master')
         except Exception as e:
@@ -57,6 +60,19 @@ class GitHandler:
         managed_set = set(os.listdir(self.resource_path))
         return list(managed_set - remote_set)
 
+    def _log_diff(self):
+        diff = self.repo.git.diff('HEAD', name_status=True)
+        if len(diff) is 0:
+            log.info("No files were changed and no diff was found.")
+        else:
+            for line in diff.split("\n"):
+                if line.startswith("D"):
+                    click.secho(f"File [A=added|M=modified|D=deleted]: {line}", fg='red')
+                if line.startswith("A"):
+                    click.secho(f"File [A=added|M=modified|D=deleted]: {line}", fg='green')
+                if line.startswith("Y"):
+                    click.secho(f"File [A=added|M=modified|D=deleted]: {line}", fg='yellow')
+
     def __enter__(self):
         self.local_repo_path = tempfile.TemporaryDirectory()
         self.resource_path = os.path.join(self.local_repo_path.name, self.directory)
@@ -66,13 +82,23 @@ class GitHandler:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # If not ignoring deleted remote state, delete all files not explicitly added
-        if not self.ignore_deletes:
+        if self.delete_not_found:
             self._remove_unmanaged_files()
 
-        # stage all changes
+        log.info("===IDENTIFYING AND STAGING GIT CHANGES===")
+        # Stage Changes for logging diff
         self._stage_changes()
-        # push all changes
-        self._push()
+
+        # Log Changes
+        self._log_diff()
+
+        # Handle Dry Run
+        if self.dry_run is True:
+            # push all changes
+            self._push()
+            log.info("===FINISHED PUSHING CHANGES===")
+        else:
+            log.info("===RUNNING IN DRY RUN MODE NOT PUSHING CHANGES===")
         # clean temp folder
         self.local_repo_path.cleanup()
 

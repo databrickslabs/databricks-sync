@@ -1,19 +1,15 @@
-import json
-import os
-import tempfile
-from datetime import datetime
-
 import click
-import git
 from databricks_cli.configure.config import debug_option, profile_option, provide_api_client
 from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import eat_exceptions
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
+from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option
 from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json
 from databricks_terraformer.policies.policies_service import PolicyService
+from databricks_terraformer.utils import normalize_identifier
 from databricks_terraformer.utils.git_handler import GitHandler
-from databricks_terraformer.utils.patterns import pattern_option, provide_pattern_func
+from databricks_terraformer.utils.patterns import provide_pattern_func
 from databricks_terraformer.version import print_version_callback, version
 
 
@@ -24,11 +20,15 @@ from databricks_terraformer.version import print_version_callback, version
 @profile_option
 @eat_exceptions
 @provide_api_client
-def export_cli(api_client: ApiClient, hcl, pattern_matches):
+@git_url_option
+@ssh_key_option
+@delete_option
+@dry_run_option
+def export_cli(dry_run, delete, git_ssh_url, api_client: ApiClient, hcl, pattern_matches):
     if hcl:
         service = PolicyService(api_client)
         created_policy_list = []
-        with GitHandler("https://github.com/stikkireddy/export-repo", "cluster_policies", ignore_deletes=True) as gh:
+        with GitHandler(git_ssh_url, "cluster_policies", delete_not_found=delete, dry_run=dry_run) as gh:
             for policy in service.list_policies()["policies"]:
                 assert "definition" in policy
                 assert "name" in policy
@@ -38,12 +38,12 @@ def export_cli(api_client: ApiClient, hcl, pattern_matches):
                     continue
                 log.debug(f"{policy['name']} matched the pattern function {pattern_matches}")
                 cluster_policy_tf_dict = {
-                    "definition": policy["definition"],
+                    "@raw:definition": policy["definition"],
                     "name": policy["name"]
                 }
                 o_type = "resource"
                 name = "databricks_cluster_policy"
-                identifier = f"databricks_cluster_policy-{policy['name']}-{policy['policy_id']}"
+                identifier = normalize_identifier(f"databricks_cluster_policy-{policy['name']}-{policy['policy_id']}")
                 created_policy_list.append(identifier)
                 policy_hcl = create_hcl_from_json(o_type, name, identifier, cluster_policy_tf_dict, False)
 
@@ -52,8 +52,6 @@ def export_cli(api_client: ApiClient, hcl, pattern_matches):
                 log.debug(policy_hcl)
 
 
-
-# deleting 405E7E8E4A000029
 @click.group(context_settings=CONTEXT_SETTINGS,
              short_help='Utility to interact with clusters cluster policies.')
 @click.option('--version', '-v', is_flag=True, callback=print_version_callback,

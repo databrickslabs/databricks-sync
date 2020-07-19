@@ -1,4 +1,5 @@
 import click
+from databricks_cli.click_types import ContextObject
 from databricks_cli.configure.config import debug_option, profile_option, provide_api_client
 from databricks_cli.dbfs.dbfs_path import DbfsPath
 from databricks_cli.sdk import ApiClient, DbfsService
@@ -26,22 +27,23 @@ def export_cli(api_client: ApiClient, hcl, pattern_matches):
         files = service.list(path="dbfs:/databricks/init_scripts")['files']
         log.info(files)
 
-        #with GitHandler("git@github.com:itaiw/export-repo.git", "dbfs", ignore_deletes=True) as gh:
+        # with GitHandler("git@github.com:itaiw/export-repo.git", "dbfs", ignore_deletes=True) as gh:
         for file in files:
             assert "path" in file
             assert "is_dir" in file
             assert "file_size" in file
 
-            base_name = file["path"].replace(".","_").replace("/","_")
+            base_name = file["path"].replace(".", "_").replace("/", "_")
 
-            print(f'${{pathexpand("{file["path"]}")}}')
-            print(f'${{md5(filebase64(pathexpand("{file["path"]}"}}')
+            # print(f'${{pathexpand("{file["path"]}")}}')
+            # print(f'${{md5(filebase64(pathexpand("{file["path"]}"}}')
 
             dbfs_resource_data = {
-                "source": f'${{pathexpand("{file["path"]}")}}',
-                "content_b64_md5": f'${{md5(filebase64(pathexpand("{file["path"]}"}}',
+                "@expr:source": f'pathexpand("{file["path"]}")',
+                "@expr:content_b64_md5": f'md5(filebase64(pathexpand("{file["path"]}")))',
                 "path": file["path"],
                 "overwrite": True,
+                "@block:tags": {"test1": "test2"},
                 "mkdirs": True,
                 "validate_remote_file": True,
             }
@@ -52,7 +54,6 @@ def export_cli(api_client: ApiClient, hcl, pattern_matches):
             policy_hcl = create_hcl_from_json(o_type, name, identifier, dbfs_resource_data, False)
 
             print(policy_hcl)
-
 
 
 @click.group(context_settings=CONTEXT_SETTINGS,
@@ -69,4 +70,4 @@ def dbfs_group():
     pass
 
 
-dbfs_group.add_command(export_cli,name="export")
+dbfs_group.add_command(export_cli, name="export")
