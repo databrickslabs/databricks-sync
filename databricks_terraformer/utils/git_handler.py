@@ -1,6 +1,7 @@
 import logging
 import os
 import tempfile
+from pathlib import Path
 from typing import Text, List
 
 import click
@@ -22,6 +23,7 @@ class GitHandler:
 
     def add_file(self, name, data):
         write_path = os.path.join(self.resource_path, name)
+        os.makedirs(os.path.dirname(write_path), exist_ok=True)
         log.info(f"Writing policy to path {write_path}")
         with open(write_path, "w") as f:
             f.write(data)
@@ -29,12 +31,12 @@ class GitHandler:
 
     def _remove_unmanaged_files(self):
         deleted_file_paths_to_stage = []
-        files_to_delete = self.get_files_delete()
-        for file in files_to_delete:
-            hcl_to_be_deleted_path = os.path.join(self.resource_path, file)
-            log.info(f"Deleting policy in path {hcl_to_be_deleted_path}")
-            os.remove(hcl_to_be_deleted_path)
-            deleted_file_paths_to_stage.append(hcl_to_be_deleted_path)
+        files_to_delete = self._get_files_delete()
+        for abs_file_path in files_to_delete:
+            # hcl_to_be_deleted_path = os.path.join(self.resource_path, file)
+            log.info(f"Deleting policy in path {abs_file_path}")
+            os.remove(abs_file_path)
+            deleted_file_paths_to_stage.append(abs_file_path)
 
     def _stage_changes(self):
         self.repo.git.add(".")
@@ -55,9 +57,9 @@ class GitHandler:
             repo = git.Repo(self.local_repo_path.name)
         return repo
 
-    def get_files_delete(self) -> (List[Text]):
-        remote_set = set(self.files_created)
-        managed_set = set(os.listdir(self.resource_path))
+    def _get_files_delete(self) -> (List[Text]):
+        remote_set = set([os.path.join(self.resource_path, item) for item in list(self.files_created)])
+        managed_set = set([str(path.absolute()) for path in list(Path(self.resource_path).rglob("*")) if path.is_file()])
         return list(managed_set - remote_set)
 
     def _log_diff(self):
@@ -65,7 +67,7 @@ class GitHandler:
         if len(diff) is 0:
             log.info("No files were changed and no diff was found.")
         else:
-            for line in diff.split("\n"):
+            for line in sorted(diff.split("\n")):
                 if line.startswith("D"):
                     click.secho(f"File [A=added|M=modified|D=deleted]: {line}", fg='red')
                 if line.startswith("A"):
@@ -82,7 +84,7 @@ class GitHandler:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # If not ignoring deleted remote state, delete all files not explicitly added
-        if self.delete_not_found:
+        if self.delete_not_found is True:
             self._remove_unmanaged_files()
 
         log.info("===IDENTIFYING AND STAGING GIT CHANGES===")
@@ -93,7 +95,7 @@ class GitHandler:
         self._log_diff()
 
         # Handle Dry Run
-        if self.dry_run is True:
+        if self.dry_run and self.dry_run is False:
             # push all changes
             self._push()
             log.info("===FINISHED PUSHING CHANGES===")

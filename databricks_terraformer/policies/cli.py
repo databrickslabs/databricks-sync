@@ -25,7 +25,7 @@ from databricks_terraformer.version import print_version_callback, version
 @delete_option
 @dry_run_option
 def export_cli(dry_run, delete, git_ssh_url, api_client: ApiClient, hcl, pattern_matches):
-    if hcl:
+    if hcl is True:
         service = PolicyService(api_client)
         created_policy_list = []
         with GitHandler(git_ssh_url, "cluster_policies", delete_not_found=delete, dry_run=dry_run) as gh:

@@ -19,9 +19,10 @@ def delete_option(f):
 
 def dry_run_option(f):
     def callback(ctx, param, value):  # NOQA
-        if value:
+        if value is True:
             log.info("===RUNNING IN DRY RUN MODE===")
-    return click.option('--dry-run', '-d', is_flag=True, callback=callback,
+        return value
+    return click.option('--dry-run', is_flag=True, callback=callback,
                         help="This will only log to console the actions but not commit to git remote state.")(f)
 
 
