@@ -1,5 +1,6 @@
 import click as click
 import click_log
+from databricks_terraformer.instance_pools.cli import instance_pools_group
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.dbfs.cli import dbfs_group
@@ -17,6 +18,7 @@ def cli():
 
 cli.add_command(cluster_policies_group, name="cluster-policies")
 cli.add_command(dbfs_group, name="dbfs")
+cli.add_command(instance_pools_group, name="instance-pools")
 
 
 if __name__ == "__main__":

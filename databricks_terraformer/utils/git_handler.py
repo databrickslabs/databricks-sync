@@ -95,7 +95,7 @@ class GitHandler:
         self._log_diff()
 
         # Handle Dry Run
-        if self.dry_run and self.dry_run is False:
+        if self.dry_run is not None and self.dry_run is False:
             # push all changes
             self._push()
             log.info("===FINISHED PUSHING CHANGES===")
