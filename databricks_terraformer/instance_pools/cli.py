@@ -7,7 +7,7 @@ from databricks_terraformer.config import git_url_option, ssh_key_option, delete
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json
-from databricks_terraformer.utils import handle_block, handle_map, normalize_identifier
+from databricks_terraformer.utils import handle_block, handle_map, normalize_identifier, prep_json
 from databricks_terraformer.utils.git_handler import GitHandler
 from databricks_terraformer.utils.patterns import provide_pattern_func
 from databricks_terraformer.version import print_version_callback, version
@@ -49,22 +49,7 @@ def export_cli(dry_run, delete, git_ssh_url, api_client: ApiClient, hcl, pattern
                     log.debug(f"{pool['instance_pool_name']} did not match pattern function {pattern_matches}")
                     continue
                 log.debug(f"{pool['instance_pool_name']} matched the pattern function {pattern_matches}")
-
-                for req_key in required_attributes_key:
-                    assert req_key in pool
-
-                pool_resource_data = {}
-                for att in pool:
-                    if att in ignore_attribute_key:
-                        log.debug(f"{att} is in ignore list")
-                        continue
-
-                    if att in block_key_map:
-                        block_key_map[att](pool_resource_data, pool, att)
-                    else:
-                        assert type(att) is not dict, f"map/block {att} is not defined"
-                        pool_resource_data[att] = pool[att]
-
+                pool_resource_data = prep_json(block_key_map, ignore_attribute_key, pool, required_attributes_key)
 
                 base_name = normalize_identifier(pool["instance_pool_name"])
                 o_type = "resource"

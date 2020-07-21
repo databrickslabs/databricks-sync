@@ -1,3 +1,6 @@
+from databricks_terraformer import log
+
+
 def normalize_identifier(identifier):
     return_name=remove_emoji(identifier)
     if identifier[0].isdigit():
@@ -46,3 +49,20 @@ def remove_emoji(text):
                                 "]+", flags=re.UNICODE)
 
     return regrex_pattern.sub(r'' ,text)
+
+def prep_json(block_key_map, ignore_attribute_key, resource, required_attributes_key):
+    for req_key in required_attributes_key:
+        assert req_key in resource
+    pool_resource_data = {}
+    for att in resource:
+        if att in ignore_attribute_key:
+            log.debug(f"{att} is in ignore list")
+            continue
+
+        if att in block_key_map:
+            block_key_map[att](pool_resource_data, resource, att)
+        else:
+            assert type(att) is not dict, f"map/block {att} is not defined"
+            pool_resource_data[att] = resource[att]
+    return pool_resource_data
+
