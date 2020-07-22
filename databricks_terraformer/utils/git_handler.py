@@ -35,7 +35,7 @@ class GitExportHandler:
     def add_file(self, name, data):
         write_path = os.path.join(self.resource_path, name)
         os.makedirs(os.path.dirname(write_path), exist_ok=True)
-        log.info(f"Writing policy to path {write_path}")
+        log.info(f"Writing {self.directory} to path {write_path}")
         with open(write_path, "w") as f:
             f.write(data)
         self.files_created.append(name)
@@ -47,7 +47,7 @@ class GitExportHandler:
             # Skip ignored files
             file_name = ntpath.basename(abs_file_path)
             if file_name not in self._ignore_remove_files:
-                log.info(f"Deleting policy in path {abs_file_path}")
+                log.info(f"Deleting {self.directory} in path {abs_file_path}")
                 os.remove(abs_file_path)
                 deleted_file_paths_to_stage.append(abs_file_path)
 

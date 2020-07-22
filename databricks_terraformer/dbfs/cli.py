@@ -42,7 +42,7 @@ def export_cli(tag, dry_run, dbfs_path, delete, git_ssh_url, api_client: ApiClie
                 assert "file_size" in file
                 if file["is_dir"]:
                     continue
-                base_name = file["path"].replace(".", "_").replace("/", "_")
+                base_name = file["path"]
 
                 identifier = normalize_identifier(f"databricks_dbfs_file-{base_name}")
                 dbfs_resource_data = {
