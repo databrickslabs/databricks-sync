@@ -41,3 +41,19 @@ def create_hcl_from_json(object_type: Text, object_name: Text, object_identifier
         raise ValueError(output.error.decode("UTF-8"))
     else:
         return output.hcl.decode("UTF-8")
+
+
+class ValidateHCLResponse(Structure):
+    _fields_ = [("errors", c_char_p)]
+
+
+lib.ValidateHCL.argtypes = [GoString, c_ubyte]
+lib.ValidateHCL.restype = ValidateHCLResponse
+
+
+def validate_hcl(hcl_string: Text, debug: bool = False) -> Text:
+    b_hcl_string = hcl_string.encode("utf-8")
+    go_hcl_string = GoString(b_hcl_string, len(b_hcl_string))
+    debug_option = 1 if debug else 0
+    output = lib.ValidateHCL(go_hcl_string, c_ubyte(debug_option))
+    return output.errors.decode("UTF-8")

@@ -1,5 +1,12 @@
-from databricks_terraformer import log
+from typing import List
 
+from pygrok import Grok
+
+valid_resources = [
+    "databricks_cluster_policy",
+    "databricks_dbfs_file",
+    "databricks_instance_pool",
+]
 
 def normalize_identifier(identifier):
     return_name=remove_emoji(identifier)
@@ -66,3 +73,64 @@ def prep_json(block_key_map, ignore_attribute_key, resource, required_attributes
             pool_resource_data[att] = resource[att]
     return pool_resource_data
 
+class TFGitResource:
+
+    @classmethod
+    def from_file_path(cls, path):
+        import ntpath
+        file_name = ntpath.basename(path)
+        # multiple resources may match because of prefix so we want to find the longest matching prefix
+        filtered_resources = list(filter(lambda resource: file_name.startswith(resource), valid_resources))
+        if len(filtered_resources) is 0:
+            return None
+        single_resource = max(filtered_resources, key=lambda resource_name: len(resource_name))
+        return cls(single_resource, file_name.split(".")[0])
+
+    def __init__(self, resource_type, resource_name):
+        self.resource_name = resource_name
+        self.resource_type = resource_type
+
+    def __repr__(self):
+        return f"resource: {self.resource_type} name: {self.resource_name}"
+
+    def get_plan_target_cmds(self):
+        return ["-target", f"{self.resource_type}.{self.resource_name}"]
+
+
+class TFResource:
+
+    def __init__(self, resource_type, resource_name):
+        self.resource_name = resource_name
+        self.resource_type = resource_type
+
+    def __repr__(self):
+        return f"resource: {self.resource_type} name: {self.resource_name}"
+
+
+class TFGitResourceFile:
+
+    @classmethod
+    def from_file_path(cls, path):
+        pattern = '^resource "%{WORD:resource_type}" "%{DATA:resource_name}" {'
+        grok = Grok(pattern)
+        with open(path, "r") as f:
+            lines = f.readlines()
+
+        tf_resources = []
+
+        for line in lines:
+            res = grok.match(line)
+            if res is not None and "resource_type" in res and "resource_name" in res:
+                tf_resources.append(TFResource(**res))
+        if len(tf_resources) > 0:
+            return cls(tf_resources)
+        return cls(tf_resources)
+
+    def __init__(self, resource_list: List[TFResource]):
+        self.resource_list = resource_list
+
+    def get_plan_target_cmds(self):
+        target_cmds = []
+        for resource in self.resource_list:
+            target_cmds += ["--target", f"{resource.resource_type}.{resource.resource_name}"]
+        return target_cmds

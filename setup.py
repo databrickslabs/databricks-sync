@@ -22,7 +22,7 @@ setuptools.setup(
           'gitpython'
       ],
     package_data={
-        'databricks_terraformer': ['hcl/json2hcl.so'],
+        'databricks_terraformer': ['hcl/json2hcl.so', 'utils/changelog.md.j2', 'hcl/hcl.tf.j2'],
     },
     entry_points='''
         [console_scripts]

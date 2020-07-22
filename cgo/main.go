@@ -23,13 +23,6 @@ const BlockPrefix = "@block:"
 const ExprPrefix = "@expr:"
 const RawStringPrefix = "@raw:"
 
-func GetObjectType(inputMap map[string]interface{}) reflect.Type {
-	for _, val := range inputMap {
-		return reflect.TypeOf(val)
-	}
-	return nil
-}
-
 func mapInterfaceInterfaceToStringInterface(m map[interface{}]interface{}) map[string]interface{} {
 	resp := make(map[string]interface{})
 	for key, val := range m {
@@ -38,21 +31,22 @@ func mapInterfaceInterfaceToStringInterface(m map[interface{}]interface{}) map[s
 	return resp
 }
 
-func ProcessString(resourceBody *hclwrite.Body, key string, value interface{}, debug bool) {
+func processString(resourceBody *hclwrite.Body, key string, value interface{}, debug bool) {
 	var line string
 	var processedKey string
-	if strings.HasPrefix(key, RawStringPrefix) {
+
+	switch {
+	case strings.HasPrefix(key, RawStringPrefix):
 		processedKey = strings.Replace(key, RawStringPrefix, "", 1)
-		resourceBody.SetAttributeValue(processedKey, cty.StringVal(value.(string)))
-		return
-	}
-	if strings.HasPrefix(key, ExprPrefix) {
+		line = fmt.Sprintf("%v = %q", processedKey, value)
+	case strings.HasPrefix(key, ExprPrefix):
 		processedKey = strings.Replace(key, ExprPrefix, "", 1)
 		line = fmt.Sprintf("%v = %v", processedKey, value)
-	} else {
+	default:
 		processedKey = key
 		line = fmt.Sprintf("%v = \"%v\"", processedKey, value)
 	}
+
 	if debug {
 		log.Printf("Processing line %v\n", line)
 	}
@@ -67,7 +61,7 @@ func ProcessString(resourceBody *hclwrite.Body, key string, value interface{}, d
 	resourceBody.SetAttributeRaw(processedKey, attr.Expr().BuildTokens(nil))
 }
 
-func ProcessMap(resourceBody *hclwrite.Body, key string, value interface{}, debug bool) {
+func processMap(resourceBody *hclwrite.Body, key string, value interface{}, debug bool) {
 
 	valMap := value.(map[string]interface{})
 	valMapJson, _ := json.Marshal(valMap)
@@ -86,16 +80,16 @@ func ProcessMap(resourceBody *hclwrite.Body, key string, value interface{}, debu
 	resourceBody.SetAttributeRaw(key, attr.Expr().BuildTokens(nil))
 }
 
-func ProcessBlock(resourceBody *hclwrite.Body, key string, val interface{}, debug bool) {
+func processBlock(resourceBody *hclwrite.Body, key string, val interface{}, debug bool) {
 	if strings.HasPrefix(key, BlockPrefix) {
 		block := resourceBody.AppendNewBlock(strings.Replace(key, BlockPrefix,"", 1), nil)
 		valCasted, ok := val.(map[string]interface{})
 		if ok {
-			ProcessBody(block.Body(), valCasted, debug)
+			processBody(block.Body(), valCasted, debug)
 		}
 		valInterfaceCasted, ok := val.(map[interface{}]interface{})
 		if ok {
-			ProcessBody(block.Body(), mapInterfaceInterfaceToStringInterface(valInterfaceCasted), debug)
+			processBody(block.Body(), mapInterfaceInterfaceToStringInterface(valInterfaceCasted), debug)
 		}
 
 	}
@@ -110,7 +104,7 @@ func keyIsNotOfPrefix(key string, ty string) bool {
 }
 
 
-func ProcessBody(resourceBody *hclwrite.Body, input map[string]interface{}, debug bool) {
+func processBody(resourceBody *hclwrite.Body, input map[string]interface{}, debug bool) {
 
 
 	keys := make([]string, 0, len(input))
@@ -122,7 +116,7 @@ func ProcessBody(resourceBody *hclwrite.Body, input map[string]interface{}, debu
 		val := input[key]
 
 		if keyIsOfPrefix(key, BlockPrefix){
-			ProcessBlock(resourceBody, key, val, debug)
+			processBlock(resourceBody, key, val, debug)
 		}
 
 		valType := reflect.TypeOf(val)
@@ -135,14 +129,14 @@ func ProcessBody(resourceBody *hclwrite.Body, input map[string]interface{}, debu
 		switch valType.Kind() {
 		case reflect.Map:
 			if keyIsNotOfPrefix(key, BlockPrefix) {
-				ProcessMap(resourceBody, key, val, debug)
+				processMap(resourceBody, key, val, debug)
 			}
 		case reflect.Bool:
 			resourceBody.SetAttributeValue(key, cty.BoolVal(val.(bool))) // this is overwritten later
 		case reflect.Float64:
 			resourceBody.SetAttributeValue(key, cty.NumberFloatVal(val.(float64))) // this is overwritten later
 		case reflect.String:
-			ProcessString(resourceBody, key, val, debug)
+			processString(resourceBody, key, val, debug)
 
 		}
 	}
@@ -157,7 +151,7 @@ func WriteHCLFromMap(objectType string, input map[string]interface{}, resourceIn
 	if input == nil {
 		return ""
 	}
-	ProcessBody(resourceBody, input, debug)
+	processBody(resourceBody, input, debug)
 
 	return strings.Replace(string(f.Bytes()), "$${", "${", -1)
 }
@@ -179,5 +173,23 @@ func CreateHCLFromJson(objectType, objectName, objectIdentifier, jsonData string
 	}
 	return C.CString(WriteHCLFromMap(objectType, unJson, r, false)), C.CString("")
 }
+
+//export ValidateHCL
+func ValidateHCL(hclB64String string, debug bool) *C.char {
+	var errorLines []string
+	if debug {
+		log.Printf("Validating HCL string: \n\n%s\n", hclB64String)
+	}
+	_, diags := hclwrite.ParseConfig([]byte(hclB64String), "", hcl.Pos{Line: 1, Column: 1})
+	if len(diags) != 0 {
+		for _, diag := range diags {
+			errorLines= append(errorLines,fmt.Sprintf("- %s", diag.Error()))
+		}
+		return C.CString(strings.Join(errorLines, "\n"))
+	}
+	return C.CString("")
+}
+
+
 
 func main() {}
