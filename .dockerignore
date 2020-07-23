@@ -1,0 +1,11 @@
+.terraform
+website
+vendor
+dist
+examples
+venv
+dist
+databricks_terraformer.egg-info
+build
+databricks_terraformer/hcl/json2hcl.h
+databricks_terraformer/hcl/json2hcl.so
