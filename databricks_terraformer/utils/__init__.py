@@ -1,6 +1,9 @@
+import re
 from typing import List
 
 from pygrok import Grok
+
+from databricks_terraformer import log
 
 valid_resources = [
     "databricks_cluster_policy",
@@ -29,8 +32,6 @@ def handle_map(pool_resource_data, pool, map):
         block_resource_data[att] = pool[map][att]
     pool_resource_data[f"{map}"] = block_resource_data
 
-
-import re
 
 
 def remove_emoji(text):

@@ -23,16 +23,18 @@ SUPPORT_IMPORTS = ['cluster_policies', 'dbfs', 'notebooks']
 @click.option('--databricks-object-type', type=click.Choice(SUPPORT_IMPORTS),
               multiple=True, default=SUPPORT_IMPORTS,
               help="This is the databricks object you wish to create a plan for. By default we will plan for all objects.")
+@click.option("--backend-file", required=True, type=click.Path(exists=True), callback=absolute_path_callback,
+              help='Please provide this as this is where your backend configuration at which your terraform file will be saved.')
 @debug_option
 @profile_option
 @eat_exceptions
 @git_url_option
 @ssh_key_option
 @inject_profile_as_env
-def import_cli(git_ssh_url, databricks_object_type, plan, apply, custom_plan_path, revision, artifact_dir):
+def import_cli(git_ssh_url, databricks_object_type, plan, apply, backend_file, custom_plan_path, revision, artifact_dir):
     with GitTFStage_V2(git_url=git_ssh_url, directories=databricks_object_type,
                        cur_ref=revision,
-                       artifact_dir=artifact_dir) as tf:
+                       artifact_dir=artifact_dir, backend_file=backend_file) as tf:
         if plan is True:
             tf.plan()
         if apply is True and plan is not True and custom_plan_path is None:

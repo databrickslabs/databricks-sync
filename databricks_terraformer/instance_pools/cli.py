@@ -3,9 +3,9 @@ from databricks_cli.configure.config import debug_option, profile_option, provid
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import eat_exceptions
-from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
+from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
 from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json
 from databricks_terraformer.utils import handle_block, handle_map, normalize_identifier, prep_json
 from databricks_terraformer.utils.git_handler import GitExportHandler
@@ -81,3 +81,4 @@ def instance_pools_group():
 instance_pools_group.add_command(export_cli, name="export")
 
 # GIT_PYTHON_TRACE=full databricks-terraformer -v debug instance-pools export --hcl --profile demo
+# GIT_PYTHON_TRACE=full databricks-terraformer -v debug instance-pools export --hcl --profile demo-aws -g git@github.com:stikkireddy/export-repo.git --dry-run --delete

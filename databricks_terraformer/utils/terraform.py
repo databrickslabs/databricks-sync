@@ -126,7 +126,8 @@ class GitTFStage_V2:
 
     # TODO: Support tag and batch id for batched-targeted plans
     def __init__(self, git_url, directories: List[Text], cur_ref, artifact_dir,
-                 prev_ref=None, init=True):
+                 prev_ref=None, init=True, backend_file=None):
+        self.backend_file = backend_file
         self.prev_ref = prev_ref
         self.cur_ref = cur_ref
         self.directories = directories
@@ -186,6 +187,14 @@ class GitTFStage_V2:
             }}
             """.format(self.cur_ref, self.git_url))
 
+    def _add_back_end_file(self):
+        provider_path = os.path.join(self.tf_stage_directory.name, "backend.tf")
+        with open(provider_path, "w") as f:
+            with open(self.backend_file, "r") as bk:
+                bkend_content = bk.read()
+            f.write(bkend_content)
+            f.flush()
+
     def _get_code(self):
         self.local_repo_directory = tempfile.TemporaryDirectory()
         # self.resource_path = os.path.join(self.local_repo_directory.name, self.directory)
@@ -232,6 +241,10 @@ class GitTFStage_V2:
 
         self._add_output_tag_block()
         log.info(f"added provider")
+
+        if self.backend_file is not None:
+            self._add_back_end_file()
+            log.info(f"added backend")
 
         for file_path in self.targeted_files_abs_paths:
             self._stage_file(file_path)
