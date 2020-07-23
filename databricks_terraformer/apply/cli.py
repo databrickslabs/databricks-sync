@@ -7,7 +7,7 @@ from databricks_terraformer.config import git_url_option, ssh_key_option, inject
 from databricks_terraformer.utils.terraform import GitTFStage_V2
 
 
-SUPPORT_IMPORTS = ['cluster_policies', 'dbfs', 'notebooks']
+SUPPORT_IMPORTS = ['cluster_policies', 'dbfs', 'notebooks', 'instance_pools']
 
 # TODO: Custom state back ends using aws environment variables
 @click.command(context_settings=CONTEXT_SETTINGS, help="Import selected resources.")
@@ -23,7 +23,7 @@ SUPPORT_IMPORTS = ['cluster_policies', 'dbfs', 'notebooks']
 @click.option('--databricks-object-type', type=click.Choice(SUPPORT_IMPORTS),
               multiple=True, default=SUPPORT_IMPORTS,
               help="This is the databricks object you wish to create a plan for. By default we will plan for all objects.")
-@click.option("--backend-file", required=True, type=click.Path(exists=True), callback=absolute_path_callback,
+@click.option("--backend-file", type=click.Path(exists=True), callback=absolute_path_callback,
               help='Please provide this as this is where your backend configuration at which your terraform file will be saved.')
 @debug_option
 @profile_option
