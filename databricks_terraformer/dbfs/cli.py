@@ -5,7 +5,7 @@ from databricks_cli.utils import eat_exceptions
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
-from databricks_terraformer.dbfs import get_file_contents
+from databricks_terraformer.dbfs import get_file_contents, get_dbfs_files_recursive
 from databricks_terraformer.hcl import create_hcl_file
 from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json, validate_hcl
 from databricks_terraformer.utils import normalize_identifier
@@ -32,7 +32,7 @@ def export_cli(tag, dry_run, dbfs_path, delete, git_ssh_url, api_client: ApiClie
         log.debug("this if debug")
         service = DbfsService(api_client)
 
-        files = service.list(path=dbfs_path)['files']
+        files = get_dbfs_files_recursive(service, dbfs_path)
         log.info(files)
 
         with GitExportHandler(git_ssh_url, "dbfs", delete_not_found=delete, dry_run=dry_run, tag=tag) as gh:

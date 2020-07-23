@@ -8,6 +8,7 @@ from databricks_terraformer import log
 valid_resources = [
     "databricks_cluster_policy",
     "databricks_dbfs_file",
+    "databricks_notebook",
     "databricks_instance_pool",
 ]
 
