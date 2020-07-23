@@ -2,7 +2,7 @@ import click as click
 import click_log
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
-from databricks_terraformer.apply.cli import import_cli
+from databricks_terraformer.apply.cli import destroy_cli, import_cli
 from databricks_terraformer.dbfs.cli import dbfs_group
 from databricks_terraformer.cluster_policies.cli import cluster_policies_group
 from databricks_terraformer.instance_pools.cli import instance_pools_group
@@ -23,6 +23,7 @@ cli.add_command(dbfs_group, name="dbfs")
 cli.add_command(instance_pools_group, name="instance-pools")
 cli.add_command(notebook_group, name="notebooks")
 cli.add_command(import_cli, name="import")
+cli.add_command(destroy_cli, name="destroy")
 
 
 if __name__ == "__main__":
