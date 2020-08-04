@@ -10,6 +10,11 @@ valid_resources = [
     "databricks_dbfs_file",
     "databricks_notebook",
     "databricks_instance_pool",
+    "databricks_instance_profile",
+    "databricks_secret_scope",
+    "databricks_secret",
+    "databricks_secret_acl",
+    "jobs",
 ]
 
 def normalize_identifier(identifier):
@@ -20,18 +25,18 @@ def normalize_identifier(identifier):
     return re.sub("[^a-zA-Z0-9_]+", "_",return_name)
 
 
-def handle_block(pool_resource_data, pool, block):
+def handle_block(resource_data, object, block):
     block_resource_data = {}
-    for att in pool[block]:
-        block_resource_data[att] = pool[block][att]
-    pool_resource_data[f"@block:{block}"] = block_resource_data
+    for att in object[block]:
+        block_resource_data[att] = object[block][att]
+    resource_data[f"@block:{block}"] = block_resource_data
 
 
-def handle_map(pool_resource_data, pool, map):
-    block_resource_data = {}
-    for att in pool[map]:
-        block_resource_data[att] = pool[map][att]
-    pool_resource_data[f"{map}"] = block_resource_data
+def handle_map(resource_data, object, map):
+    map_resource_data = {}
+    for att in object[map]:
+        map_resource_data[att] = object[map][att]
+    resource_data[f"{map}"] = map_resource_data
 
 
 
@@ -68,6 +73,7 @@ def prep_json(block_key_map, ignore_attribute_key, resource, required_attributes
             log.debug(f"{att} is in ignore list")
             continue
 
+        log.debug(att)
         if att in block_key_map:
             block_key_map[att](pool_resource_data, resource, att)
         else:
