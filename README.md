@@ -25,7 +25,7 @@ Support Matrix for Import and Export Operations:
 | azure adls gen1 mount        | unsupported   | unsupported      |
 | azure adls gen2 mount        | unsupported   | unsupported      |
 | azure blob mount             | unsupported   | unsupported      |
-| secret                       | supported     | supported        |
+| secret                       | supported     | unsupported      |
 | secret acl                   | supported     | supported        |
 | secret scope                 | supported     | supported        |
 | metastore tables             | unsupported   | unsupported      |
@@ -34,7 +34,7 @@ Support Matrix for Import and Export Operations:
 | Users Management                                                |
 | group                        | unsupported   | unsupported      |
 | group instance profile       | unsupported   | unsupported      |
-| group member                 | supported     | supported        |
+| group member                 | unsupported   | unsupported      |
 | scim group                   | unsupported   | unsupported      |
 | scim user                    | unsupported   | unsupported      |
 
