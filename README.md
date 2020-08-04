@@ -1,6 +1,53 @@
 # databricks-terraformer
 Use Terraformer to backup restore and sync Databricks workspaces
 
+This package uses credentials from the [Databricks CLI](https://docs.databricks.com/user-guide/dev-tools/databricks-cli.html)
+
+Support Matrix for Import and Export Operations:
+
+| component                    | export to hcl | workspace import |
+| -----------------------------|---------------|------------------|
+| User Objects                                                    |
+| cluster policy               | supported     | supported        |
+| cluster                      | unsupported   | unsupported      |
+| dbfs file                    | supported     | supported        |
+| instance pool                | supported     | supported        |
+| instance profile             | supported     | supported        |
+| job                          | supported     | unsupported      |
+| notebook                     | supported     | supported        |
+| -----------------------------|---------------|------------------|
+| Administrator setup                                             |
+| mws credentials              | unsupported   | unsupported      |
+| mws networks                 | unsupported   | unsupported      |
+| mws storage configurations   | unsupported   | unsupported      |
+| mws workspaces               | unsupported   | unsupported      |
+| aws s3 mount                 | unsupported   | unsupported      |
+| azure adls gen1 mount        | unsupported   | unsupported      |
+| azure adls gen2 mount        | unsupported   | unsupported      |
+| azure blob mount             | unsupported   | unsupported      |
+| secret                       | supported     | supported        |
+| secret acl                   | supported     | supported        |
+| secret scope                 | supported     | supported        |
+| metastore tables             | unsupported   | unsupported      |
+| metastore table ACLs         | unsupported   | unsupported      |
+| -----------------------------|---------------|------------------|
+| Users Management                                                |
+| group                        | unsupported   | unsupported      |
+| group instance profile       | unsupported   | unsupported      |
+| group member                 | supported     | supported        |
+| scim group                   | unsupported   | unsupported      |
+| scim user                    | unsupported   | unsupported      |
+
+
+# Next steps:
+* Add Terraform output to capture depedand ID (such as cluster policy ID for a cluster
+* Export object permissions and import them to the target with the object
+* Add examples for different scenarios:
+    * Backup and Restore
+    * CI/CD
+    * Disaster Recovery Sync
+    * Batch modification (will require Terraform Object Import support)
+      
 
 # Common commands
 
