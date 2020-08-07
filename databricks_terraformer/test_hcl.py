@@ -1,9 +1,9 @@
-from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json
+from databricks_terraformer.hcl.json_to_hcl import create_resource_from_dict
+
 
 def print_test(ctx, param, value):
     import click
 
-    object = "resource"
     type = "cluster"
     name = "my_cluster_cluster-1243424e"
     resource_data = {
@@ -15,13 +15,17 @@ def print_test(ctx, param, value):
             "mappy": {
                 "nested_sub_sub_sub": 123,
                 "test1234": 123
+            },
+            "interpolation": {
+                "@expr:nested_sub_sub_sub": "var.demo_interpolate_variable",
+                "test1234": 123
             }
         },
         "test": 12345,
         "test2": "string ${upper.lib}"
     }
 
-    output = create_hcl_from_json(object, type, name, resource_data, False)
+    output = create_resource_from_dict(type, name, resource_data, False)
 
     click.echo(output)
     ctx.exit()

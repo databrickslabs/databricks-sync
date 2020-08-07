@@ -7,7 +7,7 @@ from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
 from databricks_terraformer.dbfs import get_file_contents, get_dbfs_files_recursive
 from databricks_terraformer.hcl import create_hcl_file
-from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json, validate_hcl
+from databricks_terraformer.hcl.json_to_hcl import validate_hcl, create_resource_from_dict
 from databricks_terraformer.utils import normalize_identifier
 from databricks_terraformer.utils.git_handler import GitExportHandler
 from databricks_terraformer.utils.patterns import provide_pattern_func
@@ -54,10 +54,9 @@ def export_cli(tag, dry_run, dbfs_path, delete, git_ssh_url, api_client: ApiClie
                     "validate_remote_file": True,
                 }
 
-                o_type = "resource"
                 name = "databricks_dbfs_file"
 
-                dbfs_file_hcl = create_hcl_from_json(o_type, name, identifier, dbfs_resource_data, False)
+                dbfs_file_hcl = create_resource_from_dict(name, identifier, dbfs_resource_data, False)
 
                 processed_hcl_file = create_hcl_file(file['path'], api_client.url, dbfs_resource_data,
                                                      dbfs_file_hcl)

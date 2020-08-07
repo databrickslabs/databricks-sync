@@ -6,7 +6,7 @@ from databricks_cli.utils import eat_exceptions
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
-from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json
+from databricks_terraformer.hcl.json_to_hcl import create_resource_from_dict
 from databricks_terraformer.utils import handle_block, handle_map, normalize_identifier, prep_json
 from databricks_terraformer.utils.git_handler import GitExportHandler
 from databricks_terraformer.utils.patterns import provide_pattern_func
@@ -69,14 +69,13 @@ def export_cli(dry_run, tag, delete, git_ssh_url, api_client: ApiClient, hcl, pa
                 job_resource_data = prep_json(block_key_map, ignore_attribute_key, job['settings'], required_attributes_key)
 
                 base_name = normalize_identifier(job['settings']['name'])
-                o_type = "resource"
                 name = "databricks_job"
                 identifier = f"databricks_job-{base_name}"
 
                 #need to escape quotes in the name.
                 job_resource_data['name'] = job_resource_data['name'].replace('"','\\"')
 
-                instance_job_hcl = create_hcl_from_json(o_type, name, identifier, job_resource_data, False)
+                instance_job_hcl = create_resource_from_dict(name, identifier, job_resource_data, False)
                 file_name_identifier = f"{identifier}.tf"
                 gh.add_file(file_name_identifier, instance_job_hcl)
                 log.debug(instance_job_hcl)

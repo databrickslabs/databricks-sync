@@ -1,16 +1,12 @@
-from base64 import b64decode
-
 import click
 from databricks_cli.configure.config import debug_option, profile_option, provide_api_client
-from databricks_cli.sdk import ApiClient, DbfsService, WorkspaceService
+from databricks_cli.sdk import ApiClient, WorkspaceService
 from databricks_cli.utils import eat_exceptions
-from databricks_cli.workspace.api import WorkspaceApi
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
-from databricks_terraformer.dbfs import get_file_contents
 from databricks_terraformer.hcl import create_hcl_file
-from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json, validate_hcl
+from databricks_terraformer.hcl.json_to_hcl import validate_hcl, create_resource_from_dict
 from databricks_terraformer.notebooks import get_workspace_notebooks_recursive, get_content
 from databricks_terraformer.utils import normalize_identifier
 from databricks_terraformer.utils.git_handler import GitExportHandler
@@ -50,9 +46,8 @@ def export_cli(tag, dry_run, notebook_path, delete, git_ssh_url, api_client: Api
                     "language": file.language,
                     "format": "SOURCE",
                 }
-                o_type = "resource"
                 name = "databricks_notebook"
-                notebook_file_hcl = create_hcl_from_json(o_type, name, identifier, notebook_resource_data, False)
+                notebook_file_hcl = create_resource_from_dict(name, identifier, notebook_resource_data, False)
                 processed_hcl_file = create_hcl_file(file.path, api_client.url, notebook_resource_data,
                                                      notebook_file_hcl)
                 gh.add_file(f"{identifier}.tf", processed_hcl_file)

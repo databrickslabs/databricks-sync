@@ -252,3 +252,5 @@ dmypy.json
 tmp
 tmp*
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python,visualstudiocode
+
+.DS_Store

@@ -1,13 +1,13 @@
 import click
 from databricks_cli.configure.config import debug_option, profile_option, provide_api_client
-from databricks_cli.secrets.api import SecretApi
 from databricks_cli.sdk import ApiClient
+from databricks_cli.secrets.api import SecretApi
 from databricks_cli.utils import eat_exceptions
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
 from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
-from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json
-from databricks_terraformer.utils import handle_block, handle_map, normalize_identifier, prep_json
+from databricks_terraformer.hcl.json_to_hcl import create_resource_from_dict
+from databricks_terraformer.utils import normalize_identifier, prep_json
 from databricks_terraformer.utils.git_handler import GitExportHandler
 from databricks_terraformer.utils.patterns import provide_pattern_func
 from databricks_terraformer.version import print_version_callback, version
@@ -49,13 +49,12 @@ def export_cli(dry_run, tag, delete, git_ssh_url, api_client: ApiClient, hcl, pa
                     acl_resource_data = prep_json(block_key_map, ignore_attribute_key, acl, required_attributes_key)
 
                     base_name = normalize_identifier(acl["principal"])
-                    o_type = "resource"
                     name = "databricks_secret_acl"
                     identifier = f"databricks_secret_acl-{base_name}"
 
                     acl_resource_data["scope"] = scope["name"]
 
-                    acl_hcl = create_hcl_from_json(o_type, name, identifier, acl_resource_data, False)
+                    acl_hcl = create_resource_from_dict(name, identifier, acl_resource_data, False)
 
                     file_name_identifier = f"{identifier}.tf"
                     gh.add_file(file_name_identifier, acl_hcl)

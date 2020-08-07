@@ -4,10 +4,10 @@ from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import eat_exceptions
 
 from databricks_terraformer import CONTEXT_SETTINGS, log
+from databricks_terraformer.cluster_policies.policies_service import PolicyService
 from databricks_terraformer.config import git_url_option, ssh_key_option, delete_option, dry_run_option, tag_option
 from databricks_terraformer.hcl import create_hcl_file
-from databricks_terraformer.hcl.json_to_hcl import create_hcl_from_json, validate_hcl
-from databricks_terraformer.cluster_policies.policies_service import PolicyService
+from databricks_terraformer.hcl.json_to_hcl import validate_hcl, create_resource_from_dict
 from databricks_terraformer.utils import normalize_identifier
 from databricks_terraformer.utils.git_handler import GitExportHandler
 from databricks_terraformer.utils.patterns import provide_pattern_func
@@ -43,11 +43,10 @@ def export_cli(tag, dry_run, delete, git_ssh_url, api_client: ApiClient, hcl, pa
                     "@raw:definition": policy["definition"],
                     "name": policy["name"]
                 }
-                o_type = "resource"
                 name = "databricks_cluster_policy"
                 identifier = normalize_identifier(f"databricks_cluster_policy-{policy['name']}-{policy['policy_id']}")
                 created_policy_list.append(identifier)
-                policy_hcl = create_hcl_from_json(o_type, name, identifier, cluster_policy_tf_dict, False)
+                policy_hcl = create_resource_from_dict(name, identifier, cluster_policy_tf_dict, False)
                 file_name_identifier = f"{identifier}.tf"
 
                 processed_hcl_file = create_hcl_file(policy['policy_id'], api_client.url, cluster_policy_tf_dict,
