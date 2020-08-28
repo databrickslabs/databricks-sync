@@ -1,4 +1,4 @@
-# PROJECT NAME
+# databricks-sync
 Standard Project Template for Databricks Labs Projects
 
 ## Project Description
