@@ -6,3 +6,4 @@ click-log==0.3.2
 gitpython
 Jinja2==2.11.2
 pygrok
+python-dotenv

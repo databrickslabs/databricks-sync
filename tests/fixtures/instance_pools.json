@@ -1,0 +1,28 @@
+[{
+    "instance_pool_name": "small instance pool 2",
+    "min_idle_instances": 0,
+    "max_capacity": 5,
+    "node_type_id": "Standard_DS3_v2",
+    "custom_tags": {
+      "custom": "1"
+    },
+    "idle_instance_autotermination_minutes": 120,
+    "enable_elastic_disk": "True",
+    "preloaded_spark_versions": [
+      "7.1.x-scala2.12"
+    ]
+  },
+  {
+    "instance_pool_name": "medium instance pool 2",
+    "min_idle_instances": 0,
+    "max_capacity": 5,
+    "node_type_id": "Standard_DS5_v2",
+    "custom_tags": {
+      "pool": "Medium"
+    },
+    "idle_instance_autotermination_minutes": 60,
+    "enable_elastic_disk": "True",
+    "preloaded_spark_versions": [
+      "7.1.x-scala2.12"
+    ]
+}]

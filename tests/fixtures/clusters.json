@@ -1,0 +1,24 @@
+[{
+  "cluster_name": "no pool std cluster 1",
+  "spark_version": "6.5.x-scala2.11",
+  "spark_conf": {
+    "spark.databricks.delta.preview.enabled": "true"
+  },
+  "node_type_id": "Standard_DS3_v2",
+  "driver_node_type_id": "Standard_DS3_v2",
+  "spark_env_vars": {
+    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+  },
+  "autotermination_minutes": 120,
+  "init_scripts": [
+    {
+      "dbfs": {
+        "destination": "dbfs:/does_not_exists.sh"
+      }
+    }
+  ],
+  "autoscale": {
+    "min_workers": 2,
+    "max_workers": 8
+  }
+}]

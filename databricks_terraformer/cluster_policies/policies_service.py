@@ -11,6 +11,8 @@ class PolicyService(object):
         _data = {}
         if policy_name is not None:
             _data['policy_name'] = policy_name
+            # the REST API expects a NAME field not POLICY_NAME
+            _data['name'] = policy_name
         if definition is not None:
             _data['definition'] = definition
 

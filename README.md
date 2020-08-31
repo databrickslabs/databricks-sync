@@ -1,5 +1,5 @@
-# databricks-terraformer
-Use Terraformer to backup restore and sync Databricks workspaces
+# Databricks Sync
+Use Databricks Sync to backup restore and sync Databricks workspaces
 
 This package uses credentials from the [Databricks CLI](https://docs.databricks.com/user-guide/dev-tools/databricks-cli.html)
 
@@ -37,6 +37,67 @@ Support Matrix for Import and Export Operations:
 | group member                 | unsupported   | unsupported      |
 | scim group                   | unsupported   | unsupported      |
 | scim user                    | unsupported   | unsupported      |
+
+
+# Databricks Terraform Provider
+
+[![Build Status](https://travis-ci.org/databrickslabs/databricks-terraform.svg?branch=master)](https://travis-ci.org/databrickslabs/databricks-terraform)
+
+## Quickstart: Building and Using the Provider
+
+### Quick install
+
+### Install using go 
+
+Please note that there is a Makefile which contains all the commands you would need to run this project.
+
+This code base to contribute to requires the following software:
+
+* [golang 1.13.X](https://golang.org/dl/)
+* [terraform v0.12.x](https://www.terraform.io/downloads.html)
+
+To quickly install the binary please execute the following curl command in your shell.
+
+```bash
+$ curl https://raw.githubusercontent.com/databrickslabs/databricks-terraform/master/godownloader-databricks-provider.sh | bash -s -- -b $HOME/.terraform.d/plugins
+```
+
+* pip install -r requirements.txt
+
+* run make command at the root of the project to build
+
+The command should have moved the binary into your `~/.terraform.d/plugins` folder.
+
+You can `ls` the previous directory to verify. 
+
+To make sure everything is installed correctly please run the following commands:
+
+Testing go installation:
+```bash
+$ go version 
+go version go1.13.3 darwin/amd64
+```
+
+Testing terraform installation:
+```bash
+$ terraform --version
+Terraform v0.12.19
+
+Your version of Terraform is out of date! The latest version
+is 0.12.24. You can update by downloading from https://www.terraform.io/downloads.html
+
+```
+
+Testing make installation:
+```bash
+$ make --version
+GNU Make 3.81
+Copyright (C) 2006  Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+This program built for i386-apple-darwin11.3.0
 
 
 # Next steps:

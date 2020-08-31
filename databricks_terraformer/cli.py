@@ -22,7 +22,6 @@ from databricks_terraformer.version import print_version_callback, version
 def cli():
     pass
 
-
 cli.add_command(cluster_policies_group, name="cluster-policies")
 cli.add_command(dbfs_group, name="dbfs")
 cli.add_command(instance_pools_group, name="instance-pools")

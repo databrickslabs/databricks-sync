@@ -1,0 +1,14 @@
+[
+  {
+    "name": "second policy",
+    "definition": "{\n  \"instance_pool_id\": { \"type\": \"forbidden\" }\n}"
+  },
+  {
+    "name": "first policy",
+    "definition": "{\n  \"spark_version\": {\n    \"type\": \"regex\",\n    \"pattern\": \"7\\\\.[0-9]+\\\\.x-scala.*\"\n  },\n  \"dbus_per_hour\": {\n    \"type\": \"range\",\n    \"maxValue\": 10\n  },\n  \"instance_pool_id\": {\n    \"type\": \"forbidden\",\n    \"hidden\": true\n  },\n  \"spark_conf.spark.databricks.io.cache.enabled\": {\n    \"type\": \"fixed\",\n    \"value\": \"true\"\n  },\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 20,\n    \"hidden\": true\n  }\n}"
+  },
+  {
+    "name": "test_policy",
+    "definition": "{}"
+  }
+]
