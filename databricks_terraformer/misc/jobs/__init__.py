@@ -1,0 +1,1 @@
+print(list({"test":"123"}))

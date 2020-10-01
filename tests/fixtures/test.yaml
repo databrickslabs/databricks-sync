@@ -1,0 +1,13 @@
+#commit_msg_template:
+name: test
+objects:
+
+  notebook:
+    notebook_path: "/demo/test/"
+    patterns:
+      - "*"
+  cluster_policy:
+    patterns:
+      - "*"
+  dbfs_file:
+    dbfs_path: "dbfs:/databricks/init_scripts"

@@ -1,0 +1,46 @@
+version: v1
+#commit_msg_template:
+objects:
+  cluster_policy:
+    patterns: "*prod*"
+
+  cluster:
+    patterns:
+    - "*prod*"
+    tags: "*"
+    map_vars:
+      - "node_type_id"
+      - "driver_node_type_id"
+    dynamic_vars:
+      - "arn"
+
+  dbfs_file:
+
+
+  group:
+
+  group_instance_profile:
+
+  group_member:
+
+  instance_pool:
+
+  instance_profile:
+
+  job:
+
+  notebook:
+
+  scim_group:
+
+  scim_user:
+
+  secret:
+
+  secret_acl:
+
+  secret_scope:
+
+  permissions:
+
+  aws_s3_mount:

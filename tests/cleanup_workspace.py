@@ -3,7 +3,7 @@ from databricks_cli.configure.provider import get_config_for_profile
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.dbfs.api import DbfsApi, DbfsPath
 from databricks_cli.workspace.api import WorkspaceApi
-from databricks_terraformer.cluster_policies.policies_service import PolicyService
+from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.sdk import ApiClient
 

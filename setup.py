@@ -19,14 +19,16 @@ setuptools.setup(
           'click>=6.7',
           'click-log==0.3.2',
           'databricks-cli==0.11.0',
-          'gitpython'
+          'gitpython',
+          'streamz==0.5.5',
+          'tenacity'
       ],
     package_data={
-        'databricks_terraformer': ['hcl/json2hcl.so', 'utils/changelog.md.j2', 'hcl/hcl.tf.j2'],
+        'databricks_terraformer': ['sdk/hcl/json2hcl.so', 'utils/changelog.md.j2', 'sdk/hcl/hcl.tf.j2'],
     },
     entry_points='''
         [console_scripts]
-        databricks-terraformer=databricks_terraformer.cli:cli
+        databricks-terraformer=databricks_terraformer.cmds.cli:cli
     ''',
     classifiers=[
         "Programming Language :: Python :: 3",

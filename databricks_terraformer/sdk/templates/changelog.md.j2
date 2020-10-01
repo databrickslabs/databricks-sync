@@ -1,0 +1,26 @@
+# Global Changes
+
+To identify changes please use git history/git diff.
+
+---
+
+## {{ tag }} - {{ date }}UTC
+
+### {{ resource }} added; count - {{ added|length }}
+
+{% for file in added %}
+    1. [{{ file }}]({{ file }})
+{% endfor %}
+
+
+### {{ resource }}  modified; count - {{ modified|length }}
+
+{% for file in modified %}
+    1. [{{ file }}]({{ file }})
+{% endfor %}
+
+### {{ resource }}  removed; count - {{ removed|length }}
+
+{% for file in removed %}
+    1. {{ file }}
+{% endfor %}

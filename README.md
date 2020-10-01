@@ -39,26 +39,21 @@ $ alias dbsync='docker run -it --rm --name docker-terraformer --env-file <(env |
 ## Common commands
 
 ```bash
-$ databricks-terraformer cluster-policies export --hcl --profile demo-aws -g git@github.com:stikkireddy/test-demo-repo.git --dry-run --delete
+$ GIT_PYTHON_TRACE=full databricks-terraformer -v DEBUG export \
+    --profile field-eng \
+    --git-ssh-url git@github.com:..../.....git \
+    -c ....test.yaml \
+    --dry-run \
+    --dask-mode
 
-$ databricks-terraformer cluster-policies export --hcl --profile demo-aws -g git@github.com:stikkireddy/demo-test-repo.git --delete --dry-run
-
-$ databricks-terraformer notebooks export --hcl --notebook-path /Users/sri.tikkireddy@databricks.com/ --profile demo-aws -g git@github.com:stikkireddy/demo-test-repo.git --delete --dry-run
-
-$ databricks-terraformer dbfs export --hcl --dbfs-path dbfs:/databricks/init_scripts --profile demo-aws -g git@github.com:stikkireddy/test-demo-repo.git --delete --dry-run
-
-$ databricks-terraformer dbfs export --hcl --dbfs-path dbfs:/databricks/init_scripts --profile demo-aws -g git@github.com:stikkireddy/test-export-2.git --delete --dry-run
-
-$ databricks-terraformer import --profile azure-my-vnet -g git@github.com:stikkireddy/test-export-2.git --revision master --plan --artifact-dir tmp
-
-$ databricks-terraformer import \
-    --profile azure-my-vnet \
-    -g git@github.com:stikkireddy/test-demo-repo.git \
-    --revision 97275b43d55c7b108e88c7ad4621c003f39057f5 \
+$ GIT_PYTHON_TRACE=full databricks-terraformer import \
+    -g git@github.com:.../....git \
+    --profile dr_tagert \
+    --databricks-object-type cluster_policy \
+    --artifact-dir ..../dir \
     --plan \
-    --artifact-dir tmp \
-    --apply \
-    --backend-file tmp/backend.tf
+    --skip-refresh \
+    --revision ....
 ```
 
 

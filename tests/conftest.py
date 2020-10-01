@@ -6,7 +6,7 @@ from click.testing import CliRunner
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.dbfs.api import DbfsApi, DbfsPath
 from databricks_cli.workspace.api import WorkspaceApi
-from databricks_terraformer.cluster_policies.policies_service import PolicyService
+from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_cli.clusters.api import ClusterApi
 
 from databricks_cli.configure.provider import get_config_for_profile
@@ -142,7 +142,7 @@ def src_create_policies(src_policy_service):
 @pytest.fixture(scope="session")
 def src_upload_dbfs_file(src_dbfs_api):
     fixture_path = os.path.join(pytest.__pytestPDB._config.rootdir,'tests/fixtures')
-    src_dbfs_api.put_file(os.path.join(fixture_path, "example_notebook.py"), DbfsPath("dbfs:/example_notebook.py"), True)
+    src_dbfs_api.put_file(os.path.join(fixture_path, "example_notebook.py"), DbfsPath("dbfs:/tests/example_notebook.py"), True)
     return "example_notebook.py"
 
 

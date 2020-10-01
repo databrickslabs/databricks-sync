@@ -1,16 +1,35 @@
-from databricks_terraformer.utils.git_handler import GitExportHandler
+import shutil
+from pathlib import Path
+import tempfile
+from git import Repo
+
+
+from databricks_terraformer import log
+
 import os
 import glob
 
-def destroy_all(git_ssh_url,dry_run):
+def destroy_all(git_url,dry_run):
+    with tempfile.TemporaryDirectory() as tmp:
+        base_path = Path(tmp)
 
-    with GitExportHandler(git_ssh_url, "jobs", dry_run=dry_run) as gh:
-        print(gh.local_repo_path.name)
-        for file in glob.glob(f"{gh.local_repo_path.name}/**/*.tf",recursive=True):
-            if dry_run:
-                print(f"Will remove file {file}")
+        repo = Repo.clone_from(git_url, base_path.absolute(),
+                               branch='master')
+
+        for file in glob.glob(f"{base_path.absolute()}/*",recursive=True):
+            print(file)
+            if dry_run is False:
+                repo.git.rm(file, r=True)
             else:
-                os.unlink(file)
+                log.info(f"Will remove file {file}")
+
+        commit_msg = "Deleted via databricks-sync."
+        repo.index.commit(commit_msg)
+        origin = repo.remote()
+        origin.push("--no-verify")
 
 
-#destroy_all('git@github.com:itaiw/export-repo.git',dry_run=True)
+
+
+
+# destroy_all('git@github.com:itaiw/export-repo.git',dry_run=False)
