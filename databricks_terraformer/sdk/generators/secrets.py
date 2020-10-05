@@ -64,19 +64,19 @@ class SecretScopeHCLGenerator(APIGenerator):
         )
 
     async def _generate(self) -> Generator[APIData, None, None]:
-        secret_scopes = self.__service.list_scopes().get("scopes")
+        secret_scopes = self.__service.list_scopes().get("scopes",[])
         for secret_scope in secret_scopes:
             secret_scope_data = self.__create_secret_scope_data(secret_scope)
             yield secret_scope_data
 
-            secret_ACLs = self.__service.list_acls(secret_scope.get("name")).get("items")
+            secret_ACLs = self.__service.list_acls(secret_scope.get("name")).get("items",[])
             for secret_ACL in secret_ACLs:
                 secret_ACL["name"] = secret_scope.get("name")
                 secret_ACL["scope_id"] = self.__get_secret_scope_identifier(secret_scope)
                 secret_scope_acl_data = self.__create_secret_acl_data(secret_ACL)
                 yield secret_scope_acl_data
 
-            secrets = self.__service.list_secrets(secret_scope.get("name"))
+            secrets = self.__service.list_secrets(secret_scope.get("name",[]))
             if "secrets" in secrets:
                 for secret in secrets.get("secrets"):
                     secret["name"] = secret_scope.get("name")

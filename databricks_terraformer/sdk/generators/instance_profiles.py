@@ -35,15 +35,14 @@ class InstanceProfileHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         profiles = self.__service.list_instance_profiles()
-        if "instance_profiles" in profiles:
-            for profile in profiles.get("instance_profiles"):
-                instance_profile_data = self.__create_instance_profile_data(profile)
-                yield instance_profile_data
-                #TODO no permissions for instance_profile
-                # try:
-                #     yield self.__perms.create_permission_data(instance_profile_data, self.get_local_hcl_path)
-                # except NoDirectPermissionsError:
-            #     pass
+        for profile in profiles.get("instance_profiles",[]):
+            instance_profile_data = self.__create_instance_profile_data(profile)
+            yield instance_profile_data
+            #TODO no permissions for instance_profile
+            # try:
+            #     yield self.__perms.create_permission_data(instance_profile_data, self.get_local_hcl_path)
+            # except NoDirectPermissionsError:
+        #     pass
 
     @property
     def folder_name(self) -> str:

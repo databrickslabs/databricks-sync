@@ -35,6 +35,12 @@ def tgt_api_client(load_env):
     return ApiClient(host=config.host, token=config.token)
 
 @pytest.fixture(scope="session")
+def tgt_api_config(load_env):
+    target_profile = os.environ.get("AZURE_TARGET_WORKSPACE")
+    return get_config_for_profile(target_profile)
+
+
+@pytest.fixture(scope="session")
 def env(load_env):
     conf = dict()
     conf["git_repo"] = os.environ.get("GIT_REPO")
@@ -43,6 +49,7 @@ def env(load_env):
     conf["revision"] = os.environ.get("MASTER_REVISION")
     conf["directory"] = os.environ.get("ARTIFACT_DIR")
     conf["backup_file"] = os.environ.get("BACKUP_FILE")
+    conf["destroy"] = os.environ.get("DESTROY")
     if not os.path.exists(conf["backup_file"]):
         open(conf["backup_file"], 'a').close()
     return conf

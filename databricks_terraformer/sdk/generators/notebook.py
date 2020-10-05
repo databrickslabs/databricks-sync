@@ -30,7 +30,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         super().__init__(api_client, base_path, patterns=patterns)
         self.__notebook_path = notebook_path
         self.__service = WorkspaceService(self.api_client)
-        self.__custom_map_vars = custom_map_vars or []
+        self.__custom_map_vars = custom_map_vars or {}
         self.__perms = PermissionsHelper(self.api_client)
 
     @property

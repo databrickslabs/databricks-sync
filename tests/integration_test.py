@@ -1,17 +1,27 @@
 import json
+import logging
 import os
+from pathlib import Path
+from pygrok import Grok
+
+
 import pytest
 import re
 
 from databricks_cli.clusters.api import ClusterApi
+from databricks_cli.configure.provider import DatabricksConfig
 from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.dbfs.api import DbfsApi, DbfsPath
 from databricks_cli.workspace.api import WorkspaceApi
+from databricks_terraformer.cmds import apply
+
 from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_cli.sdk import ApiClient
 from databricks_terraformer import cli
+from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
 # TODO explain this in README.md
+from databricks_terraformer.sdk.sync.export import ExportCoordinator
 
 from tests import cleanup_workspace, cleanup_git
 
@@ -71,13 +81,19 @@ def test_cleanup(src_cluster_api: ClusterApi, tgt_cluster_api: ClusterApi, src_p
     cleanup_workspace.delete_policies(src_policy_service, policies_json)
     cleanup_workspace.delete_pools(src_pool_api, pools_json)
 
+
     cleanup_git.destroy_all(env["git_repo"], dry_run=False)
-    if os.path.exists(f'{env["directory"]}/terraform.tfstate'):
-        os.remove(f'{env["directory"]}/terraform.tfstate')
+    if Path(f'{env["directory"]}/terraform.tfstate').exists():
+        Path.unlink(f'{env["directory"]}/terraform.tfstate')
 
     cleanup_workspace.delete_clusters(tgt_cluster_api, clusters_json)
     cleanup_workspace.delete_policies(tgt_policy_service, policies_json)
     cleanup_workspace.delete_pools(tgt_pool_api, pools_json)
+
+    if Path(Path(env["directory"]) / "plan.out").exists():
+        Path.unlink(Path(env["directory"]) / "plan.out")
+    if Path(Path(env["directory"]) / "state.tfstate").exists():
+        Path.unlink(Path(env["directory"]) / "state.tfstate")
 
 
 def test_src_api_client(src_api_client: ApiClient):
@@ -134,83 +150,92 @@ def test_src_notebooks(src_workspace_api: WorkspaceApi):
     print(src_workspace_api.list_objects("/Shared/example_notebook"))
     assert src_workspace_api.list_objects("/Shared/example_notebook") is not None
 
-def test_src_new_export(cli_runner, env):
-    result = cli_runner.invoke(cli,
-                                       args=['export', '--profile', env["source"], '-g', env["git_repo"],  '--config-path', './tests/integration_test.yaml'],
-                                       prog_name="databricks-terraformer")
-    if result.exit_code != 0:
-        print(result.stdout)
-    assert result.exit_code == 0
-    print(result.stdout)
+def test_src_export_direct(src_api_client: ApiClient,env,caplog):
+    caplog.set_level(logging.DEBUG)
+    path = (Path(__file__).parent/'integration_test.yaml').absolute()
+    throws_exception=None
 
-# def test_src_export(cli_runner, env):
-#     global db_objects
-#     for run, params in db_objects.items():
-#         print(run)
-#         print(params)
-#         if params['args'] is None:
-#             result = cli_runner.invoke(cli,
-#                                        args=[run, 'export', '--hcl', '--profile', env["source"], '-g', env["git_repo"]],
-#                                        prog_name="databricks-terraformer")
-#         else:
-#             result = cli_runner.invoke(cli,
-#                                        args=[run, 'export', '--hcl', '--profile', env["source"], '-g', env["git_repo"],
-#                                              params['args'][0], params['args'][1]],
-#                                        prog_name="databricks-terraformer")
-#         if result.exit_code != 0:
-#             print(result.stdout)
-#         assert result.exit_code == 0
-#         assert len(re.findall(params['export_pattern'], result.stdout)) == params['export_object_count'], \
-#             f"export {run} found {len(re.findall(params['export_pattern'], result.stdout))} objects expected {params['export_object_count']}"
+    try:
+        ExportCoordinator.export(src_api_client, env["git_repo"],path, dry_run=False, dask_mode=False)
+    except Exception as e:
+        throws_exception=e
+    print(caplog.text)
+    assert throws_exception is None, throws_exception
 
-#TODO load all the jsons and check for errors
+def import_direct(tgt_api_config:DatabricksConfig, env,caplog):
+    caplog.set_level(logging.DEBUG)
 
-def test_tgt_import(cli_runner, env):
-    global db_objects
-    result = cli_runner.invoke(cli,
-                               args=['import', '-g', env["git_repo"], '--profile', env["target"], "--revision",
-                                     env["revision"],
-                                     "--plan", "--apply", "--artifact-dir",
-                                     env["directory"], "--backend-file", env["backup_file"]],
-                               prog_name="databricks-terraformer")
-    if result.exit_code != 0:
-        print(result.stdout)
-    print(result.stdout)
-    assert result.exit_code == 0
+    # setup the env variable for Terraform, using the Target credentials
+    os.environ["DATABRICKS_HOST"] = tgt_api_config.host
+    os.environ["DATABRICKS_TOKEN"] = tgt_api_config.token
 
-    for run, params in db_objects.items():
-        assert len(re.findall(params['import_pattern'], result.stdout)) == params['import_object_count'], \
-            f"import {run} found {len(re.findall(params['import_pattern'], result.stdout))} objects expected {params['import_object_count']}"
+    print(f" will import : {apply.SUPPORT_IMPORTS}")
+    te = TerraformExecution(
+        env["git_repo"],
+        revision=env["revision"],
+        folders=apply.SUPPORT_IMPORTS,
+        destroy=False,
+        plan=True,
+        apply=True,
+        refresh=False,
+        # Hard coded for now
+        plan_location=Path(env["directory"]) / "plan.out",
+        state_location=Path(env["directory"]) / "state.tfstate",
+    )
+    te.execute()
+
+
+def test_tgt_import_direct(tgt_api_config:DatabricksConfig, env,caplog):
+
+    os.environ["GIT_PYTHON_TRACE"] = "full"
+    os.environ["TF_VAR_databricks_secret_scope1_key1_var"] = "secret"
+    os.environ["TF_VAR_databricks_secret_scope2_key2_var"] = "secret2"
+    os.environ["TF_VAR_databricks_secret_IntegrationTest_scope1_it_key1_var"] = "secret3"
+    os.environ["TF_VAR_databricks_secret_IntegrationTest_scope2_it_key2_var"] = "secret3"
+
+    throws_exception=None
+
+    try:
+        import_direct(tgt_api_config, env,caplog)
+    except Exception as e:
+        throws_exception = e
+    print(caplog.text)
+    assert throws_exception is None, throws_exception
+
+def test_tgt_import_no_change(tgt_api_config:DatabricksConfig, env,caplog):
+    throws_exception=None
+
+
+    try:
+        import_direct(tgt_api_config, env,caplog)
+    except Exception as e:
+        throws_exception = e
+ #   print(caplog.text)
+    assert throws_exception is None, throws_exception
+
+    grok = Grok("Plan: %{INT:add} to add, %{INT:change} to change, %{INT:destroy} to destroy.")
+    print(grok.match(caplog.text))
 
 
 def test_tgt_objects_exist(tgt_policy_service: PolicyService, tgt_pool_api: InstancePoolsApi,
                            src_dbfs_api: DbfsApi, tgt_dbfs_api: DbfsApi, tgt_workspace_api:WorkspaceApi, env):
 
-    assert len(tgt_policy_service.list_policies()["policies"]) == db_objects['cluster-policies']['import_object_count']
-    assert len(tgt_pool_api.list_instance_pools()["instance_pools"]) == db_objects['instance-pools']['import_object_count']
+    assert len(tgt_policy_service.list_policies().get("policies",[])) == db_objects['cluster-policies']['import_object_count']
+    assert len(tgt_pool_api.list_instance_pools().get("instance_pools",[])) == db_objects['instance-pools']['import_object_count']
     assert len(tgt_workspace_api.list_objects("/Shared")) == db_objects['notebooks']['import_object_count']
     assert len(tgt_dbfs_api.list_files(DbfsPath("dbfs:/example_notebook.py"))) == db_objects['dbfs']['import_object_count']
 
 
 
-def test_tgt_export_dryrun(cli_runner, env):
-    global db_objects
-    for run, params in db_objects.items():
-        print(run)
-        print(params)
-        if params['args'] is None:
-            result = cli_runner.invoke(cli,
-                                       args=[run, 'export', '--hcl', '--profile', env["target"], '-g', env["git_repo"],
-                                             "--dry-run"],
-                                       prog_name="databricks-terraformer")
-        else:
-            result = cli_runner.invoke(cli,
-                                       args=[run, 'export', '--hcl', '--profile', env["target"], '-g', env["git_repo"],
-                                             "--dry-run",
-                                             params['args'][0], params['args'][1]],
-                                       prog_name="databricks-terraformer")
-        if result.exit_code != 0:
-            print(result.stdout)
-        assert result.exit_code == 0
-        assert len(re.findall(params['export_pattern'], result.stdout)) == params['export_object_count'], \
-            f"export {run} found {len(re.findall(params['export_pattern'], result.stdout))} objects expected {params['export_object_count']}"
+def test_tgt_export_dryrun(tgt_api_client:ApiClient, env,caplog):
+    caplog.set_level(logging.DEBUG)
+    path = (Path(__file__).parent/'integration_test.yaml').absolute()
+    throws_exception=None
+
+    try:
+        ExportCoordinator.export(tgt_api_client, env["git_repo"],path, dry_run=True, dask_mode=False)
+    except Exception as e:
+        throws_exception=e
+    print(caplog.text)
+    assert throws_exception is None, throws_exception
+

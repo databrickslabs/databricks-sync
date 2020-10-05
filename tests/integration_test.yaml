@@ -35,9 +35,3 @@ objects:
   identity:
     patterns:
       - "*"
-#  scim_user:
-#    patterns:
-#      - "*"
-#  group:
-#    patterns:
-#      - "*"

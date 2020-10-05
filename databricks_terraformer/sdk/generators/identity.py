@@ -35,14 +35,14 @@ class IdentityHCLGenerator(APIGenerator):
             self.__make_group_dict,
             self.map_processors(self.__custom_map_vars)
         )
-    def __create_role_data(self, role_data: Dict[str, Any]):
+    def __create_group_instance_profile_data(self, group_instance_profile_data: Dict[str, Any]):
         return self._create_data(
-            ResourceCatalog.GROUP_ROLE_RESOURCE,
-            role_data,
-            lambda: any([self._match_patterns(role_data["displayName"])]) is False,
-            self.__get_role_identifier,
-            self.__get_role_raw_id,
-            self.__make_role_dict,
+            ResourceCatalog.GROUP_INSTANCE_PROFILE_RESOURCE,
+            group_instance_profile_data,
+            lambda: any([self._match_patterns(group_instance_profile_data["displayName"])]) is False,
+            self.__get_group_instance_profile_identifier,
+            self.__get_group_instance_profile_raw_id,
+            self.__make_group_instance_profile_dict,
             self.map_processors(self.__custom_map_vars)
         )
     def __create_member_data(self, member_data: Dict[str, Any]):
@@ -91,7 +91,7 @@ class IdentityHCLGenerator(APIGenerator):
     def __get_group_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_group-{d['displayName']}")
 
-    def __get_role_identifier(self, data: Dict[str, Any]) -> str:
+    def __get_group_instance_profile_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_group-{d['displayName']}-{d['value']}")
 
     def __get_member_identifier(self, data: Dict[str, Any]) -> str:
@@ -102,7 +102,7 @@ class IdentityHCLGenerator(APIGenerator):
         return data['id']
 
     @staticmethod
-    def __get_role_raw_id(data: Dict[str, Any]) -> str:
+    def __get_group_instance_profile_raw_id(data: Dict[str, Any]) -> str:
         return data['value']
 
     @staticmethod
@@ -128,7 +128,7 @@ class IdentityHCLGenerator(APIGenerator):
 
 
     @staticmethod
-    def __make_role_dict(data: Dict[str, Any]) -> Dict[str, Any]:
+    def __make_group_instance_profile_dict(data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
             add_required("group_id", lambda: f"databricks_group.databricks_group_{data['displayName']}.id"). \
             add_required("instance_profile_id", lambda: f"databricks_instance_profile.{data['id']}.id"). \
@@ -156,11 +156,11 @@ class IdentityHCLGenerator(APIGenerator):
             group_data = self.__create_group_data(group)
             yield group_data
 
-            for role in group.get("roles",[]):
-                role["displayName"] = group["displayName"]
-                role["id"] = normalize_identifier(f"databricks_instance_profile-{role['value']}")
-                role_data = self.__create_role_data(role)
-                yield role_data
+            for group_instance_profile in group.get("roles",[]):
+                group_instance_profile["displayName"] = group["displayName"]
+                group_instance_profile["id"] = normalize_identifier(f"databricks_instance_profile-{group_instance_profile['value']}")
+                group_instance_profile_data = self.__create_group_instance_profile_data(group_instance_profile)
+                yield group_instance_profile_data
 
             for member in group.get("members",[]):
                 member["displayName"] = group["displayName"]

@@ -10,6 +10,6 @@ class ResourceCatalog:
     SECRET_SCOPE_RESOURCE = "databricks_secret_scope"
     SECRET_ACL_RESOURCE = "databricks_secret_acl"
     GROUP_RESOURCE = "databricks_group"
-    GROUP_ROLE_RESOURCE = "databricks_group_instance_profile"
+    GROUP_INSTANCE_PROFILE_RESOURCE = "databricks_group_instance_profile"
     GROUP_MEMBER_RESOURCE = "databricks_group_member"
 

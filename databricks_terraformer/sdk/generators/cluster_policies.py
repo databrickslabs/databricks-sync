@@ -33,14 +33,13 @@ class ClusterPolicyHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         policies = self.__service.list_policies()
-        if "policies" in policies:
-            for policy in policies.get("policies"):
-                cluster_policy_data = self.__create_cluster_policy_data(policy)
-                yield cluster_policy_data
-                try:
-                    yield self.__perms.create_permission_data(cluster_policy_data, self.get_local_hcl_path)
-                except NoDirectPermissionsError:
-                    pass
+        for policy in policies.get("policies",[]):
+            cluster_policy_data = self.__create_cluster_policy_data(policy)
+            yield cluster_policy_data
+            try:
+                yield self.__perms.create_permission_data(cluster_policy_data, self.get_local_hcl_path)
+            except NoDirectPermissionsError:
+                pass
 
     @property
     def folder_name(self) -> str:
