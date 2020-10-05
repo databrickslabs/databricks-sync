@@ -1,5 +1,3 @@
-#Readme
-
 # Databricks Sync (dbSync)
 Use Databricks Sync to backup, restore, and sync Databricks workspaces
 
