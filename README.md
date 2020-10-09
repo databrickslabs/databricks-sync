@@ -105,33 +105,33 @@ private keys in a read only fashion for accessing the git repository. This is al
 
 ## Support Matrix for Import and Export Operations:
 
-| Component                    | Export to HCL | Import to Workspace |
-| -----------------------------|---------------|---------------------|
+| Component                    | Export to HCL | Import to Workspace |Comments     |  
+| -----------------------------|---------------|---------------------|-------------|
 | | **User Objects** |
-| cluster policy               | [x]           | [x]              |
-| cluster                      | []            | []               |
-| dbfs file                    | [x]           | [x]              |
-| instance pool                | [x]           | [x]              |
-| instance profile             | [x]           | [x]              |
-| job                          | [x]           | []               |
-| notebook                     | [x]           | [x]              |
+| cluster policy               | [x]           | [x]              | |
+| cluster                      | []            | []               | |
+| dbfs file                    | [x]           | [x]              | |
+| instance pool                | [x]           | [x]              | |
+| instance profile             | [x]           | [x]              | |
+| job                          | [x]           | []               | |
+| notebook                     | [x]           | [x]              | |
 | | **Administrator Setup** |
-| mws credentials              | []            | []               |
-| mws networks                 | []            | []               |
-| mws storage configurations   | []            | []               |
-| mws workspaces               | []            | []               |
-| aws s3 mount                 | []            | []               |
-| azure adls gen1 mount        | []            | []               |
-| azure adls gen2 mount        | []            | []               |
-| azure blob mount             | []            | []               |
-| secret                       | [x]           | []               |
-| secret acl                   | [x]           | [x]              |
-| secret scope                 | [x]           | [x]              |
-| metastore tables             | []            | []               |
-| metastore table ACLs         | []            | []               |
+| mws credentials              | []            | []               | |
+| mws networks                 | []            | []               | |
+| mws storage configurations   | []            | []               | |
+| mws workspaces               | []            | []               | |
+| aws s3 mount                 | []            | []               | |
+| azure adls gen1 mount        | []            | []               | |
+| azure adls gen2 mount        | []            | []               | |
+| azure blob mount             | []            | []               | |
+| secret                       | [x]           | []               | |
+| secret acl                   | [x]           | [x]              | |
+| secret scope                 | [x]           | [x]              |TF provider does not support byte_value |
+| metastore tables             | []            | []               | |
+| metastore table ACLs         | []            | []               | |
 | | **Users Management** |
-| group                        | []            | []               |
-| group instance profile       | []            | []               |
-| group member                 | []            | []               |
-| scim group                   | []            | []               |
-| scim user                    | []            | []               |
+| group                        | []            | []               | |
+| group instance profile       | []            | []               | |
+| group member                 | []            | []               | |
+| scim group                   | []            | []               | |
+| scim user                    | []            | []               | |
