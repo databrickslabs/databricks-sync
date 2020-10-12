@@ -1,0 +1,76 @@
+[
+      {
+         "name":"IntegrationTestJob1",
+         "new_cluster":{
+            "spark_version":"7.0.x-scala2.12",
+            "spark_conf":{
+               "spark.databricks.delta.preview.enabled":"true"
+            },
+            "node_type_id":"Standard_DS3_v2",
+            "spark_env_vars":{
+               "PYSPARK_PYTHON":"/databricks/python3/bin/python3"
+            },
+            "enable_elastic_disk":"True",
+            "azure_attributes":{
+               "availability":"ON_DEMAND_AZURE"
+            },
+            "num_workers":8
+         },
+         "email_notifications":{
+
+         },
+         "timeout_seconds":0,
+         "max_concurrent_runs":0,
+         "schedule": {
+         "quartz_cron_expression": "0 15 22 ? * *",
+         "timezone_id": "America/Los_Angeles"
+         }
+      },
+      {
+         "name":"IntegrationTestJob2",
+         "new_cluster":{
+            "spark_version":"7.0.x-scala2.12",
+            "spark_conf":{
+               "spark.databricks.delta.preview.enabled":"true"
+            },
+            "node_type_id":"Standard_DS3_v2",
+            "spark_env_vars":{
+               "PYSPARK_PYTHON":"/databricks/python3/bin/python3"
+            },
+            "enable_elastic_disk":"True",
+            "azure_attributes":{
+               "availability":"ON_DEMAND_AZURE"
+            },
+            "num_workers":8
+         },
+         "email_notifications":{
+
+         },
+         "timeout_seconds":0,
+         "max_concurrent_runs":1
+      },
+      {
+         "name":"IntegrationTestJob3",
+         "new_cluster":{
+            "spark_version":"7.0.x-scala2.12",
+            "spark_conf":{
+               "spark.databricks.delta.preview.enabled":"true"
+            },
+            "node_type_id":"Standard_DS3_v2",
+            "spark_env_vars":{
+               "PYSPARK_PYTHON":"/databricks/python3/bin/python3"
+            },
+            "enable_elastic_disk":"True",
+            "azure_attributes":{
+               "availability":"ON_DEMAND_AZURE"
+            },
+            "num_workers":8
+         },
+         "email_notifications":{
+
+         },
+         "timeout_seconds":0,
+         "max_concurrent_runs":1
+
+      }
+ ]

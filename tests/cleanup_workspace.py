@@ -8,7 +8,21 @@ from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.sdk import ApiClient
 
 
-def delete_clusters(cluster_api,clusters_json):
+def delete_jobs(jobs_api, jobs_json):
+    print("Deleting Jobs")
+    jobs_list = jobs_api.list_jobs()
+    test_jobs =[]
+    for job in jobs_json:
+        test_jobs.append(job["name"])
+
+    if "jobs" in jobs_list:
+        for job in jobs_list["jobs"]:
+            if job["settings"]["name"] in test_jobs:
+                jobs_api.delete_job(job["job_id"])
+                print(f"deleted job_id :  {str(job['job_id'])}  : {str(job['settings']['name'])}")
+
+
+def delete_clusters(cluster_api, clusters_json):
     print("Deleting clusters")
     cluster_list = cluster_api.list_clusters()
     test_clusters = []
@@ -45,20 +59,69 @@ def delete_policies(policy_service:PolicyService, cluster_policies_json_list):
             if policy["name"] in test_policies:
                 policy_service.delete_policy(policy["policy_id"])
 
+def delete_groups(group_api, groups_json):
+    print("Deleting groups")
+    for grp in groups_json:
+        try:
+            group_api.delete(grp['name'])
+            print(f"Deleted {grp['name']}")
+        except:
+            pass
 
-def remove_dbfs_file(dbfs_api):
-    print("Removing DBFS files")
+
+def delete_dbfs_files(dbfs_api, dbfs_files_json, dbfs_path):
+    print("Deleting files")
+    for file in dbfs_files_json:
+        try:
+            dbfs_path = DbfsPath(f"{dbfs_path}{file['name']}")
+            file_exists = dbfs_api.get_status(dbfs_path)
+            if file_exists:
+                dbfs_api.delete(dbfs_path, False)
+        except:
+            pass
+
+def delete_dbfs_file(dbfs_api, file_name, dbfs_path):
+    print("Deleting DBFS file")
     try:
-        file_exists = dbfs_api.get_status(DbfsPath("dbfs:/example_notebook.py"))
-        dbfs_api.delete(DbfsPath("dbfs:/example_notebook.py"), False)
+        dbfs_path = DbfsPath(f"{dbfs_path}{file_name}")
+        file_exists = dbfs_api.get_status(dbfs_path)
+        if file_exists:
+            dbfs_api.delete(dbfs_path, False)
     except:
         pass
 
+def delete_secrets(secret_api, secrets_json):
+    print("Deleting secrets")
 
-def remove_notebook(workspace_api):
-    print("Removing notebooks")
+    for sec in secrets_json:
+        try:
+            scope_name = sec['name']
+            secret_api.delete_scope(scope_name)
+            print(f"deleted {scope_name}")
+        except:
+            pass
+
+
+def delete_notebooks(workspace_api, notebooks_json, nb_path_in_workspace):
+    print("Deleting notebooks")
+
+    for notebook in notebooks_json:
+        try:
+            notebook_path = f"{nb_path_in_workspace}{notebook['name']}"
+            notebook_exists = workspace_api.list_objects(notebook_path)
+            if notebook_exists:
+                workspace_api.delete(notebook_path, False)  # Not recursive
+                print(f"Deleted {notebook_path}.")
+        except:
+            pass
+
+
+def delete_notebook(workspace_api, notebook_name, nb_path_in_workspace):
+    print("Deleting notebook")
     try:
-        notebook_exists = workspace_api.list_objects("/Shared/example_notebook")
-        workspace_api.delete("/Shared/example_notebook", False)
+        notebook_path = f"{nb_path_in_workspace}{notebook_name}"
+        notebook_exists = workspace_api.list_objects(notebook_path)
+        if notebook_exists:
+            workspace_api.delete(notebook_path, False) #Not recursive
     except:
         pass

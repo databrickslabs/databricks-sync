@@ -1,0 +1,9 @@
+[
+  {
+    "name": "example_notebook",
+    "src_dir": "notebooks",
+    "file_name": "example_notebook.py",
+    "format": "SOURCE",
+    "language": "PYTHON"
+  }
+]
