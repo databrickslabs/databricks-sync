@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Callable, Dict
 
-from databricks_terraformer.sdk.generators import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Block, Expression
 from databricks_terraformer.sdk.message import APIData, HCLConvertData
 from databricks_terraformer.sdk.service.permissions import PermissionService
@@ -30,7 +30,7 @@ class PermissionsHelper:
             ResourceCatalog.INSTANCE_POOL_RESOURCE: self.TerraformPermissionType("instance-pools",
                                                                                  "instance_pool_id", "id"),
             ResourceCatalog.SECRET_SCOPE_RESOURCE: self.TerraformPermissionType("secret-scope",
-                                                                                 "name", "id")
+                                                                                "name", "id")
 
         }
 
@@ -45,7 +45,7 @@ class PermissionsHelper:
             for perm in item["all_permissions"]:
                 if perm["inherited"]:
                     continue
-                data = {"group_name": item.get("group_name", ""), "user_name": item.get("user_name", ""),
+                data = {"group_name": item.get("group_name", None), "user_name": item.get("user_name", None),
                         "permission_level": perm["permission_level"]}
                 permission_list.append(data)
         if len(permission_list) == 0:

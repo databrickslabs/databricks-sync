@@ -48,8 +48,9 @@ class ExportCoordinator:
             if dry_run is False:
                 geh.stage_changes()
                 changes = geh.get_changes("exports")
-                if changes is not None:
-                    log.info("Changes found.")
+                tf_var_changes = geh.get_changes("terraform.tfvars")
+                shell_env_changes = geh.get_changes("variables_env.sh")
+                if any([changes is not None for changes in [changes, tf_var_changes, shell_env_changes]]):
                     geh.commit()
                 else:
                     log.info("No changes found.")

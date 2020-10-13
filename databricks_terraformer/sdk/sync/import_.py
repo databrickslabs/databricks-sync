@@ -4,25 +4,10 @@ import tempfile
 from pathlib import Path
 from typing import List
 
+from databricks_terraformer.sdk.sync.constants import ENTRYPOINT_MAIN_TF
+
 from databricks_terraformer.sdk.git_handler import GitHandler
 from databricks_terraformer.sdk.terraform import ImportStage, Terraform
-
-entrypoint = {
-    "provider": {
-        "databricks": {}
-    },
-    "terraform": {
-        "required_version": ">= 0.13.0",
-        "required_providers": {
-            "databricks": {
-                "source": "databrickslabs/databricks",
-                # This should be fixed to not impact this tools behavior when downstream changes are made to the
-                # RP. This should be consciously upgraded. Maybe in the future can be passed in as optional
-                "version": "0.2.5"
-            }
-        }
-    },
-}
 
 
 def setup_empty_stage(func):
@@ -94,7 +79,7 @@ class TerraformExecution:
             istg.stage_files(self.__get_exports_path(repo_path) / folder)
         istg.stage_file(self.__get_exports_path(repo_path) / "mapped_variables.tf.json")
         with (stage_path / "main.tf.json").open("w+") as w:
-            w.write(json.dumps(entrypoint))
+            w.write(json.dumps(ENTRYPOINT_MAIN_TF))
 
     @setup_empty_stage
     @setup_repo
@@ -102,7 +87,7 @@ class TerraformExecution:
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            w.write(json.dumps(entrypoint))
+            w.write(json.dumps(ENTRYPOINT_MAIN_TF))
         tf = Terraform(working_dir=str(stage_path), is_env_vars_included=True)
         tf.version()
         tf.init()

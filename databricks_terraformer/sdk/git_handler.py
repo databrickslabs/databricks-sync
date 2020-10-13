@@ -38,8 +38,9 @@ class GitHandler:
         # TODO: Is the log enough on the CI/CD tool
         diff = self.repo.git.diff('HEAD', '--', directory, name_status=True)
         if len(diff) is 0:
-            log.info("No files were changed and no diff was found.")
+            log.info(f"No files were changed and no diff was found in directory/file: {directory}.")
         else:
+            log.info(f"Processing changes found in directory/file: {directory}.")
             category_changes = {}
             for line in sorted(diff.split("\n")):
                 # get the relative path of the file relative to the handler directory

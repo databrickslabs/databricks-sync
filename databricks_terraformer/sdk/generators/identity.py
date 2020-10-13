@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Generator, Dict, Any
+from typing import Generator, Dict, Any, Callable
 
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.sdk.generators import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksAdminGroup
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper
-from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
+from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.scim import ScimService
@@ -13,162 +13,270 @@ from databricks_terraformer.sdk.utils import normalize_identifier
 
 
 class IdentityHCLGenerator(APIGenerator):
+    # static identifiers for the users an groups
+    USERS_BASE_IDENTIFIER = "databricks_scim_users"
+    GROUPS_BASE_IDENTIFIER = "databricks_scim_groups"
+
+    USERS_FOREACH_VAR = "databricks_scim_users_for_each_var"
+    USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE = "databricks_user_instance_profiles_{}_for_each_var"
+    GROUPS_FOREACH_VAR = "databricks_groups_for_each_var"
+    GROUP_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE = "databricks_group_instance_profiles_{}_for_each_var"
+    GROUP_MEMBERS_FOREACH_VAR_TEMPLATE = "databricks_group_members_{}_for_each_var"
+
+    def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
+                 custom_map_vars=None):
+        super().__init__(api_client, base_path, patterns=patterns)
+        self.__custom_map_vars = custom_map_vars or {}
+        self.__service = ScimService(self.api_client)
+        self.__perms = PermissionsHelper(self.api_client)
 
     @property
     def folder_name(self) -> str:
         return "identity"
 
-    def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
-                 custom_map_vars=None):
-        super().__init__(api_client, base_path, patterns=patterns)
-        self.__custom_map_vars = custom_map_vars
-        self.__service = ScimService(self.api_client)
-        self.__perms = PermissionsHelper(self.api_client)
-
-    def __create_group_data(self, group_data: Dict[str, Any]):
-        return self._create_data(
+    def __create_group_data(self, group_data: Dict[str, Any], groups_identifier: Callable[[Dict[str, str]], str]):
+        gd = self._create_data(
             ResourceCatalog.GROUP_RESOURCE,
             group_data,
-            lambda: any([self._match_patterns(group_data["displayName"])]) is False,
-            self.__get_group_identifier,
-            self.__get_group_raw_id,
+            lambda: any([self._match_patterns(d["display_name"]) for _, d in group_data.items()]) is False,
+            groups_identifier,
+            groups_identifier,
             self.__make_group_dict,
             self.map_processors(self.__custom_map_vars)
         )
-    def __create_group_instance_profile_data(self, group_instance_profile_data: Dict[str, Any]):
-        return self._create_data(
+        gd.upsert_local_variable(self.GROUPS_FOREACH_VAR, group_data)
+        return gd
+
+    def __create_group_instance_profile_data(self, group_instance_profile_data: Dict[str, Any],
+                                             group_instance_profile_identifier: Callable[[Dict[str, str]], str]):
+        this_group_instance_profile_id = group_instance_profile_identifier(group_instance_profile_data)
+        rd = self._create_data(
             ResourceCatalog.GROUP_INSTANCE_PROFILE_RESOURCE,
             group_instance_profile_data,
-            lambda: any([self._match_patterns(group_instance_profile_data["displayName"])]) is False,
-            self.__get_group_instance_profile_identifier,
-            self.__get_group_instance_profile_raw_id,
-            self.__make_group_instance_profile_dict,
+            lambda: False,
+            group_instance_profile_identifier,
+            group_instance_profile_identifier,
+            self.__make_group_instance_profile_dict(this_group_instance_profile_id),
             self.map_processors(self.__custom_map_vars)
         )
-    def __create_member_data(self, member_data: Dict[str, Any]):
-        return self._create_data(
+        rd.upsert_local_variable(self.GROUP_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(
+            group_instance_profile_identifier(group_instance_profile_data)),
+            group_instance_profile_data)
+        return rd
+
+    def __create_member_data(self, member_data: Dict[str, Any], member_identifier: Callable[[Dict[str, str]], str]):
+        this_member_id = member_identifier(member_data)
+        md = self._create_data(
             ResourceCatalog.GROUP_MEMBER_RESOURCE,
             member_data,
-            lambda: any([self._match_patterns(member_data["displayName"])]) is False,
-            self.__get_member_identifier,
-            self.__get_member_raw_id,
-            self.__make_member_dict,
+            lambda: False,
+            member_identifier,
+            member_identifier,
+            self.__make_member_dict(this_member_id),
             self.map_processors(self.__custom_map_vars)
         )
+        md.upsert_local_variable(self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(this_member_id),
+                                 member_data)
+        return md
 
-    def __get_user_identifier(self, data: Dict[str, Any]) -> str:
-        return self.get_identifier(data,
-                                   lambda d: f"databricks_scim_user-{d['userName']}-{self.__get_user_raw_id(d)}")
+    def __interpolate_scim_user_id(self, user_name):
+        return Interpolate.resource(ResourceCatalog.USER_RESOURCE, f'{self.USERS_BASE_IDENTIFIER}["{user_name}"]',
+                                    'id')
 
-    def __get_user_raw_id(self, data: Dict[str, Any]) -> str:
-        return data['id']
+    def __interpolate_scim_group_id(self, group_name):
+        if group_name == "admins":
+            return Interpolate.data_source(ResourceCatalog.GROUP_RESOURCE,
+                                           DefaultDatabricksAdminGroup.DATA_SOURCE_IDENTIFIER,
+                                           DefaultDatabricksAdminGroup.DATA_SOURCE_ATTRIBUTE)
+        return Interpolate.resource(ResourceCatalog.GROUP_RESOURCE, f'{self.GROUPS_BASE_IDENTIFIER}["{group_name}"]',
+                                    'id')
 
-    def __user_is_admin(self, data: Dict[str, Any]):
-        group_is_admin_lst = [True if group["display"] == "admins" else False for group in data.get("groups", [])]
-        return lambda: any(group_is_admin_lst)
-
-    def __make_user_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
-            add_required("user_name", lambda: data["userName"]). \
-            add_required("default_roles", lambda: []). \
-            add_optional("display_name", lambda: data["displayName"]). \
-            add_optional("roles", lambda: [valuePair["value"] for valuePair in data["roles"]]). \
-            add_optional("entitlements", lambda: [valuePair["value"] for valuePair in data["entitlements"]]). \
-            add_optional_if(self.__user_is_admin(data), "set_admin", lambda: True). \
-            to_dict()
-
-    def __create_scim_user_data(self, user_data: Dict[str, Any]):
-        return self._create_data(
-            ResourceCatalog.SCIM_USER_RESOURCE,
+    def __create_user_data(self, user_data: Dict[str, Any],
+                           user_identifier: Callable[[Dict[str, str]], str]):
+        ud = self._create_data(
+            ResourceCatalog.USER_RESOURCE,
             user_data,
-            lambda: any([self._match_patterns(user_data["userName"])]) is False,
-            self.__get_user_identifier,
-            self.__get_user_raw_id,
+            lambda: any([self._match_patterns(d["user_name"]) for _, d in user_data.items()]) is False,
+            user_identifier,
+            user_identifier,
             self.__make_user_dict,
             self.map_processors(self.__custom_map_vars)
         )
+        ud.upsert_local_variable(self.USERS_FOREACH_VAR, user_data)
+        return ud
 
-    def __get_group_identifier(self, data: Dict[str, Any]) -> str:
-        return self.get_identifier(data, lambda d: f"databricks_group-{d['displayName']}")
+    def __create_user_instance_profile_data(self,
+                                            user_name: str,
+                                            user_instance_profile_data: Dict[str, Any],
+                                            user_instance_profile_identifier: Callable[[Dict[str, str]], str]):
+        uipd = self._create_data(
+            ResourceCatalog.USER_INSTANCE_PROFILE_RESOURCE,
+            user_instance_profile_data,
+            lambda: False,
+            user_instance_profile_identifier,
+            user_instance_profile_identifier,
+            self.__make_user_instance_profile_dict(user_name),
+            self.map_processors(self.__custom_map_vars)
+        )
+        uipd.upsert_local_variable(self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name),
+                                   user_instance_profile_data)
+        return uipd
 
-    def __get_group_instance_profile_identifier(self, data: Dict[str, Any]) -> str:
-        return self.get_identifier(data, lambda d: f"databricks_group-{d['displayName']}-{d['value']}")
-
-    def __get_member_identifier(self, data: Dict[str, Any]) -> str:
-        return self.get_identifier(data, lambda d: f"databricks_group-{d['displayName']}-{d['display']}-{d['value']}")
-
-    @staticmethod
-    def __get_group_raw_id(data: Dict[str, Any]) -> str:
-        return data['id']
-
-    @staticmethod
-    def __get_group_instance_profile_raw_id(data: Dict[str, Any]) -> str:
-        return data['value']
-
-    @staticmethod
-    def __get_member_raw_id(data: Dict[str, Any]) -> str:
-        return data['value']
-
-    @staticmethod
-    def __make_group_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-        allow_cluster_create=False
-        allow_instance_pool_create=False
-        if "entitlements" in data:
-            if lambda: [valuePair["value"] == 'allow-cluster-create' for valuePair in data["entitlements"]]():
-                allow_cluster_create=True
-            if lambda: [valuePair["value"] == 'allow-instance-pool-create' for valuePair in data["entitlements"]]():
-                allow_instance_pool_create=True
-
-
+    def __make_user_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_required("display_name", lambda: data["displayName"]). \
-            add_required("allow_cluster_create", lambda: allow_cluster_create). \
-            add_required("allow_instance_pool_create", lambda: allow_instance_pool_create). \
+            add_for_each(data, lambda: self.USERS_FOREACH_VAR). \
             to_dict()
 
-
-    @staticmethod
-    def __make_group_instance_profile_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
-            add_required("group_id", lambda: f"databricks_group.databricks_group_{data['displayName']}.id"). \
-            add_required("instance_profile_id", lambda: f"databricks_instance_profile.{data['id']}.id"). \
+    def __make_user_instance_profile_dict(self, user_name: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
+        return lambda x: TerraformDictBuilder(). \
+            add_for_each(x, lambda: self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name)). \
             to_dict()
 
-    @staticmethod
-    def __make_member_dict(data: Dict[str, Any]) -> Dict[str, Any]:
+    def __make_group_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_required("group_id", lambda: f"databricks_group.databricks_group_{data['displayName']}.id"). \
-            add_required("member_id", lambda: data["member_id"]). \
+            add_for_each(data, lambda: self.GROUPS_FOREACH_VAR). \
             to_dict()
 
+    def __make_group_instance_profile_dict(self, group_instance_profile_id: str) -> Callable[
+        [Dict[str, Any]], Dict[str, Any]]:
+        return lambda x: TerraformDictBuilder(). \
+            add_for_each(x, lambda: self.GROUP_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(group_instance_profile_id),
+                         cloud=CloudConstants.AWS). \
+            to_dict()
+
+    def __make_member_dict(self, member_id: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
+        return lambda x: TerraformDictBuilder(). \
+            add_for_each(x, lambda: self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(member_id)). \
+            to_dict()
+
+    def get_user_instance_profiles(self, user):
+        user_name = user["userName"]
+        user_instance_profile_data = {}
+        for instance_profile in user.get("roles", []):
+            instance_profile_arn = instance_profile.get("value")
+            id_ = f'{user_name}-{instance_profile_arn}'
+            user_instance_profile_data[id_] = {
+                "user_id": self.__interpolate_scim_user_id(user_name),
+                "instance_profile_id": instance_profile_arn,
+            }
+        if len(user_instance_profile_data.keys()) > 0:
+            return self.__create_user_instance_profile_data(
+                user_name,
+                user_instance_profile_data, lambda x: normalize_identifier(
+                    f"databricks_user_{user_name}-instance_profiles"))
+        else:
+            return None
+
+    # TODO: a lot of strings things can go sour really fast.
+    def get_group_members(self, group, group_name, user_dict):
+        group_member_data = {}
+        for member in group.get("members", []):
+            member_data = {
+                "group_id": self.__interpolate_scim_group_id(group_name),
+            }
+            if "/Users/" in member["$ref"]:
+                id_ = normalize_identifier(f"user-{member['value']}")
+                username = user_dict[member["value"]]["userName"]
+                member_data["member_id"] = self.__interpolate_scim_user_id(username)
+
+            else:
+                id_ = normalize_identifier(f"group-{member['value']}")
+                this_memmber_group_name = member["display"]
+                member_data["member_id"] = self.__interpolate_scim_group_id(this_memmber_group_name)
+
+            group_member_data[id_] = member_data
+
+        if len(group_member_data.keys()) > 0:
+            return self.__create_member_data(group_member_data, lambda x: normalize_identifier(
+                f"databricks_group_{group_name}-members"))
+        else:
+            return None
+
+    def get_group_instance_profiles(self, group, group_name):
+        group_instance_profiles_data = {}
+        for group_instance_profile in group.get("roles", []):
+            group_instance_profile_id = group_instance_profile['value']
+            if ":instance-profile/" not in group_instance_profile_id:
+                continue
+            group_instance_profile_data = {
+                "group_id": self.__interpolate_scim_group_id(group_name),
+                "instance_profile_id": group_instance_profile_id
+            }
+            group_instance_profiles_data[group_instance_profile_id] = group_instance_profile_data
+        if len(group_instance_profiles_data.keys()) > 0:
+            return self.__create_group_instance_profile_data(group_instance_profiles_data,
+                                                             lambda x: normalize_identifier(
+                                                                 f"databricks_group_{group_name}"
+                                                                 f"-instance-profiles"))
+        else:
+            return None
+
+    @staticmethod
+    def get_user_dict(user):
+        display_name = f'{user.get("displayName")}' if user.get("displayName", None) is not None and \
+                                                       len(user.get("displayName", "").split(" ")) > 1 else f'Use Email'
+
+        entitlements = user.get("entitlements", [])
+        allow_cluster_create = any([valuePair["value"] == 'allow-cluster-create' for valuePair in entitlements])
+        allow_instance_pool_create = any([valuePair["value"] == 'allow-instance-pool-create'
+                                          for valuePair in entitlements])
+        return {
+            "user_name": user["userName"],
+            "display_name": display_name,
+            "allow_cluster_create": allow_cluster_create,
+            "allow_instance_pool_create": allow_instance_pool_create,
+            "active": user["active"]
+        }
+
+    @staticmethod
+    def get_group_dict(group):
+        entitlements = group.get("entitlements", [])
+        allow_cluster_create = any([valuePair["value"] == 'allow-cluster-create' for valuePair in entitlements])
+        allow_instance_pool_create = any([valuePair["value"] == 'allow-instance-pool-create'
+                                          for valuePair in entitlements])
+        return {
+            "display_name": group["displayName"],
+            "allow_cluster_create": allow_cluster_create,
+            "allow_instance_pool_create": allow_instance_pool_create,
+        }
 
     async def _generate(self) -> Generator[APIData, None, None]:
-        user_dict= {}
-
+        # used to look up the users
+        user_lookup_dict = {}
         service = ScimService(self.api_client)
-        users = service.list_users().get("Resources",[])
+
+        # requires upfront memory
+        users = service.list_users().get("Resources", [])
+        groups = service.list_groups().get("Resources", [])
+
+        # Dictionary to create one hcl json file with foreach for groups and users
+        user_data = {}
+        groups_data = {}
         for user in users:
-            yield self.__create_scim_user_data(user)
-            user_dict[user["id"]]=user["userName"]
+            id_ = user['userName']
+            user_data[id_] = self.get_user_dict(user)
+            user_lookup_dict[user["id"]] = user
 
-        groups = service.list_groups()
-        for group in groups.get("Resources",[]):
-            group_data = self.__create_group_data(group)
-            yield group_data
+            user_instance_profiles = self.get_user_instance_profiles(user)
+            if user_instance_profiles is not None:
+                yield user_instance_profiles
 
-            for group_instance_profile in group.get("roles",[]):
-                group_instance_profile["displayName"] = group["displayName"]
-                group_instance_profile["id"] = normalize_identifier(f"databricks_instance_profile-{group_instance_profile['value']}")
-                group_instance_profile_data = self.__create_group_instance_profile_data(group_instance_profile)
-                yield group_instance_profile_data
+        yield self.__create_user_data(user_data, lambda x: self.USERS_BASE_IDENTIFIER)
 
-            for member in group.get("members",[]):
-                member["displayName"] = group["displayName"]
-                if "Users" in member["$ref"] :
-                    member["id"] = normalize_identifier(
-                        f"{user_dict[member['value']]}-{member['value']}")
-                    member["member_id"] = f"databricks_scim_user.databricks_scim_user_{member['id']}.id"
-                else:
-                    member["member_id"] = f"databricks_group.databricks_group_{member['displayName']}.id"
-                member_data = self.__create_member_data(member)
-                yield member_data
+        for group in groups:
+            id_ = group["displayName"]
+            if id_ != "admins":
+                groups_data[id_] = self.get_group_dict(group)
+
+            # generate instance profiles and members
+            group_name = normalize_identifier(group['displayName'])
+            group_instance_profiles = self.get_group_instance_profiles(group, group_name)
+            if group_instance_profiles is not None:
+                # return group instance profiles for each group
+                yield group_instance_profiles
+            members = self.get_group_members(group, group_name, user_lookup_dict)
+            if members is not None:
+                # return group members for each group
+                yield members
+        # return the groups
+        yield self.__create_group_data(groups_data, lambda x: self.GROUPS_BASE_IDENTIFIER)

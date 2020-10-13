@@ -3,7 +3,7 @@ from typing import Generator, Dict, Any
 
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.sdk.generators import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData
@@ -33,7 +33,7 @@ class ClusterPolicyHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         policies = self.__service.list_policies()
-        for policy in policies.get("policies",[]):
+        for policy in policies.get("policies", []):
             cluster_policy_data = self.__create_cluster_policy_data(policy)
             yield cluster_policy_data
             try:

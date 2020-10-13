@@ -9,8 +9,7 @@ from databricks_terraformer.cmds.config import git_url_option, ssh_key_option, i
     absolute_path_callback
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
-SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'instance_pool']
-#SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'instance_pool', 'identity','secrets']
+SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'instance_profile', 'instance_pool', 'secrets']
 
 
 # TODO: Custom state back ends using aws environment variables

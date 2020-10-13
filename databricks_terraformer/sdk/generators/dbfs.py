@@ -7,7 +7,7 @@ from databricks_cli.dbfs.api import FileInfo, BUFFER_SIZE_BYTES
 from databricks_cli.sdk import DbfsService, ApiClient
 from databricks_cli.utils import error_and_quit
 
-from databricks_terraformer.sdk.generators import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Expression
 from databricks_terraformer.sdk.message import APIData, Artifact
 from databricks_terraformer.sdk.pipeline import DownloaderAPIGenerator
@@ -45,7 +45,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
         super().__init__(api_client, base_path, patterns=patterns)
         self.__dbfs_path = dbfs_path
         self.__service = DbfsService(self.api_client)
-        self.__custom_map_vars=custom_map_vars
+        self.__custom_map_vars = custom_map_vars
 
     @property
     def folder_name(self) -> str:
@@ -76,10 +76,11 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
         return data["path"]
 
     def __make_dbfs_file_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder().\
-            add_required("source", lambda: f'pathexpand("{self.__get_dbfs_identifier(data)}")', Expression()).\
-            add_required("content_b64_md5", lambda: f'md5(filebase64(pathexpand("{self.__get_dbfs_identifier(data)}")))',
-                         Expression()).\
+        return TerraformDictBuilder(). \
+            add_required("source", lambda: f'pathexpand("{self.__get_dbfs_identifier(data)}")', Expression()). \
+            add_required("content_b64_md5",
+                         lambda: f'md5(filebase64(pathexpand("{self.__get_dbfs_identifier(data)}")))',
+                         Expression()). \
             add_required("path", lambda: data["path"]). \
             add_required("overwrite", lambda: True). \
             add_required("mkdirs", lambda: True). \

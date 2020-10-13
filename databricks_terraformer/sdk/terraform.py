@@ -30,6 +30,7 @@ class ImportStage:
         if from_path.exists():
             shutil.copy(from_path, self.__base_path)
 
+
 class TerraformCommandError(subprocess.CalledProcessError):
     def __init__(self, ret_code, cmd, out, err):
         super(TerraformCommandError, self).__init__(ret_code, cmd)
@@ -142,7 +143,7 @@ class Terraform:
 
         return self.cmd(plan_cmd)
 
-    def apply(self, plan_file: Path =None, state_file_abs_path: Path =None, refresh=None):
+    def apply(self, plan_file: Path = None, state_file_abs_path: Path = None, refresh=None):
         apply_cmd = self.BASE_COMMAND + ["apply"]
         if state_file_abs_path is not None:
             apply_cmd += ["-state", str(state_file_abs_path.absolute())]
@@ -151,4 +152,3 @@ class Terraform:
         if plan_file is not None:
             apply_cmd += [str(plan_file.absolute())]
         return self.cmd(apply_cmd)
-

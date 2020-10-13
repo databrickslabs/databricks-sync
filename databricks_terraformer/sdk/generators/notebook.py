@@ -6,7 +6,7 @@ from databricks_cli.sdk import WorkspaceService, ApiClient
 from databricks_cli.workspace.api import WorkspaceFileInfo
 
 from databricks_terraformer import log
-from databricks_terraformer.sdk.generators import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Expression
 from databricks_terraformer.sdk.message import Artifact, APIData

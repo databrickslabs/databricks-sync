@@ -87,14 +87,14 @@ class APIGenerator(abc.ABC):
         pass
 
     def _create_data(self,
-                    resource_type: str,
-                    data: Dict[str, Any],
-                    filter_func: Callable[[], bool],
-                    identifier_func: Callable[[Dict[str, Any]], str],
-                    raw_id_func: Callable[[Dict[str, Any]], str],
-                    make_dict_func: Callable[[Dict[str, Any]], Dict[str, Any]],
-                    processors
-                    ):
+                     resource_type: str,
+                     data: Dict[str, Any],
+                     filter_func: Callable[[], bool],
+                     identifier_func: Callable[[Dict[str, Any]], str],
+                     raw_id_func: Callable[[Dict[str, Any]], str],
+                     make_dict_func: Callable[[Dict[str, Any]], Dict[str, Any]],
+                     processors
+                     ):
         if filter_func():
             return None
         identifier = identifier_func(data)  # normalizes the identifier
@@ -174,6 +174,18 @@ class ExportFileUtils:
         return dir_path / "mapped_variables.tf.json"
 
     @staticmethod
+    def make_tfvars(base_path: str) -> Path:
+        dir_path = Path(base_path)
+        ExportFileUtils.__ensure_parent_dirs(dir_path)
+        return dir_path / "terraform.tfvars"
+
+    @staticmethod
+    def make_tfvars_env_file(base_path: str) -> Path:
+        dir_path = Path(base_path)
+        ExportFileUtils.__ensure_parent_dirs(dir_path)
+        return dir_path / "variables_env.sh"
+
+    @staticmethod
     def make_local_data_path(base_path: Path, sub_dir: str, file_name) -> Path:
         dir_path = base_path / ExportFileUtils.BASE_DIRECTORY / sub_dir / "data"
         ExportFileUtils.__ensure_parent_dirs(dir_path)
@@ -228,10 +240,6 @@ class DownloaderAPIGenerator(APIGenerator, ABC):
         return new_api_data
 
 
-def do_nothing(x):
-    pass
-
-
 def before_retry(fn, attempt_number):
     log.info(f"Attempt {attempt_number}: attempting to retry {fn.__name__}")
 
@@ -255,6 +263,8 @@ class Pipeline:
     @HCLConvertData.manage_error
     def apply_processors(terraform_model: HCLConvertData):
         tf_model = copy.deepcopy(terraform_model)
+        if terraform_model.processors is None:
+            return tf_model
         for processor in terraform_model.processors:
             processor.process(tf_model)
         return tf_model
@@ -272,8 +282,12 @@ class Pipeline:
     @HCLConvertData.manage_error
     def mapped_variables_unique_key(hcl_convert_data: HCLConvertData) -> str:
         tjb = TerraformJsonBuilder()
+        # TODO: fix this we should also throw a duplicate variable error rather than value error as well
         for mapped_var in hcl_convert_data.mapped_variables:
-            tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
+            try:
+                tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
+            except ValueError as e:
+                log.info(f"Attempting to find unique but found duplicate of {mapped_var} so skipping.")
         return tjb.to_json()
         # return "\n".join([mapped_var.to_hcl(False) for mapped_var in hcl_convert_data.mapped_variables])
 
@@ -287,19 +301,40 @@ class Pipeline:
         return False
 
     @staticmethod
-    def make_mapped_variables_handler(base_path, debug: bool):
+    @HCLConvertData.manage_error
+    def filter_tfvars(hcl_convert_data: HCLConvertData) -> bool:
+        print(hcl_convert_data.resource_variables)
+        print([var.default for var in hcl_convert_data.resource_variables])
+        if hcl_convert_data.resource_variables is not None \
+                and len(hcl_convert_data.resource_variables) > 0 \
+                and any([var.default is None for var in hcl_convert_data.resource_variables]) \
+                and len(hcl_convert_data.errors) == 0:
+            return True
+        return False
+
+    @staticmethod
+    @HCLConvertData.manage_error
+    def map_tfvars(hcl_convert_data: HCLConvertData) -> List[str]:
+        tfvars = []
+
+        for r_var in hcl_convert_data.resource_variables:
+            if r_var.default is None:
+                tfvars.append(r_var.variable_name)
+        print(f"tfvars-{tfvars}")
+        return tfvars
+
+    @staticmethod
+    def make_mapped_variables_handler(base_path):
         @HCLConvertData.manage_error
         def _save_mapped_variables(hcl_convert_data_list: List[HCLConvertData]):
-            # mapped_variables_hcl_data = []
-            # for hcl_convert_data in hcl_convert_data_list:
-            #     mapped_variables_hcl_data += mapped_variables_hcl_data + \
-            #                                  [mapped_var.to_hcl(debug) for mapped_var in
-            #                                   hcl_convert_data.mapped_variables]
-            # mapped_variables_hcl = "\n".join(list(sorted(mapped_variables_hcl_data)))
             tjb = TerraformJsonBuilder()
             for hcl_convert_data in hcl_convert_data_list:
                 for mapped_var in hcl_convert_data.mapped_variables:
-                    tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
+                    try:
+                        tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
+                    except ValueError as e:
+                        log.info(f"Attempting to add another instance of {mapped_var} so skipping.")
+                    # tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
             mapped_variables_json = tjb.to_json()
             with ExportFileUtils.make_mapped_vars_path(base_path).open("w+") as f:
                 f.write(mapped_variables_json)
@@ -307,6 +342,21 @@ class Pipeline:
             return hcl_convert_data_list
 
         return _save_mapped_variables
+
+    @staticmethod
+    def make_tfvars_handler(base_path):
+        def _save_tfvars(vars: List[str]) -> List[str]:
+            with ExportFileUtils.make_tfvars(base_path).open("w+") as f:
+                for var in vars:
+                    f.write(f'{var}=\n')
+                    f.flush()
+            with ExportFileUtils.make_tfvars_env_file(base_path).open("w+") as f:
+                for var in vars:
+                    f.write(f'export TF_VAR_{var}=\n')
+                    f.flush()
+            return vars
+
+        return _save_tfvars
 
     def wire(self):
         debug = False
@@ -326,11 +376,20 @@ class Pipeline:
         self.__collectors.append(map_vars_collector)
 
         StreamUtils.apply_map(
-            Pipeline.make_mapped_variables_handler(self._base_path, debug),
+            Pipeline.make_mapped_variables_handler(self._base_path),
             map_vars_collector,
             # Everything will be collected to all in once place we do not need this to be distributed
             is_dask_enabled=False
         ).sink(print)
+
+        tfvars_s = StreamUtils.apply_filter(
+            Pipeline.filter_tfvars,
+            processed_stream)
+        tfvars_values_s = tfvars_s.map(Pipeline.map_tfvars)
+
+        tfvars_collector = tfvars_values_s.flatten().unique().collect()
+        self.__collectors.append(tfvars_collector)
+        tfvars_collector.map(Pipeline.make_tfvars_handler(self._base_path)).sink(print)
 
         resource_s = StreamUtils.apply_map(
             Pipeline.make_resource_files_handler(debug),

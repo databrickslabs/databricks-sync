@@ -3,7 +3,7 @@ import functools
 import json
 import traceback
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 
 from databricks_terraformer import log
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformJsonBuilder, \
@@ -84,6 +84,16 @@ class Variable:
             to_json()
 
 
+class LocalVariable(Variable):
+
+    def __init__(self, variable_name, data: Dict[str, Any]):
+        super().__init__(variable_name)
+        self.data = data
+
+    def to_dict(self):
+        return {**self.data}
+
+
 class ErrorMixin:
     def __init__(self):
         self.__errors = []
@@ -131,6 +141,7 @@ class HCLConvertData(ErrorMixin):
         self.__lineage.append(raw_api_data.data)
         self.__mapped_variables = []
         self.__resource_variables = []
+        self.__local_variables = {}
 
     @property
     def raw_id(self):
@@ -172,6 +183,10 @@ class HCLConvertData(ErrorMixin):
     def resource_variables(self) -> List[Variable]:
         return self.__resource_variables
 
+    @property
+    def local_variables(self) -> List[LocalVariable]:
+        return list(self.__local_variables.values())
+
     def modify_json(self, value):
         self.__lineage.append(value)
 
@@ -181,10 +196,15 @@ class HCLConvertData(ErrorMixin):
     def add_resource_variable(self, variable_name, variable_default_value=None):
         self.__resource_variables.append(Variable(variable_name, variable_default_value))
 
+    def upsert_local_variable(self, local_var_name, local_var_value):
+        self.__local_variables[local_var_name] = LocalVariable(local_var_name, local_var_value)
+
     def to_hcl(self, debug: bool):
         tjb = TerraformJsonBuilder()
         for r_var in self.resource_variables:
             tjb.add_variable(r_var.variable_name, r_var.to_dict())
+        for l_var in self.local_variables:
+            tjb.add_locals(l_var.variable_name, l_var.to_dict())
         tjb.add_resource(self.resource_name, self.hcl_resource_identifier, self.latest_version)
         return tjb.to_json()
         # variable_hcls = "\n".join([r_var.to_hcl(debug) for r_var in self.resource_variables])
