@@ -73,7 +73,8 @@ class Terraform:
         :return: ret_code, out, err
         """
         capture_output = kwargs.pop('capture_output', True)
-        raise_on_error = kwargs.pop('raise_on_error', False)
+        # TODO maybe figure out where to set this and how to pass it here
+        raise_on_error = True
         if capture_output is True:
             stderr = sys.stdout
             stdout = subprocess.PIPE
