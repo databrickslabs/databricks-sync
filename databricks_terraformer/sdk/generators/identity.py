@@ -3,12 +3,12 @@ from typing import Generator, Dict, Any, Callable
 
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksAdminGroup
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.scim import ScimService
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksAdminGroup
 from databricks_terraformer.sdk.utils import normalize_identifier
 
 
@@ -44,6 +44,7 @@ class IdentityHCLGenerator(APIGenerator):
             self.__make_group_dict,
             self.map_processors(self.__custom_map_vars)
         )
+        # TODO normalize the keys here and interpolate the value
         gd.upsert_local_variable(self.GROUPS_FOREACH_VAR, group_data)
         return gd
 
@@ -264,7 +265,7 @@ class IdentityHCLGenerator(APIGenerator):
         yield self.__create_user_data(user_data, lambda x: self.USERS_BASE_IDENTIFIER)
 
         for group in groups:
-            id_ = group["displayName"]
+            id_ = normalize_identifier(group["displayName"])
             if id_ != "admins":
                 groups_data[id_] = self.get_group_dict(group)
 

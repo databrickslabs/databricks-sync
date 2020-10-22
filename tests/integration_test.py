@@ -1,27 +1,27 @@
 import json
 import logging
 import os
+import traceback
 from pathlib import Path
-from pygrok import Grok
 
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.configure.provider import DatabricksConfig
-from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.dbfs.api import DbfsApi, DbfsPath
-from databricks_cli.workspace.api import WorkspaceApi
-from databricks_terraformer.cmds import apply
-from databricks_cli.jobs.api import JobsApi
 from databricks_cli.groups.api import GroupsApi
-from databricks_cli.secrets.api import SecretApi
-
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_cli.instance_pools.api import InstancePoolsApi
+from databricks_cli.jobs.api import JobsApi
 from databricks_cli.sdk import ApiClient
-from databricks_terraformer import cli
-from databricks_terraformer.sdk.sync.import_ import TerraformExecution
+from databricks_cli.secrets.api import SecretApi
+from databricks_cli.workspace.api import WorkspaceApi
+from pygrok import Grok
 
-# TODO explain this in README.md
+from databricks_terraformer.cmds import apply
+from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_terraformer.sdk.sync.constants import CloudConstants
+# TODO DOC README - Describe the integration Test in the READNE. Explain .env as well
+# TODO DOC README - Need to document 403 scenario due to token expiration date
 from databricks_terraformer.sdk.sync.export import ExportCoordinator
-
+from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 from tests import cleanup_workspace, cleanup_git
 
 db_objects = {'instance-pools':
@@ -64,12 +64,13 @@ db_objects = {'instance-pools':
               }
 
 
-def test_cleanup(tests_path, it_conf, src_cluster_api: ClusterApi, tgt_cluster_api: ClusterApi, src_policy_service: PolicyService,
+def test_cleanup(tests_path, it_conf, src_cluster_api: ClusterApi, tgt_cluster_api: ClusterApi,
+                 src_policy_service: PolicyService,
                  tgt_policy_service: PolicyService, src_pool_api: InstancePoolsApi, tgt_pool_api: InstancePoolsApi,
-                 env, src_job_api: JobsApi, tgt_job_api: JobsApi, src_workspace_api: WorkspaceApi, tgt_workspace_api: WorkspaceApi,
+                 env, src_job_api: JobsApi, tgt_job_api: JobsApi, src_workspace_api: WorkspaceApi,
+                 tgt_workspace_api: WorkspaceApi,
                  src_dbfs_api: DbfsApi, tgt_dbfs_api: DbfsApi, src_group_api: GroupsApi, tgt_group_api: GroupsApi,
                  src_secret_api: SecretApi, tgt_secret_api: SecretApi):
-
     fixture_path = (tests_path / 'fixtures').absolute()
     dbfs_path = it_conf['objects']['dbfs_file']['dbfs_path']
     nb_path_in_workspace = it_conf['objects']['notebook']['notebook_path']
@@ -128,12 +129,24 @@ def test_cleanup(tests_path, it_conf, src_cluster_api: ClusterApi, tgt_cluster_a
         Path.unlink(Path(env["directory"]) / "state.tfstate")
 
 
+# TODO order of execution: DBFS, pools, Policy, Cluster.
+def test_src_upload_dbfs_files(src_upload_dbfs_file: DbfsApi):
+    print(src_upload_dbfs_file)
+    assert src_upload_dbfs_file is not None
+
+
+def test_src_dbfs_files(src_dbfs_file):
+    assert src_dbfs_file
+
+
 def test_src_api_client(src_api_client: ApiClient):
     print(src_api_client.url)
     assert src_api_client.url is not None
 
 
 def test_src_create_policy(src_create_policies: PolicyService):
+    global created_policies
+    created_policies = src_create_policies
     print(src_create_policies)
     assert src_create_policies is not None
 
@@ -144,6 +157,8 @@ def test_src_policies(src_policy_service: PolicyService):
 
 
 def test_src_create_pool(src_create_pools: InstancePoolsApi):
+    global created_pools
+    created_pools = src_create_pools
     print(src_create_pools)
     assert src_create_pools is not None
 
@@ -154,6 +169,7 @@ def test_src_pools(src_pool_api: InstancePoolsApi):
 
 
 def test_src_create_cluster(src_create_cluster: ClusterApi):
+    created_clusters = src_create_cluster
     print(src_create_cluster)
     assert src_create_cluster is not None
 
@@ -171,15 +187,6 @@ def test_src_create_job(src_create_job):
 def test_src_jobs(src_job_api: JobsApi):
     print(src_job_api)
     assert src_job_api is not None
-
-
-def test_src_upload_dbfs_files(src_upload_dbfs_file: DbfsApi):
-    print(src_upload_dbfs_file)
-    assert src_upload_dbfs_file is not None
-
-
-def test_src_dbfs_files(src_dbfs_file):
-    assert src_dbfs_file
 
 
 def test_src_upload_notebooks(src_upload_notebooks):
@@ -206,25 +213,27 @@ def test_src_secrete(src_secrets):
     assert src_secrets
 
 
-def test_src_export_direct(src_api_client: ApiClient,env,caplog):
+def test_src_export_direct(src_api_client: ApiClient, env, caplog):
     caplog.set_level(logging.DEBUG)
-    path = (Path(__file__).parent/'integration_test.yaml').absolute()
-    throws_exception=None
+    path = (Path(__file__).parent / 'integration_test.yaml').absolute()
+    throws_exception = None
 
     try:
         ExportCoordinator.export(src_api_client, env["git_repo"], path, dry_run=False, dask_mode=False)
     except Exception as e:
-        throws_exception=e
-    print(caplog.text)
+        throws_exception = e
+        if throws_exception is not None:
+            traceback.print_exc()
     assert throws_exception is None, throws_exception
 
 
-def import_direct(tgt_api_config:DatabricksConfig, env, caplog):
+def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
     caplog.set_level(logging.DEBUG)
 
     # setup the env variable for Terraform, using the Target credentials
     os.environ["DATABRICKS_HOST"] = tgt_api_config.host
     os.environ["DATABRICKS_TOKEN"] = tgt_api_config.token
+    os.environ["TF_VAR_CLOUD"] = CloudConstants.AZURE
 
     print(f" will import : {apply.SUPPORT_IMPORTS}")
     te = TerraformExecution(
@@ -242,29 +251,29 @@ def import_direct(tgt_api_config:DatabricksConfig, env, caplog):
     te.execute()
 
 
-def test_tgt_import_direct(tgt_api_config:DatabricksConfig, env,caplog):
-
+# TODO DOC Clsuter - in case of failure the user should check the status of the cluster or verify that they are all terminated
+def test_tgt_import_direct(tgt_api_config: DatabricksConfig, env, caplog):
     os.environ["GIT_PYTHON_TRACE"] = "full"
-    os.environ["TF_VAR_databricks_secret_scope1_key1_var"] = "secret"
-    os.environ["TF_VAR_databricks_secret_scope2_key2_var"] = "secret2"
-    os.environ["TF_VAR_databricks_secret_IntegrationTest_scope1_it_key1_var"] = "secret3"
-    os.environ["TF_VAR_databricks_secret_IntegrationTest_scope2_it_key2_var"] = "secret3"
+    os.environ["TF_VAR_scope1_key1_var"] = "secret"
+    os.environ["TF_VAR_scope2_key2_var"] = "secret2"
+    os.environ["TF_VAR_IntegrationTest_scope1_it_key1_var"] = "secret3"
+    os.environ["TF_VAR_IntegrationTest_scope2_it_key2_var"] = "secret3"
 
-    throws_exception=None
+    throws_exception = None
 
     try:
-        import_direct(tgt_api_config, env,caplog)
+        import_direct(tgt_api_config, env, caplog)
     except Exception as e:
         throws_exception = e
     print(caplog.text)
     assert throws_exception is None, throws_exception
 
 
-def test_tgt_import_no_change(tgt_api_config:DatabricksConfig, env,caplog):
-    throws_exception=None
+def test_tgt_import_no_change(tgt_api_config: DatabricksConfig, env, caplog):
+    throws_exception = None
 
     try:
-        import_direct(tgt_api_config, env,caplog)
+        import_direct(tgt_api_config, env, caplog)
     except Exception as e:
         throws_exception = e
 
@@ -275,23 +284,65 @@ def test_tgt_import_no_change(tgt_api_config:DatabricksConfig, env,caplog):
 
 
 def test_tgt_objects_exist(tgt_policy_service: PolicyService, tgt_pool_api: InstancePoolsApi,
-                           src_dbfs_api: DbfsApi, tgt_dbfs_api: DbfsApi, tgt_workspace_api:WorkspaceApi, env):
-    # assert len(tgt_policy_service.list_policies().get("policies",[])) == db_objects['cluster-policies']['import_object_count']
-    # assert len(tgt_pool_api.list_instance_pools().get("instance_pools",[])) == db_objects['instance-pools']['import_object_count']
-    # assert len(tgt_workspace_api.list_objects("/Shared")) == db_objects['notebooks']['import_object_count']
-    # assert len(tgt_dbfs_api.list_files(DbfsPath("dbfs:/example_notebook.py"))) == db_objects['dbfs']['import_object_count']
-    assert(True)
+                           src_dbfs_api: DbfsApi, tgt_dbfs_api: DbfsApi, tgt_workspace_api: WorkspaceApi, env):
+    assert len(tgt_policy_service.list_policies().get("policies", [])) == db_objects['cluster-policies'][
+        'import_object_count']
+    assert len(tgt_pool_api.list_instance_pools().get("instance_pools", [])) == db_objects['instance-pools'][
+        'import_object_count']
+    assert len(tgt_workspace_api.list_objects("/Shared")) == db_objects['notebooks']['import_object_count']
+    assert len(tgt_dbfs_api.list_files(DbfsPath("dbfs:/example_notebook.py"))) == db_objects['dbfs'][
+        'import_object_count']
+    # TODO need to fix this
+    assert True
 
 
-def test_tgt_export_dryrun(tgt_api_client:ApiClient, env, caplog):
+def test_tgt_export_dryrun(tgt_api_client: ApiClient, env, caplog):
     caplog.set_level(logging.DEBUG)
-    path = (Path(__file__).parent/'integration_test.yaml').absolute()
+    path = (Path(__file__).parent / 'integration_test.yaml').absolute()
 
-    throws_exception=None
+    throws_exception = None
 
     try:
-        ExportCoordinator.export(tgt_api_client, env["git_repo"],path, dry_run=True, dask_mode=False)
+        ExportCoordinator.export(tgt_api_client, env["git_repo"], path, dry_run=True, dask_mode=False)
     except Exception as e:
-        throws_exception=e
+        throws_exception = e
     print(caplog.text)
     assert throws_exception is None, throws_exception
+#
+# def test_itai_prep(tests_path,src_cluster_api,src_policy_service, src_pool_api):
+#     fixture_path = (tests_path / 'fixtures').absolute()
+#
+#     cl_js = (fixture_path / 'clusters.json').absolute()
+#     cp_js = (fixture_path / 'cluster_policies.json').absolute()
+#     ip_js = (fixture_path / 'instance_pools.json').absolute()
+#     job_js = (fixture_path / 'jobs.json').absolute()
+#     nb_js = (fixture_path / 'notebooks.json').absolute()
+#     df_js = (fixture_path / 'dbfs_files.json').absolute()
+#     gr_js = (fixture_path / 'groups.json').absolute()
+#     sr_js = (fixture_path / 'secrets.json').absolute()
+#
+#     with open(cl_js) as jsonfile:
+#         clusters_json = json.load(jsonfile)
+#     with open(cp_js) as jsonfile:
+#         policies_json = json.load(jsonfile)
+#     with open(ip_js) as jsonfile:
+#         pools_json = json.load(jsonfile)
+#     with open(job_js) as jsonfile:
+#         jobs_json = json.load(jsonfile)
+#     with open(nb_js) as jsonfile:
+#         notebooks_json = json.load(jsonfile)
+#     with open(df_js) as jsonfile:
+#         dbfs_files_json = json.load(jsonfile)
+#     with open(gr_js) as jsonfile:
+#         groups_json = json.load(jsonfile)
+#     with open(sr_js) as jsonfile:
+#         secrets_json = json.load(jsonfile)
+#
+#     cleanup_workspace.delete_clusters(src_cluster_api, clusters_json)
+#     cleanup_workspace.delete_policies(src_policy_service, policies_json)
+#     cleanup_workspace.delete_pools(src_pool_api, pools_json)
+#
+# def test_itai(src_create_cluster,src_create_pools,src_create_policies,src_cluster_api,src_policy_service,src_pool_api,tests_path):
+#     # test_src_create_pool(src_create_pools)
+#     # test_src_create_policy(src_create_policies)
+#     test_src_create_cluster(src_create_cluster)

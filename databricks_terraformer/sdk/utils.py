@@ -1,5 +1,18 @@
 import functools
 import re
+from typing import Dict
+
+
+def azure_s3_dbfs(data: Dict) -> Dict:
+    print(data)
+    print(type(data))
+    for key, value in data.items():
+        print(key)
+        if type(value) == dict:
+            for dict_key, value in data.get(key).items():
+                return {key.lower().replace('s3', 'dbfs'): {dict_key: re.sub(r's3.*:\/', 'dbfs:/', value.lower())}}
+        else:
+            return {key: value.lower().replace('s3', 'dbfs')}
 
 
 def normalize(func):

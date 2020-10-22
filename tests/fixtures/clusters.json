@@ -1,6 +1,6 @@
 [{
   "cluster_name": "no pool std cluster 1",
-  "spark_version": "6.5.x-scala2.11",
+  "spark_version": "7.3.x-scala2.12",
   "spark_conf": {
     "spark.databricks.delta.preview.enabled": "true"
   },
@@ -13,12 +13,75 @@
   "init_scripts": [
     {
       "dbfs": {
-        "destination": "dbfs:/does_not_exists.sh"
+        "destination": "dbfs:/tests/empty.sh"
       }
     }
   ],
   "autoscale": {
-    "min_workers": 2,
-    "max_workers": 8
+    "min_workers": 1,
+    "max_workers": 2
   }
-}]
+},
+{
+  "cluster_name": "HC Library",
+  "spark_version": "7.2.x-scala2.12",
+  "spark_conf": {
+    "spark.databricks.repl.allowedLanguages": "python,sql",
+    "spark.databricks.pyspark.enableProcessIsolation": "true",
+    "spark.databricks.delta.preview.enabled": "true",
+    "spark.databricks.passthrough.enabled": "true",
+    "spark.databricks.cluster.profile": "serverless"
+  },
+  "custom_tags": {
+    "ResourceClass": "Serverless"
+  },
+  "node_type_id": "Standard_DS3_v2",
+  "driver_node_type_id": "Standard_DS3_v2",
+  "spark_env_vars": {
+    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+  },
+  "autotermination_minutes": 120,
+  "init_scripts": [
+    {
+      "dbfs": {
+        "destination": "dbfs:/tests/empty.sh"
+      }
+    }
+  ],
+  "autoscale": {
+    "min_workers": 1,
+    "max_workers": 2
+  }
+},
+  {
+    "cluster_name": "With Pool and Policy",
+    "spark_version": "7.2.x-scala2.12",
+    "spark_conf": {
+      "spark.databricks.repl.allowedLanguages": "python,sql",
+      "spark.databricks.pyspark.enableProcessIsolation": "true",
+      "spark.databricks.delta.preview.enabled": "true",
+      "spark.databricks.passthrough.enabled": "true",
+      "spark.databricks.cluster.profile": "serverless"
+    },
+    "custom_tags": {
+      "ResourceClass": "Serverless"
+    },
+    "spark_env_vars": {
+      "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+    },
+    "autotermination_minutes": 120,
+    "init_scripts": [
+      {
+        "dbfs": {
+          "destination": "dbfs:/tests/empty.sh"
+        }
+      }
+    ],
+    "autoscale": {
+      "min_workers": 1,
+      "max_workers": 2
+    },
+    "policy_id": "ED5F86CD7C00006D",
+    "instance_pool_id": "1019-140122-romps370-pool-PEbE83Rs"
+  }
+]

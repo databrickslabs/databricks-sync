@@ -4,14 +4,14 @@ from typing import Generator, Dict, Any, Callable, List
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import SecretService
 
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.utils import normalize_identifier
 
 
-class SecretsHCLGenerator(APIGenerator):
+class SecretHCLGenerator(APIGenerator):
     SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE = "databricks_secret_scope_{}_acls_for_each_var"
     SECRET_FOREACH_VAR_TEMPLATE = "databricks_secret_{}_for_each_var"
 

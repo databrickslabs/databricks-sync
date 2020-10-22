@@ -1,0 +1,30 @@
+[
+  {
+    "jar": "dbfs:/tests/library.jar"
+  },
+  {
+    "egg": "dbfs:/tests/sample.egg"
+  },
+  {
+    "whl": "dbfs:/tests/sample.whl"
+  },
+  {
+    "maven": {
+      "coordinates": "com.crealytics:spark-excel_2.12:0.13.1",
+      "exclusions": [
+        "slf4j:slf4j"
+      ]
+    }
+  },
+  {
+    "pypi": {
+      "package": "mlflow"
+    }
+  },
+  {
+    "cran": {
+      "package": "ggplot2",
+      "repo": "https://cran.us.r-project.org"
+    }
+  }
+]

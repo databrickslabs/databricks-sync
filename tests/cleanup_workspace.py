@@ -1,17 +1,12 @@
-from databricks_cli.dbfs.dbfs_path import DbfsPath
-from databricks_cli.configure.provider import get_config_for_profile
-from databricks_cli.instance_pools.api import InstancePoolsApi
-from databricks_cli.dbfs.api import DbfsApi, DbfsPath
-from databricks_cli.workspace.api import WorkspaceApi
+from databricks_cli.dbfs.api import DbfsPath
+
 from databricks_terraformer.sdk.service.cluster_policies import PolicyService
-from databricks_cli.clusters.api import ClusterApi
-from databricks_cli.sdk import ApiClient
 
 
 def delete_jobs(jobs_api, jobs_json):
     print("Deleting Jobs")
     jobs_list = jobs_api.list_jobs()
-    test_jobs =[]
+    test_jobs = []
     for job in jobs_json:
         test_jobs.append(job["name"])
 
@@ -19,7 +14,6 @@ def delete_jobs(jobs_api, jobs_json):
         for job in jobs_list["jobs"]:
             if job["settings"]["name"] in test_jobs:
                 jobs_api.delete_job(job["job_id"])
-                print(f"deleted job_id :  {str(job['job_id'])}  : {str(job['settings']['name'])}")
 
 
 def delete_clusters(cluster_api, clusters_json):

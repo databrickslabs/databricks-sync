@@ -1,7 +1,7 @@
 [
   {
     "name": "second policy",
-    "definition": "{\n  \"instance_pool_id\": { \"type\": \"forbidden\" }\n}"
+    "definition": "{\n\t\"autotermination_minutes\": {\n    \t\"type\":\"range\",\n        \"minValue\": 15,\n        \"maxValue\": 120\n    }\n}"
   },
   {
     "name": "first policy",

@@ -5,7 +5,7 @@ class ResourceCatalog:
     DBFS_FILE_RESOURCE = "databricks_dbfs_file"
     INSTANCE_POOL_RESOURCE = "databricks_instance_pool"
     INSTANCE_PROFILE_RESOURCE = "databricks_instance_profile"
-    SECRET_RESOURCE = "databricks_secret_scope"
+    SECRET_RESOURCE = "databricks_secret"
     SECRET_SCOPE_RESOURCE = "databricks_secret_scope"
     SECRET_ACL_RESOURCE = "databricks_secret_acl"
 
@@ -14,6 +14,9 @@ class ResourceCatalog:
     GROUP_RESOURCE = "databricks_group"
     GROUP_INSTANCE_PROFILE_RESOURCE = "databricks_group_instance_profile"
     GROUP_MEMBER_RESOURCE = "databricks_group_member"
+
+    CLUSTER_RESOURCE = "databricks_cluster"
+    JOB_RESOURCE = "databricks_job"
 
 
 class DefaultDatabricksAdminGroup:
@@ -29,8 +32,8 @@ class DefaultDatabricksAdminGroup:
 
 
 class CloudConstants:
-    AWS = "aws"
-    AZURE = "azure"
+    AWS = "AWS"
+    AZURE = "AZURE"
     CLOUD_VARIABLE = "var.CLOUD"
 
 
@@ -45,7 +48,7 @@ ENTRYPOINT_MAIN_TF = {
                 "source": "databrickslabs/databricks",
                 # This should be fixed to not impact this tools behavior when downstream changes are made to the
                 # RP. This should be consciously upgraded. Maybe in the future can be passed in as optional
-                "version": "0.2.5"
+                "version": "0.2.7"
             }
         }
     },

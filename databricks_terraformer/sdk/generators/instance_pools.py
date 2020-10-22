@@ -4,11 +4,11 @@ from typing import Generator, Dict, Any
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import InstancePoolService
 
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 
 
 class InstancePoolHCLGenerator(APIGenerator):
@@ -43,7 +43,12 @@ class InstancePoolHCLGenerator(APIGenerator):
     async def _generate(self) -> Generator[APIData, None, None]:
         instance_pools = self.__service.list_instance_pools().get("instance_pools", [])
         for instance_pool in instance_pools:
+            # due to Azure limitation we have to setup enable_elastic_disk to True
+            #  see https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/clusters
+            instance_pool["enable_elastic_disk"] = True
+
             instance_pools_data = self.__create_instance_pool_data(instance_pool)
+
             yield instance_pools_data
             try:
                 yield self.__perms.create_permission_data(instance_pools_data, self.get_local_hcl_path)

@@ -17,21 +17,27 @@ objects:
 #  driver_node_type_id: "%{GREEDYDATA:variable}"
 
   ##    custom_dynamic_vars:
-##      - "format"
+  ##      - "format"
   dbfs_file:
     dbfs_path: "dbfs:/tests/"
 
   instance_pool:
     patterns:
       - "*"
-#    custom_map_vars:
-#      node_type_id: "%{GREEDYDATA:variable}"
-  instance_profile:
-    patterns:
-      - "*"
-  secret_scope:
+  #    custom_map_vars:
+  #      node_type_id: "%{GREEDYDATA:variable}"
+  #  instance_profile:
+  #    patterns:
+  #      - "*"
+  secret:
     patterns:
       - "*"
   identity:
+    patterns:
+      - "*"
+  cluster:
+    patterns:
+      - "*"
+  job:
     patterns:
       - "*"

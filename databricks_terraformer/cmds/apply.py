@@ -9,7 +9,8 @@ from databricks_terraformer.cmds.config import git_url_option, ssh_key_option, i
     absolute_path_callback
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
-SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'instance_profile', 'instance_pool', 'secrets']
+SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'instance_profile', 'instance_pool',
+                   'secrets', 'cluster', 'job']
 
 
 # TODO: Custom state back ends using aws environment variables
@@ -19,7 +20,8 @@ SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'insta
                                             'infrastructure.')
 @click.option("--destroy", is_flag=True, help='Indicate whether you wish to destroy all the provisioned '
                                               'infrastructure.')
-@click.option("--skip-refresh", is_flag=True, help='This is to determine whether you need to refresh remote state or not',
+@click.option("--skip-refresh", is_flag=True,
+              help='This is to determine whether you need to refresh remote state or not',
               default=False)
 @click.option("--artifact-dir", required=True, type=click.Path(exists=True), callback=absolute_path_callback,
               help='Will be where the plan/state file be saved, required unless backend state is specified.')
@@ -35,7 +37,8 @@ SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'insta
 @git_url_option
 @ssh_key_option
 @inject_profile_as_env
-def import_cli(git_ssh_url, databricks_object_type, plan, apply, backend_file, skip_refresh, destroy, revision, artifact_dir):
+def import_cli(git_ssh_url, databricks_object_type, plan, apply, backend_file, skip_refresh, destroy, revision,
+               artifact_dir):
     te = TerraformExecution(
         git_ssh_url,
         revision=revision,

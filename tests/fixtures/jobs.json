@@ -1,76 +1,132 @@
 [
+  {
+    "name": "IntegrationTestJob1",
+    "new_cluster": {
+      "spark_version": "7.0.x-scala2.12",
+      "spark_conf": {
+        "spark.databricks.delta.preview.enabled": "true"
+      },
+      "node_type_id": "Standard_DS3_v2",
+      "spark_env_vars": {
+        "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+      },
+      "enable_elastic_disk": "True",
+      "azure_attributes": {
+        "availability": "ON_DEMAND_AZURE"
+      },
+      "num_workers": 8
+    },
+    "email_notifications": {
+    },
+    "timeout_seconds": 0,
+    "max_concurrent_runs": 0,
+    "schedule": {
+      "quartz_cron_expression": "0 15 22 ? * *",
+      "timezone_id": "America/Los_Angeles"
+    }
+  },
+  {
+    "name": "IntegrationTestJob2",
+    "new_cluster": {
+      "spark_version": "7.0.x-scala2.12",
+      "spark_conf": {
+        "spark.databricks.delta.preview.enabled": "true"
+      },
+      "node_type_id": "Standard_DS3_v2",
+      "spark_env_vars": {
+        "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+      },
+      "enable_elastic_disk": "True",
+      "azure_attributes": {
+        "availability": "ON_DEMAND_AZURE"
+      },
+      "num_workers": 8
+    },
+    "email_notifications": {
+    },
+    "timeout_seconds": 0,
+    "max_concurrent_runs": 1
+  },
+  {
+    "name": "IntegrationTestJob3",
+    "new_cluster": {
+      "spark_version": "7.0.x-scala2.12",
+      "spark_conf": {
+        "spark.databricks.delta.preview.enabled": "true"
+      },
+      "node_type_id": "Standard_DS3_v2",
+      "spark_env_vars": {
+        "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+      },
+      "enable_elastic_disk": "True",
+      "azure_attributes": {
+        "availability": "ON_DEMAND_AZURE"
+      },
+      "num_workers": 8
+    },
+    "email_notifications": {
+    },
+    "timeout_seconds": 0,
+    "max_concurrent_runs": 1
+  },
+  {
+    "name": "IntegrationTestJob4 existing",
+    "existing_cluster_id": "1015-174613-juice327",
+    "email_notifications": {
+    },
+    "timeout_seconds": 0,
+    "max_concurrent_runs": 1
+  },
+  {
+    "name": "IntegrationTestJob5 with Libraries",
+    "new_cluster": {
+      "spark_version": "7.0.x-scala2.12",
+      "spark_conf": {
+        "spark.databricks.repl.allowedLanguages": "sql,python,r",
+        "spark.hadoop.fs.s3.impl": "com.databricks.s3a.S3AFileSystem",
+        "spark.hadoop.fs.s3a.canned.acl": "BucketOwnerFullControl",
+        "spark.hadoop.fs.s3a.acl.default": "BucketOwnerFullControl",
+        "spark.hadoop.fs.s3n.impl": "com.databricks.s3a.S3AFileSystem",
+        "spark.hadoop.fs.s3a.impl": "com.databricks.s3a.S3AFileSystem"
+      },
+      "node_type_id": "Standard_DS3_v2",
+      "spark_env_vars": {
+        "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+      },
+      "enable_elastic_disk": false,
+      "num_workers": 1,
+      "init_scripts": [
+        {
+          "dbfs": {
+            "destination": "dbfs:/databricks/init/scripts/openssl_fix.sh"
+          }
+        }
+      ]
+    },
+    "libraries": [
       {
-         "name":"IntegrationTestJob1",
-         "new_cluster":{
-            "spark_version":"7.0.x-scala2.12",
-            "spark_conf":{
-               "spark.databricks.delta.preview.enabled":"true"
-            },
-            "node_type_id":"Standard_DS3_v2",
-            "spark_env_vars":{
-               "PYSPARK_PYTHON":"/databricks/python3/bin/python3"
-            },
-            "enable_elastic_disk":"True",
-            "azure_attributes":{
-               "availability":"ON_DEMAND_AZURE"
-            },
-            "num_workers":8
-         },
-         "email_notifications":{
-
-         },
-         "timeout_seconds":0,
-         "max_concurrent_runs":0,
-         "schedule": {
-         "quartz_cron_expression": "0 15 22 ? * *",
-         "timezone_id": "America/Los_Angeles"
-         }
+        "pypi": {
+          "package": "bs4"
+        }
       },
       {
-         "name":"IntegrationTestJob2",
-         "new_cluster":{
-            "spark_version":"7.0.x-scala2.12",
-            "spark_conf":{
-               "spark.databricks.delta.preview.enabled":"true"
-            },
-            "node_type_id":"Standard_DS3_v2",
-            "spark_env_vars":{
-               "PYSPARK_PYTHON":"/databricks/python3/bin/python3"
-            },
-            "enable_elastic_disk":"True",
-            "azure_attributes":{
-               "availability":"ON_DEMAND_AZURE"
-            },
-            "num_workers":8
-         },
-         "email_notifications":{
-
-         },
-         "timeout_seconds":0,
-         "max_concurrent_runs":1
+        "pypi": {
+          "package": "pycld2"
+        }
       },
       {
-         "name":"IntegrationTestJob3",
-         "new_cluster":{
-            "spark_version":"7.0.x-scala2.12",
-            "spark_conf":{
-               "spark.databricks.delta.preview.enabled":"true"
-            },
-            "node_type_id":"Standard_DS3_v2",
-            "spark_env_vars":{
-               "PYSPARK_PYTHON":"/databricks/python3/bin/python3"
-            },
-            "enable_elastic_disk":"True",
-            "azure_attributes":{
-               "availability":"ON_DEMAND_AZURE"
-            },
-            "num_workers":8
-         },
-         "email_notifications":{
-
-         },
-         "timeout_seconds":0,
-         "max_concurrent_runs":1
-
+        "pypi": {
+          "package": "cld2-cffi"
+        }
       }
- ]
+    ],
+    "email_notifications": {},
+    "timeout_seconds": 0,
+    "max_retries": 1,
+    "notebook_task": {
+      "notebook_path": "/Users/tony.cruz@databricks.com/test",
+      "revision_timestamp": 0
+    },
+    "max_concurrent_runs": 1
+  }
+]

@@ -2,14 +2,14 @@ from pathlib import Path
 from typing import Generator, Dict, Any, Callable
 
 from databricks_cli.sdk import ApiClient
-# TODO ommit this via CLOUD_FLAG
-from databricks_terraformer.sdk.sync.constants import CloudConstants
 
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.instace_profiles import InstanceProfilesService
+# TODO ommit this via CLOUD_FLAG
+from databricks_terraformer.sdk.sync.constants import CloudConstants
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 
 
 class InstanceProfileHCLGenerator(APIGenerator):
@@ -20,15 +20,16 @@ class InstanceProfileHCLGenerator(APIGenerator):
         super().__init__(api_client, base_path, patterns=patterns)
         self.__custom_map_vars = custom_map_vars
         self.__service = InstanceProfilesService(self.api_client)
-        # TODO no permissions for instance_profile ###  self.__perms = PermissionsHelper(self.api_client)
 
     def __create_instance_profile_data(self, instance_profile_data: Dict[str, Any],
                                        instance_profile_identifier: Callable[[Dict[str, str]], str]):
+        # TODO fix the lambda below
         ipd = self._create_data(
             ResourceCatalog.INSTANCE_PROFILE_RESOURCE,
             instance_profile_data,
-            lambda: any(
-                [self._match_patterns(ud["instance_profile_arn"]) for _, ud in instance_profile_data.items()]) is False,
+            #            lambda: any(
+            #                [self._match_patterns(ud["instance_profile_arn"]) for _, ud in instance_profile_data.items()]) is False,
+            lambda: False,
             instance_profile_identifier,
             instance_profile_identifier,
             self.__make_instance_profile_dict,

@@ -1,22 +1,24 @@
 import json
 import os
+import time
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-from databricks_cli.instance_pools.api import InstancePoolsApi
-from databricks_cli.dbfs.api import DbfsApi, DbfsPath
-from databricks_cli.workspace.api import WorkspaceApi
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_cli.clusters.api import ClusterApi
-from databricks_cli.jobs.api import JobsApi
-from databricks_cli.groups.api import GroupsApi
-from databricks_cli.secrets.api import SecretApi
-
 from databricks_cli.configure.provider import get_config_for_profile
+from databricks_cli.dbfs.api import DbfsApi, DbfsPath
+from databricks_cli.groups.api import GroupsApi
+from databricks_cli.instance_pools.api import InstancePoolsApi
+from databricks_cli.jobs.api import JobsApi
+from databricks_cli.libraries.api import LibrariesApi
 from databricks_cli.sdk import ApiClient
+from databricks_cli.secrets.api import SecretApi
+from databricks_cli.workspace.api import WorkspaceApi
 from dotenv import load_dotenv
-from pathlib import Path
+
 from databricks_terraformer.sdk.config import ExportConfig
+from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 
 
 def test_dummy(): pass
@@ -28,17 +30,20 @@ def load_env():
     dotenv_path = os.path.join(path, '../.env')
     load_dotenv(dotenv_path=dotenv_path)
 
+
 @pytest.fixture(scope="session")
 def src_api_client(load_env):
     target_profile = os.environ.get("AZURE_SOURCE_WORKSPACE")
     config = get_config_for_profile(target_profile)
     return ApiClient(host=config.host, token=config.token)
 
+
 @pytest.fixture(scope="session")
 def tgt_api_client(load_env):
     target_profile = os.environ.get("AZURE_TARGET_WORKSPACE")
     config = get_config_for_profile(target_profile)
     return ApiClient(host=config.host, token=config.token)
+
 
 @pytest.fixture(scope="session")
 def tgt_api_config(load_env):
@@ -65,6 +70,7 @@ def env(load_env):
 def cli_runner():
     return CliRunner()
 
+
 @pytest.fixture(scope="session")
 def it_conf():
     path = (Path(__file__).parent / 'integration_test.yaml').absolute()
@@ -89,52 +95,57 @@ def tgt_job_api(tgt_api_client: ApiClient):
 
 
 @pytest.fixture(scope="session")
-def src_cluster_api(src_api_client:ApiClient):
+def src_cluster_api(src_api_client: ApiClient):
     return ClusterApi(src_api_client)
 
 
 @pytest.fixture(scope="session")
-def tgt_cluster_api(tgt_api_client:ApiClient):
+def src_cluster_lib_api(src_api_client: ApiClient):
+    return LibrariesApi(src_api_client)
+
+
+@pytest.fixture(scope="session")
+def tgt_cluster_api(tgt_api_client: ApiClient):
     return ClusterApi(tgt_api_client)
 
 
 @pytest.fixture(scope="session")
-def src_pool_api(src_api_client:ApiClient):
+def src_pool_api(src_api_client: ApiClient):
     return InstancePoolsApi(src_api_client)
 
 
 @pytest.fixture(scope="session")
-def tgt_pool_api(tgt_api_client:ApiClient):
+def tgt_pool_api(tgt_api_client: ApiClient):
     return InstancePoolsApi(tgt_api_client)
 
 
 @pytest.fixture(scope="session")
-def src_policy_service(src_api_client:ApiClient):
+def src_policy_service(src_api_client: ApiClient):
     return PolicyService(src_api_client)
 
 
 @pytest.fixture(scope="session")
-def tgt_policy_service(tgt_api_client:ApiClient):
+def tgt_policy_service(tgt_api_client: ApiClient):
     return PolicyService(tgt_api_client)
 
 
 @pytest.fixture(scope="session")
-def src_dbfs_api(src_api_client:ApiClient):
+def src_dbfs_api(src_api_client: ApiClient):
     return DbfsApi(src_api_client)
 
 
 @pytest.fixture(scope="session")
-def tgt_dbfs_api(tgt_api_client:ApiClient):
+def tgt_dbfs_api(tgt_api_client: ApiClient):
     return DbfsApi(tgt_api_client)
 
 
 @pytest.fixture(scope="session")
-def src_workspace_api(src_api_client:ApiClient):
+def src_workspace_api(src_api_client: ApiClient):
     return WorkspaceApi(src_api_client)
 
 
 @pytest.fixture(scope="session")
-def tgt_workspace_api(tgt_api_client:ApiClient):
+def tgt_workspace_api(tgt_api_client: ApiClient):
     return WorkspaceApi(tgt_api_client)
 
 
@@ -168,7 +179,7 @@ def src_create_group(src_group_api, tests_path):
         groups_json = json.load(jsonfile)
 
     for grp in groups_json:
-        #ToDo :add members to the group,when its APIs are available
+        # ToDo :add members to the group,when its APIs are available
         src_group_api.create(grp['name'])
         group_list.append(grp['name'])
 
@@ -213,8 +224,8 @@ def src_create_secrets(src_secret_api, tests_path):
 
         src_secret_api.create_scope(scope_name, scope_principal)
         src_secret_api.put_secret(scope_name, scope_secret_key, scope_string_value, None)
-        #ToDo
-        #Put Secrete ACL
+        # ToDo
+        # Put Secrete ACL
         scopes_list.append(scope_name)
 
     return scopes_list
@@ -232,7 +243,7 @@ def src_secrets(src_secret_api, tests_path):
         scope_name = scp['name']
         it_scopes_name_list.append(scope_name)
 
-    src_scope_list =src_secret_api.list_scopes()['scopes']
+    src_scope_list = src_secret_api.list_scopes()['scopes']
     src_scope_name_list = []
     for scp in src_scope_list:
         src_scope_name_list.append(scp['name'])
@@ -241,15 +252,22 @@ def src_secrets(src_secret_api, tests_path):
 
 
 @pytest.fixture(scope="session")
-def src_create_cluster(src_cluster_api, tests_path):
+def src_create_cluster(src_cluster_api, src_cluster_lib_api, tests_path, src_create_pools, src_create_policies):
     fixture_path = (tests_path / 'fixtures').absolute()
     cl_js = (fixture_path / 'clusters.json').absolute()
+    lib_js = (fixture_path / 'cluster_libraries.json').absolute()
 
     clusters_list = []
     with open(cl_js) as jsonfile:
         clusters_json = json.load(jsonfile)
+    with open(lib_js) as jsonfile:
+        libs_json = json.load(jsonfile)
 
     for cluster in clusters_json:
+        if "policy_id" in cluster:
+            cluster["policy_id"] = src_create_policies[0]
+        if "instance_pool_id" in cluster:
+            cluster["instance_pool_id"] = src_create_pools[0]
         created_cluster = src_cluster_api.create_cluster(cluster)
         src_cluster_api.delete_cluster(created_cluster["cluster_id"])
         clusters_list.append(created_cluster["cluster_id"])
@@ -258,13 +276,23 @@ def src_create_cluster(src_cluster_api, tests_path):
     clusters_json[0]["autotermination_minutes"] = 60
     clusters_json[0]["cluster_name"] = "no pool std cluster 2"
     cluster = src_cluster_api.create_cluster(clusters_json[0])
-    src_cluster_api.delete_cluster(cluster["cluster_id"])
-    clusters_list.append(cluster["cluster_id"])
-    return clusters_list
+
+    # while (src_cluster_api.get_cluster(cluster["cluster_id"])["state"] not in ('RUNNING', 'TERMINATING', 'TERMINATED')):
+    time.sleep(30)
+
+    # add libraries to this cluster
+    if src_cluster_api.get_cluster(cluster["cluster_id"])["state"] == 'TERMINATED':
+        return []
+    else:
+        src_cluster_lib_api.install_libraries(cluster["cluster_id"], libs_json)
+
+        src_cluster_api.delete_cluster(cluster["cluster_id"])
+        clusters_list.append(cluster["cluster_id"])
+        return clusters_list
 
 
 @pytest.fixture(scope="session")
-def src_create_job(src_job_api, tests_path):
+def src_create_job(src_job_api, tests_path, src_create_cluster):
     fixture_path = (tests_path / 'fixtures').absolute()
     job_js = (fixture_path / 'jobs.json').absolute()
 
@@ -273,11 +301,14 @@ def src_create_job(src_job_api, tests_path):
         jobs_json = json.load(jsonfile)
 
     for job in jobs_json:
+
+        if "existing_cluster_id" in job:
+            job["existing_cluster_id"] = src_create_cluster[0]
+
         created_job_response = src_job_api.create_job(job)
         jobs_list.append(created_job_response["job_id"])
 
     return jobs_list
-
 
 @pytest.fixture(scope="session")
 def src_create_pools(src_pool_api, tests_path):
@@ -296,7 +327,7 @@ def src_create_pools(src_pool_api, tests_path):
 
 @pytest.fixture(scope="session")
 def src_create_policies(src_policy_service, tests_path):
-    policies_list=[]
+    policies_list = []
 
     fixture_path = (tests_path / 'fixtures').absolute()
     cp_js = (fixture_path / 'cluster_policies.json').absolute()
@@ -348,7 +379,7 @@ def src_dbfs_file(src_dbfs_api, tests_path, it_conf):
         it_files_list.append(f"{folder_in_shard}{file['name']}")
 
     dbfs_obj_list = src_dbfs_api.list_files(DbfsPath(f"{folder_in_shard}"))
-    dbfs_file_list =[]
+    dbfs_file_list = []
     for fi in dbfs_obj_list:
         dbfs_file_list.append(fi.dbfs_path.absolute_path)
 
@@ -405,13 +436,9 @@ def src_notebooks(src_workspace_api, tests_path, it_conf):
 
     return set(int_test_notebooks_list).issubset(set(src_notebooks))
 
-
-
-
 # def pytest_sessionstart(session,api_client:ApiClient):
 #     print("start of session")
 #     print(api_client.url)
-
 
 
 # def pytest_sessionfinish(session,exitstatus):

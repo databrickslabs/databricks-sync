@@ -2,5 +2,21 @@
   {
     "name": "py_code.py",
     "path": "files"
+  },
+  {
+    "name": "empty.sh",
+    "path": "files"
+  },
+  {
+    "name": "sample.egg",
+    "path": "files"
+  },
+  {
+    "name": "library.jar",
+    "path": "files"
+  },
+  {
+    "name": "sample.whl",
+    "path": "files"
   }
 ]

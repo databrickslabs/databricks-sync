@@ -4,9 +4,8 @@ import tempfile
 from pathlib import Path
 from typing import List
 
-from databricks_terraformer.sdk.sync.constants import ENTRYPOINT_MAIN_TF
-
 from databricks_terraformer.sdk.git_handler import GitHandler
+from databricks_terraformer.sdk.sync.constants import ENTRYPOINT_MAIN_TF
 from databricks_terraformer.sdk.terraform import ImportStage, Terraform
 
 
@@ -84,6 +83,7 @@ class TerraformExecution:
     @setup_empty_stage
     @setup_repo
     def execute(self, stage_path, repo_path):
+        # TODO test for each action, stop and retrun failure as needed
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
