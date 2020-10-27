@@ -3,7 +3,7 @@ import asyncio
 import copy
 import fnmatch
 from abc import ABC
-from functools import reduce
+from functools import reduce, singledispatch
 from pathlib import Path
 from typing import List, Callable, Generator, Any, Dict, Union
 
@@ -160,6 +160,20 @@ class StreamUtils:
         return stream.filter(func)
 
 
+@singledispatch
+def write_file(data, path: Path):
+    raise ValueError(f"Data should be either a str or bytes like but got: {type(data)}")
+
+@write_file.register(str)
+def _(data, path: Path):
+    with path.open("w+") as f:
+        f.write(data)
+
+@write_file.register(bytes)
+def _(data, path: Path):
+    with path.open("wb+") as f:
+        f.write(data)
+
 class ExportFileUtils:
     BASE_DIRECTORY = "exports"
 
@@ -200,13 +214,7 @@ class ExportFileUtils:
     @staticmethod
     def add_file(local_path: Path, data: Union[str, bytes]):
         log.info(f"Writing to path {str(local_path)}")
-        # TODO: make this better or different function
-        if isinstance(data, str):
-            with local_path.open("w+") as f:
-                f.write(data)
-        else:
-            with local_path.open("wb+") as f:
-                f.write(data)
+        write_file(data, path=local_path)
 
 
 class DownloaderAPIGenerator(APIGenerator, ABC):
