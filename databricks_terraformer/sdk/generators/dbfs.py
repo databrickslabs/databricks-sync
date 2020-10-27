@@ -24,14 +24,14 @@ class DbfsFile(Artifact):
             error_and_quit('The dbfs file {} is a directory.'.format(repr(abs_path)))
         length = file_info.file_size
         offset = 0
-        output = io.StringIO()
+        output = io.BytesIO()
         while offset < length:
             response = dbfs_service.read(abs_path, offset, BUFFER_SIZE_BYTES,
                                          headers=headers)
             bytes_read = response['bytes_read']
             data = response['data']
             offset += bytes_read
-            output.write(b64decode(data).decode("utf-8"))
+            output.write(b64decode(data))
         return output.getvalue()
 
     def get_content(self):

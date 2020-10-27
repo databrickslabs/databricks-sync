@@ -20,7 +20,7 @@ class NotebookArtifact(Artifact):
         if "content" not in data:
             log.error(f"Unable to find content for file {self.remote_path}")
             raise FileNotFoundError(f"Unable to find content for notebook in {self.remote_path}")
-        return b64decode(data["content"].encode("utf-8")).decode("utf-8")
+        return b64decode(data["content"].encode("utf-8"))
 
 
 class NotebookHCLGenerator(DownloaderAPIGenerator):
