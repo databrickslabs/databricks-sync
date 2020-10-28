@@ -1,16 +1,16 @@
 import io
 from base64 import b64decode
 from pathlib import Path
-from typing import Generator, List, Dict, Any
+from typing import Generator, List, Dict, Any, Callable
 
 from databricks_cli.dbfs.api import FileInfo, BUFFER_SIZE_BYTES
 from databricks_cli.sdk import DbfsService, ApiClient
 from databricks_cli.utils import error_and_quit
 
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
-from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Expression
+from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData, Artifact
 from databricks_terraformer.sdk.pipeline import DownloaderAPIGenerator
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 
 
 class DbfsFile(Artifact):
@@ -39,6 +39,7 @@ class DbfsFile(Artifact):
 
 
 class DbfsFileHCLGenerator(DownloaderAPIGenerator):
+    DBFS_FOREACH_VAR = "databricks_dbfs_file_for_each_var"
 
     def __init__(self, api_client: ApiClient, base_path: Path, dbfs_path: str, patterns=None,
                  custom_map_vars=None):
@@ -64,9 +65,12 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
                 yield file
 
     def construct_artifacts(self, data: Dict[str, Any]) -> List[Artifact]:
-        return [DbfsFile(remote_path=data["path"],
-                         local_path=self.get_local_download_path(self.__get_dbfs_identifier(data)),
-                         service=self.__service)]
+        ret_files = []
+        for file in data:
+            ret_files.append(DbfsFile(remote_path=data[file]["path"],
+                                      local_path=self.get_local_download_path(self.__get_dbfs_identifier(data[file])),
+                                      service=self.__service))
+        return ret_files
 
     def __get_dbfs_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_dbfs_file-{d['path']}")
@@ -77,29 +81,40 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
 
     def __make_dbfs_file_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_required("source", lambda: f'pathexpand("{self.__get_dbfs_identifier(data)}")', Expression()). \
-            add_required("content_b64_md5",
-                         lambda: f'md5(filebase64(pathexpand("{self.__get_dbfs_identifier(data)}")))',
-                         Expression()). \
-            add_required("path", lambda: data["path"]). \
-            add_required("overwrite", lambda: True). \
-            add_required("mkdirs", lambda: True). \
-            add_required("validate_remote_file", lambda: True). \
+            add_for_each(data, lambda: self.DBFS_FOREACH_VAR). \
             to_dict()
 
-    def __make_dbfs_file_data(self, dbfs_file_data: Dict[str, Any]):
-        return self._create_data(
+    def __get_dbfs_file_dict(self, data: Dict[str, Any], normalize_dbfs_file_name: str) -> Dict[str, Any]:
+        return {
+            "content_b64_md5": f'${{md5(filebase64(pathexpand("{normalize_dbfs_file_name}")))}}',
+            "mkdirs": "true",
+            "overwrite": "true",
+            "path": data["path"],
+            "source": f'${{pathexpand("{normalize_dbfs_file_name}")}}',
+            "validate_remote_file": "true"
+        }
+
+    def __make_dbfs_file_data(self, dbfs_file_data: Dict[str, Any], dbfs_identifier: Callable[[Dict[str, str]], str]):
+        dbfs_data = self._create_data(
             ResourceCatalog.DBFS_FILE_RESOURCE,
             dbfs_file_data,
-            lambda: any([self._match_patterns(dbfs_file_data["path"])]) is False,
-            self.__get_dbfs_identifier,
-            self.__get_dbfs_file_raw_id,
+            #TODO fix this when fixing match_patterns
+            lambda: any([self._match_patterns(d["path"]) for _, d in dbfs_file_data.items()]) is False,
+            dbfs_identifier,
+            dbfs_identifier,
             self.__make_dbfs_file_dict,
             self.map_processors(self.__custom_map_vars)
         )
+        dbfs_data.upsert_local_variable(self.DBFS_FOREACH_VAR, dbfs_file_data)
+        return dbfs_data
 
     async def _generate(self) -> Generator[APIData, None, None]:
         service = DbfsService(self.api_client)
-        for dbfs_file in DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, self.__dbfs_path):
-            dbfs_file_data = self.__make_dbfs_file_data(dbfs_file)
-            yield dbfs_file_data
+        # Dictionary to create one hcl json file with foreach for dbfs files
+        dbfs_files = {}
+
+        for file in DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, self.__dbfs_path):
+            id_ = file['path']
+            dbfs_files[id_] = self.__get_dbfs_file_dict(file, self.__get_dbfs_identifier(file))
+
+        yield self.__make_dbfs_file_data(dbfs_files, lambda x: ResourceCatalog.DBFS_FILE_RESOURCE)

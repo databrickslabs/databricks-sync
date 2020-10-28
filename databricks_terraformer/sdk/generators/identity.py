@@ -175,7 +175,8 @@ class IdentityHCLGenerator(APIGenerator):
             member_data = {
                 "group_id": self.__interpolate_scim_group_id(group_name),
             }
-            if "/Users/" in member["$ref"]:
+            # Check if this is a User or a Group
+            if "Users/" in member["$ref"]:
                 id_ = normalize_identifier(f"user-{member['value']}")
                 username = user_dict[member["value"]]["userName"]
                 member_data["member_id"] = self.__interpolate_scim_user_id(username)
