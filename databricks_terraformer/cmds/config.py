@@ -3,7 +3,7 @@ import os
 import uuid
 
 import click
-from databricks_cli.click_types import ContextObject
+from click import ClickException
 from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
 from databricks_cli.utils import InvalidConfigurationError
@@ -16,13 +16,35 @@ def absolute_path_callback(ctx, param, value):  # NOQA
         return os.path.abspath(value)
     return value
 
+def validate_git_params(git_ssh_url, local_git_path):
+    inputs = [git_ssh_url, local_git_path]
+    if any(inputs) is False:
+        raise ClickException("--git-ssh-url flag or --local-git-path should be provided")
+
+    if all(inputs) is True:
+        raise ClickException("Only one of --git-ssh-url or --local-git-path can be provided but not both")
 
 def git_url_option(f):
-    return click.option('--git-ssh-url', '-g', type=str, required=True,
+    def callback(ctx, param, value):  # NOQA
+        if value is not None and value != "":
+            log.info(f"===USING REMOTE GIT REPOSITORY: {value}===")
+        return value
+
+    return click.option('--git-ssh-url', '-g', type=str, default=None, callback=callback,
                         help="This is the github url you wish to use to manage export and import.")(f)
 
 
-def config_file_option(f):
+def local_git_option(f):
+    def callback(ctx, param, value):  # NOQA
+        if value is not None and value != "":
+            log.info(f"===USING LOCAL GIT DIRECTORY: {value}===")
+        return value
+
+    return click.option('--local-git-path', '-l', type=str, default=None, callback=callback,
+                        help="This is the github url you wish to use to manage export and import.")(f)
+
+
+def config_path_option(f):
     return click.option('--config-path', '-c', type=click.Path(exists=True), required=True,
                         help="This is the path to the config file for the export.")(f)
 

@@ -219,7 +219,7 @@ def test_src_export_direct(src_api_client: ApiClient, env, caplog):
     throws_exception = None
 
     try:
-        ExportCoordinator.export(src_api_client, env["git_repo"], path, dry_run=False, dask_mode=False)
+        ExportCoordinator.export(src_api_client, path, dask_mode=False, dry_run=False, git_ssh_url=env["git_repo"])
     except Exception as e:
         throws_exception = e
         if throws_exception is not None:
@@ -236,18 +236,10 @@ def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
     os.environ["TF_VAR_CLOUD"] = CloudConstants.AZURE
 
     print(f" will import : {apply.SUPPORT_IMPORTS}")
-    te = TerraformExecution(
-        env["git_repo"],
-        revision=env["revision"],
-        folders=apply.SUPPORT_IMPORTS,
-        destroy=False,
-        plan=True,
-        apply=True,
-        refresh=False,
-        # Hard coded for now
-        plan_location=Path(env["directory"]) / "plan.out",
-        state_location=Path(env["directory"]) / "state.tfstate",
-    )
+    te = TerraformExecution(folders=apply.SUPPORT_IMPORTS, refresh=False, revision=env["revision"], plan=True,
+                            plan_location=Path(env["directory"]) / "plan.out",
+                            state_location=Path(env["directory"]) / "state.tfstate", apply=True, destroy=False,
+                            git_ssh_url=env["git_repo"])
     te.execute()
 
 
@@ -303,7 +295,7 @@ def test_tgt_export_dryrun(tgt_api_client: ApiClient, env, caplog):
     throws_exception = None
 
     try:
-        ExportCoordinator.export(tgt_api_client, env["git_repo"], path, dry_run=True, dask_mode=False)
+        ExportCoordinator.export(tgt_api_client, path, dask_mode=False, dry_run=True, git_ssh_url=env["git_repo"])
     except Exception as e:
         throws_exception = e
     print(caplog.text)

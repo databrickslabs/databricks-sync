@@ -32,13 +32,13 @@ class TestGitHandler:
         gh = GitHandler(git_url="fake-git-url", base_path=Path("/tmp/test"))
         datetime.datetime = MockNow
         git_mock.return_value.remote.return_value = MagicMock()
-        gh.commit()
+        gh.commit_and_push()
 
         assert path_mock.called is True
 
         # Commit and push to remote
-        assert git_mock.return_value.index.commit.called is True
-        assert git_mock.return_value.index.commit.call_args[0][0] == \
+        assert git_mock.return_value.index.commit_and_push.called is True
+        assert git_mock.return_value.index.commit_and_push.call_args[0][0] == \
                "Updated via databricks-sync."
         assert git_mock.return_value.remote.called is True
         assert git_mock.return_value.remote.return_value.push.called is True
