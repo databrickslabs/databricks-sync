@@ -1,9 +1,9 @@
+import abc
 import datetime
 import shutil
 from pathlib import Path
 
 import git
-import abc
 from git import Repo
 
 from databricks_terraformer import log

@@ -9,32 +9,36 @@ from databricks_terraformer.sdk.config import ExportConfig
 from databricks_terraformer.sdk.generators.factory import GeneratorFactory
 from databricks_terraformer.sdk.git_handler import GitHandler, LocalGitHandler, RemoteGitHandler
 from databricks_terraformer.sdk.pipeline import ExportFileUtils, Pipeline
+from databricks_terraformer.sdk.terraform import Terraform
+
 
 class ExportCoordinator:
 
     @staticmethod
-    def get_git_handler(local_git_path: Optional[str], git_ssh_url: Optional[str], tmp_dir: tempfile.TemporaryDirectory) \
+    def get_git_handler(local_git_path: Optional[str], git_ssh_url: Optional[str], tmp_dir: tempfile.TemporaryDirectory,
+                        branch="master") \
             -> (GitHandler, Path):
         assert any([local_git_path, git_ssh_url]) is True, "atleast local git path or git ssh url should be provided " \
-                                                       "otherwise if both are provided it will use local git path"
+                                                           "otherwise if both are provided it will use local git path"
         # Local Git is prioritized and if it is used then no tmpdir needed
         if local_git_path is not None:
             return LocalGitHandler(Path(local_git_path), delete_directory=Path(ExportFileUtils.BASE_DIRECTORY)), \
                    Path(local_git_path)
         else:
             return RemoteGitHandler(git_ssh_url, Path(tmp_dir.name),
-                                    delete_directory=Path(ExportFileUtils.BASE_DIRECTORY)), Path(tmp_dir.name)
+                                    delete_directory=Path(ExportFileUtils.BASE_DIRECTORY), branch=branch), Path(
+                tmp_dir.name)
 
     @staticmethod
     def export(api_client: ApiClient, yaml_file_path: Path, dask_mode: bool = False, dry_run: bool = False,
-               git_ssh_url: str = None, local_git_path=None):
+               git_ssh_url: str = None, local_git_path=None, branch="master"):
         client = None
         if dask_mode is True:
             from distributed import Client
             client = Client(processes=True)
         tmp_dir = tempfile.TemporaryDirectory()
         try:
-            geh, base_path = ExportCoordinator.get_git_handler(local_git_path, git_ssh_url, tmp_dir)
+            geh, base_path = ExportCoordinator.get_git_handler(local_git_path, git_ssh_url, tmp_dir, branch=branch)
             config = ExportConfig.from_yaml(
                 yaml_file_path)
 
@@ -64,5 +68,12 @@ class ExportCoordinator:
                     geh.commit_and_push()
                 else:
                     log.info("No changes found.")
+
+            # We should run validate in either case
+            tf = Terraform(working_dir=tmp_dir.name, is_env_vars_included=True)
+            tf.version()
+            tf.init()
+            tf.validate()
+
         finally:
             tmp_dir.cleanup()

@@ -41,7 +41,7 @@ class TerraformCommandError(subprocess.CalledProcessError):
 class Terraform:
     BASE_COMMAND = ["terraform"]
 
-    def __init__(self, working_dir=None, is_env_vars_included=False):
+    def __init__(self, working_dir: str = None, is_env_vars_included=False):
         self.is_env_vars_included = is_env_vars_included
         self.working_dir = working_dir
 

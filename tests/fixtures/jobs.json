@@ -10,7 +10,7 @@
       "spark_env_vars": {
         "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
       },
-      "enable_elastic_disk": "True",
+      "enable_elastic_disk": true,
       "azure_attributes": {
         "availability": "ON_DEMAND_AZURE"
       },
@@ -36,7 +36,7 @@
       "spark_env_vars": {
         "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
       },
-      "enable_elastic_disk": "True",
+      "enable_elastic_disk": true,
       "azure_attributes": {
         "availability": "ON_DEMAND_AZURE"
       },
@@ -58,7 +58,7 @@
       "spark_env_vars": {
         "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
       },
-      "enable_elastic_disk": "True",
+      "enable_elastic_disk": true,
       "azure_attributes": {
         "availability": "ON_DEMAND_AZURE"
       },
@@ -93,7 +93,7 @@
       "spark_env_vars": {
         "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
       },
-      "enable_elastic_disk": false,
+      "enable_elastic_disk": true,
       "num_workers": 1,
       "init_scripts": [
         {

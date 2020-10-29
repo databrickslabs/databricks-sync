@@ -110,7 +110,7 @@ def test_cleanup(tests_path, it_conf, src_cluster_api: ClusterApi, tgt_cluster_a
     cleanup_workspace.delete_groups(src_group_api, groups_json)
     cleanup_workspace.delete_secrets(src_secret_api, secrets_json)
 
-    cleanup_git.destroy_all(env["git_repo"], dry_run=False)
+    cleanup_git.destroy_all(env["git_repo"], dry_run=False, branch=env["revision"])
     if Path(f'{env["directory"]}/terraform.tfstate').exists():
         Path.unlink(f'{env["directory"]}/terraform.tfstate')
 
@@ -219,7 +219,8 @@ def test_src_export_direct(src_api_client: ApiClient, env, caplog):
     throws_exception = None
 
     try:
-        ExportCoordinator.export(src_api_client, path, dask_mode=False, dry_run=False, git_ssh_url=env["git_repo"])
+        ExportCoordinator.export(src_api_client, path, dask_mode=False, dry_run=False, git_ssh_url=env["git_repo"],
+                                 branch=env["revision"])
     except Exception as e:
         throws_exception = e
         if throws_exception is not None:
@@ -239,7 +240,7 @@ def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
     te = TerraformExecution(folders=apply.SUPPORT_IMPORTS, refresh=False, revision=env["revision"], plan=True,
                             plan_location=Path(env["directory"]) / "plan.out",
                             state_location=Path(env["directory"]) / "state.tfstate", apply=True, destroy=False,
-                            git_ssh_url=env["git_repo"])
+                            git_ssh_url=env["git_repo"], api_client=tgt_api_config, branch=env["revision"])
     te.execute()
 
 
@@ -257,6 +258,8 @@ def test_tgt_import_direct(tgt_api_config: DatabricksConfig, env, caplog):
         import_direct(tgt_api_config, env, caplog)
     except Exception as e:
         throws_exception = e
+        if throws_exception is not None:
+            traceback.print_exc()
     print(caplog.text)
     assert throws_exception is None, throws_exception
 
