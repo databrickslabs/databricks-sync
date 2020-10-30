@@ -214,6 +214,7 @@ def test_src_secrete(src_secrets):
 
 
 def test_src_export_direct(src_api_client: ApiClient, env, caplog):
+
     caplog.set_level(logging.DEBUG)
     path = (Path(__file__).parent / 'integration_test.yaml').absolute()
     throws_exception = None
@@ -236,6 +237,8 @@ def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
     os.environ["DATABRICKS_TOKEN"] = tgt_api_config.token
     os.environ["TF_VAR_CLOUD"] = CloudConstants.AZURE
 
+    print(f" env = {os.environ}")
+
     print(f" will import : {apply.SUPPORT_IMPORTS}")
     te = TerraformExecution(folders=apply.SUPPORT_IMPORTS, refresh=False, revision=env["revision"], plan=True,
                             plan_location=Path(env["directory"]) / "plan.out",
@@ -246,7 +249,6 @@ def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
 
 # TODO DOC Clsuter - in case of failure the user should check the status of the cluster or verify that they are all terminated
 def test_tgt_import_direct(tgt_api_config: DatabricksConfig, env, caplog):
-    os.environ["GIT_PYTHON_TRACE"] = "full"
     os.environ["TF_VAR_scope1_key1_var"] = "secret"
     os.environ["TF_VAR_scope2_key2_var"] = "secret2"
     os.environ["TF_VAR_IntegrationTest_scope1_it_key1_var"] = "secret3"

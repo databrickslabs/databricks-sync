@@ -55,7 +55,7 @@ def setup_repo(func):
 
 
 def shutdown_clusters(api_client):
-    print("Deleting clusters")
+    print("Shutting down clusters")
     cluster_api = ClusterApi(api_client)
     cluster_list = cluster_api.list_clusters()
     for cluster in cluster_list.get("clusters", []):

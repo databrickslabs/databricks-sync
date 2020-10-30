@@ -1,13 +1,15 @@
 from pathlib import Path
 
 import click
-from databricks_cli.configure.config import debug_option, profile_option
+from click import pass_context
+from databricks_cli.configure.config import debug_option
+from databricks_cli.configure.config import profile_option
 from databricks_cli.configure.config import provide_api_client
 from databricks_cli.sdk import ApiClient
 
 from databricks_terraformer import CONTEXT_SETTINGS
 from databricks_terraformer.cmds.config import git_url_option, ssh_key_option, inject_profile_as_env, \
-    absolute_path_callback, local_git_option, validate_git_params
+    absolute_path_callback, local_git_option, validate_git_params, handle_additional_debug
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
 SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'instance_profile', 'instance_pool',
@@ -41,9 +43,12 @@ SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'insta
 @git_url_option
 @ssh_key_option
 @inject_profile_as_env
-def import_cli(git_ssh_url, local_git_path, databricks_object_type, plan, apply, backend_file, skip_refresh, destroy,
+@pass_context
+def import_cli(ctx, git_ssh_url, local_git_path, databricks_object_type, plan, apply, backend_file, skip_refresh,
+               destroy,
                revision,
                artifact_dir, api_client: ApiClient, branch):
+    handle_additional_debug(ctx)
     validate_git_params(git_ssh_url, local_git_path)
     te = TerraformExecution(folders=databricks_object_type, refresh=not skip_refresh, revision=revision, plan=plan,
                             plan_location=Path(artifact_dir) / "plan.out",

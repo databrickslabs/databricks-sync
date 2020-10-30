@@ -4,6 +4,7 @@ import uuid
 
 import click
 from click import ClickException
+from databricks_cli.click_types import ContextObject
 from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
 from databricks_cli.utils import InvalidConfigurationError
@@ -47,6 +48,14 @@ def local_git_option(f):
 def config_path_option(f):
     return click.option('--config-path', '-c', type=click.Path(exists=True), required=True,
                         help="This is the path to the config file for the export.")(f)
+
+
+def handle_additional_debug(ctx):
+    log.info("Setting debug flags on.")
+    context_object: ContextObject = ctx.ensure_object(ContextObject)
+    if context_object.debug_mode is True:
+        os.environ["TF_LOG"] = "debug"
+        os.environ["GIT_PYTHON_TRACE"] = "full"
 
 
 def delete_option(f):
