@@ -2,7 +2,7 @@ import abc
 import collections
 import copy
 import json
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, List
 
 from databricks_terraformer.sdk.sync.constants import CloudConstants
 
@@ -31,22 +31,41 @@ class Block(TerraformValueWrapper):
 class Interpolate:
 
     @staticmethod
+    def count_ternary(boolean_expr: str):
+        return Interpolate.ternary(boolean_expr, "1", "0")
+
+    @staticmethod
+    def ternary(boolean_expr: str, true_expr: str, false_expr: str):
+        false_expr = str(false_expr).lower() if type(false_expr) == bool else false_expr
+        return Expression.wrap(f"{boolean_expr} ? {true_expr} : {false_expr}")
+
+    @staticmethod
     def variable(variable_name: str, wrap_json_syntax=True):
-        if wrap_json_syntax:
+        if wrap_json_syntax is True:
             return f'${{var.{variable_name}}}'
         else:
             return f'var.{variable_name}'
 
     @staticmethod
-    def resource(resource_type: str, resource_id: str, resource_attrib: str, wrap_json_syntax=True):
-        if wrap_json_syntax:
-            return Expression.wrap(f'{resource_type}.{resource_id}.{resource_attrib}')
+    def depends_on(resource_type: str, resource_id: str):
+        return f'{resource_type}.{resource_id}'
+
+    @staticmethod
+    def resource(resource_type: str, resource_id: str, resource_attrib: str, wrap_json_syntax=True, index=None):
+        data = [
+            resource_type,
+            resource_id if index is None else f'{resource_id}[{index}]',
+            resource_attrib
+        ]
+        interpolated_str = '.'.join(data)
+        if wrap_json_syntax is True:
+            return Expression.wrap(interpolated_str)
         else:
-            return f'{resource_type}.{resource_id}.{resource_attrib}'
+            return interpolated_str
 
     @staticmethod
     def data_source(resource_type: str, resource_id: str, resource_attrib: str, wrap_json_syntax=True):
-        if wrap_json_syntax:
+        if wrap_json_syntax is True:
             return Expression.wrap(f'data.{resource_type}.{resource_id}.{resource_attrib}')
         else:
             return f'data.{resource_type}.{resource_id}.{resource_attrib}'
@@ -74,7 +93,7 @@ class TerraformDictBuilder:
 
     def add_optional_if(self, condition_func: Callable[[], bool], field: str, value_func: Callable[[], Any],
                         *convertors: TerraformValueWrapper, tf_field_name=None):
-        if condition_func():
+        if condition_func() is True:
             self.add_optional(field, value_func, *convertors, tf_field_name=tf_field_name)
         return self
 
@@ -89,19 +108,17 @@ class TerraformDictBuilder:
         return self
 
     # the data should map exactly all the fields you want to interpolate directly
-    def add_for_each(self, data: Dict[str, Dict[str, str]], var_name_func: Callable[[], Any], cloud=None):
-        if len(data.keys()) <= 0:
-            return self
+    def add_for_each(self, var_name_func: Callable[[], Any], schema_key_list: List[str], cloud=None):
         var_name_func_val: str = var_name_func()
 
         if cloud is None:
             var_name = var_name_func_val if var_name_func_val.startswith("local.") else f"local.{var_name_func_val}"
             self.__add_field("for_each", var_name, Expression())
         else:
-            self.__add_field("for_each", f'{CloudConstants.CLOUD_VARIABLE} == "{cloud}" ? local.{var_name_func_val} : {{}}',
+            self.__add_field("for_each",
+                             f'{CloudConstants.CLOUD_VARIABLE} == "{cloud}" ? local.{var_name_func_val} : {{}}',
                              Expression())
-        one_item: Dict[str, str] = list(data.values())[0]
-        for key, value in one_item.items():
+        for key in schema_key_list:
             self.__add_field(key, f"each.value.{key}", Expression())
         return self
 
@@ -111,12 +128,30 @@ class TerraformDictBuilder:
         self.__add_field(field, value, tf_field_name=tf_field_name, *convertors)
         return self
 
-    def add_cloud_optional_block(self, field, value_func: Callable[[], Any], cloud_name):
+    def add_dynamic_blocks(self, field, value_func: Callable[[], Any], cloud_name=None):
+        try:
+            val = value_func()
+            if not isinstance(val, list):
+                raise ValueError(f"expected value in field {field} to be a list but got {type(val)}")
+            for item in val:
+                self.add_dynamic_block(field, lambda: item, cloud_name)
+        except Exception as e:
+            print("permitting error: " + str(e))
+        return self
+
+    def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None):
         dynamic_block = {
             field: {
-                "for_each": f'${{{CloudConstants.CLOUD_VARIABLE} == "{cloud_name}" ? [1] : []}}'
             }
         }
+        if cloud_name is not None:
+            dynamic_block[field]["for_each"] = \
+                Interpolate.ternary(f'{CloudConstants.CLOUD_VARIABLE} == "{cloud_name}"',
+                                    "[1]",
+                                    "[]")
+        else:
+            dynamic_block[field]["for_each"] = Expression.wrap("[1]")
+
         try:
             val = value_func()
             if not isinstance(val, dict):

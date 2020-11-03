@@ -27,12 +27,12 @@ expected_dictionary = {
 
 class TestExportConfig:
     def test_from_yaml(self, sample_config_file):
-        config = ExportConfig.from_yaml(sample_config_file)
+        config = ExportConfig.set_from_yaml(sample_config_file)
         assert config.name == "test"
         assert config.objects == expected_dictionary
 
     def test_to_dict(self, sample_config_file):
-        config = ExportConfig.from_yaml(sample_config_file)
+        config = ExportConfig.set_from_yaml(sample_config_file)
         actual = config.to_dict()
         assert {
                    "name": "test",

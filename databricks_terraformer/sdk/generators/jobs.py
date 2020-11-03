@@ -1,16 +1,16 @@
-import copy
 from pathlib import Path
 from typing import Generator, Dict, Any
 
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import JobsService
 
+from databricks_terraformer.sdk.generators.clusters import ClusterHCLGenerator
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
-from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
+from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants
-from databricks_terraformer.sdk.utils import normalize_identifier, azure_s3_dbfs
+from databricks_terraformer.sdk.utils import normalize_identifier
 
 
 class JobHCLGenerator(APIGenerator):
@@ -18,9 +18,10 @@ class JobHCLGenerator(APIGenerator):
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
                  custom_map_vars=None):
         super().__init__(api_client, base_path, patterns=patterns)
-        # default_custom_map_vars = {"node_type_id":"%{GREEDYDATA:variable}"}
-        # self.__custom_map_vars = {**default_custom_map_vars, **(custom_map_vars or {})}
-        self.__custom_map_vars = custom_map_vars
+        # TODO: support node type id to be swapped out as a map
+        default_custom_map_vars = {"new_cluster.node_type_id": None,
+                                   "new_cluster.driver_node_type_id": None}
+        self.__custom_map_vars = {**default_custom_map_vars, **(custom_map_vars or {})}
         self.__service = JobsService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
 
@@ -41,78 +42,50 @@ class JobHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         jobs = self.__service.list_jobs().get("jobs", [])
-        for aws_job in jobs:
+        # TODO: This shouldnt be aws jobs, there is no gurantee that all jobs are aws.
+        for databricks_job in jobs:
 
-            azure_job = copy.deepcopy(aws_job)
-
-            aws_job["cloud"] = CloudConstants.AWS
-            aws_job["count"] = f'${{var.CLOUD == "{CloudConstants.AWS}" ? 1 : 0}}'
-
-            azure_job["cloud"] = "AZURE"
-            azure_job["cloud"] = CloudConstants.AZURE
-            azure_job["count"] = f'${{var.CLOUD == "{CloudConstants.AZURE}" ? 1 : 0}}'
-
-            if "revision_timestamp" in aws_job.get("settings", []).get("notebook_task", []):
-                del aws_job["settings"]["notebook_task"]["revision_timestamp"]
-                del azure_job["settings"]["notebook_task"]["revision_timestamp"]
+            if "revision_timestamp" in databricks_job.get("settings", []).get("notebook_task", []):
+                del databricks_job["settings"]["notebook_task"]["revision_timestamp"]
+                # del azure_job["settings"]["notebook_task"]["revision_timestamp"]
 
             # Existing cluster - there's no need to generate per cloud object
             # New cluster - modify the object, add var.CLOUD and generate an object per cloud
-            if "new_cluster" in aws_job.get("settings", []):
+            if "new_cluster" in databricks_job.get("settings", []):
+                # TODO: remove this once the provider support it
+                if "azure_attributes" in databricks_job.get("settings", []).get("new_cluster", []):
+                    del databricks_job["settings"]["new_cluster"]["azure_attributes"]
 
-                if "azure_attributes" in aws_job.get("settings", []).get("new_cluster", []):
-                    del aws_job["settings"]["new_cluster"]["azure_attributes"]
-                    # TODO remove this once the provider support it
-                    del azure_job["settings"]["new_cluster"]["azure_attributes"]
-                if "aws_attributes" in azure_job.get("settings", []).get("new_cluster", []):
-                    del azure_job["settings"]["new_cluster"]["aws_attributes"]
-
-                dbfs_block_aws = []
-                dbfs_block_azure = []
-                for script in aws_job.get("init_scripts", []):
-                    for key in script.keys():
-                        dbfs_block_aws.append({key: script.get(key)})
-                        dbfs_block_azure.append(azure_s3_dbfs(script))
-
-                aws_job["init_scripts_block"] = dbfs_block_aws
-                azure_job["init_scripts_block"] = dbfs_block_azure
-
-                if "cluster_log_conf" in aws_job:
-                    azure_job["cluster_log_conf"] = azure_s3_dbfs(aws_job.get("cluster_log_conf"))
-
-                # due to Azure limitation we have to setup enable_elastic_disk to True
-                #  see https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/latest/clusters
-                azure_job["enable_elastic_disk"] = True
+                transformed_cluster_spec = ClusterHCLGenerator. \
+                    get_cluster_spec(databricks_job["settings"]["new_cluster"])
+                databricks_job["settings"]["new_cluster"] = \
+                    ClusterHCLGenerator.make_cluster_dict(transformed_cluster_spec)
 
             else:
-                aws_job['settings']['existing_cluster_id'] = \
-                    f"${{databricks_cluster.databricks_cluster" \
-                    f"{normalize_identifier(aws_job['settings']['existing_cluster_id'])}_{CloudConstants.AWS}[0].id}}"
-                azure_job['settings']['existing_cluster_id'] = \
-                    f"${{databricks_cluster.databricks_cluster" \
-                    f"{normalize_identifier(azure_job['settings']['existing_cluster_id'])}_{CloudConstants.AZURE}[0].id}}"
+                databricks_job['settings']['existing_cluster_id'] = Interpolate.resource(
+                    ResourceCatalog.CLUSTER_RESOURCE,
+                    f"databricks_cluster{normalize_identifier(databricks_job['settings']['existing_cluster_id'])}",
+                    "id",
+                )
+            library_resp = ClusterHCLGenerator.get_dynamic_libraries(databricks_job["settings"].get("libraries", []))
+            databricks_job["aws_libraries"] = library_resp["aws_libraries"]
+            databricks_job["azure_libraries"] = library_resp["azure_libraries"]
+            databricks_job["cloud_agnostic_libraries"] = library_resp["cloud_agnostic_libraries"]
 
-            aws_cluster_data = self.__create_job_data(aws_job)
-            azure_cluster_data = self.__create_job_data(azure_job)
+            job_data = self.__create_job_data(databricks_job)
 
-            yield aws_cluster_data
-            yield azure_cluster_data
+            yield job_data
             try:
-                yield self.__perms.create_permission_data(aws_cluster_data, self.get_local_hcl_path,
-                                                          cloud_dep=CloudConstants.AWS)
-                yield self.__perms.create_permission_data(azure_cluster_data, self.get_local_hcl_path,
-                                                          cloud_dep=CloudConstants.AZURE)
+                yield self.__perms.create_permission_data(job_data, self.get_local_hcl_path)
             except NoDirectPermissionsError:
                 pass
-
-        # TODO convert s3 to dbfs for spark_python_task
 
     @property
     def folder_name(self) -> str:
         return "job"
 
     def __get_job_identifier(self, data: Dict[str, Any]) -> str:
-        return self.get_identifier(data, lambda d: f"databricks_job-{d['job_id']}-{d['cloud']}")
+        return self.get_identifier(data, lambda d: f"databricks_job-{d['job_id']}")
 
     @staticmethod
     def __get_job_raw_id(data: Dict[str, Any]) -> str:
@@ -120,12 +93,6 @@ class JobHCLGenerator(APIGenerator):
 
     @staticmethod
     def __make_job_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-        # TODO new cluster
-        # TODO library - similar to cluster?
-        # TODO ommit the aws_attribute via CLOUD_FLAG
-        # TODO take care for the cluster log via CLOUD_FLAG
-        # TODO take care for Libraries via CLOUD_FLAG
-        # TODO take care for init Script via CLOUD_FLAG
         return TerraformDictBuilder(). \
             add_optional("new_cluster", lambda: data["settings"]["new_cluster"]). \
             add_optional("name", lambda: data["settings"]["name"]). \
@@ -141,7 +108,7 @@ class JobHCLGenerator(APIGenerator):
             add_optional("spark_submit_task", lambda: data["settings"]["spark_submit_task"]). \
             add_optional("spark_python_task", lambda: data["settings"]["spark_python_task"]). \
             add_optional("notebook_task", lambda: data["settings"]["notebook_task"]). \
-            add_optional("library", lambda: data["settings"]["libraries"]). \
-            add_optional("count", lambda: data["count"]). \
- \
+            add_dynamic_blocks("library", lambda: data["aws_libraries"], CloudConstants.AWS). \
+            add_dynamic_blocks("library", lambda: data["azure_libraries"], CloudConstants.AZURE). \
+            add_dynamic_blocks("library", lambda: data["cloud_agnostic_libraries"]). \
             to_dict()

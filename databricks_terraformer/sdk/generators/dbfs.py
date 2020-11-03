@@ -10,7 +10,8 @@ from databricks_cli.utils import error_and_quit
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData, Artifact
 from databricks_terraformer.sdk.pipeline import DownloaderAPIGenerator
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, ForEachBaseIdentifierCatalog, DbfsFileSchema, \
+    get_members
 
 
 class DbfsFile(Artifact):
@@ -81,24 +82,24 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
 
     def __make_dbfs_file_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_for_each(data, lambda: self.DBFS_FOREACH_VAR). \
+            add_for_each(lambda: self.DBFS_FOREACH_VAR, get_members(DbfsFileSchema)). \
             to_dict()
 
     def __get_dbfs_file_dict(self, data: Dict[str, Any], normalize_dbfs_file_name: str) -> Dict[str, Any]:
         return {
-            "content_b64_md5": f'${{md5(filebase64(pathexpand("{normalize_dbfs_file_name}")))}}',
-            "mkdirs": "true",
-            "overwrite": "true",
-            "path": data["path"],
-            "source": f'${{pathexpand("{normalize_dbfs_file_name}")}}',
-            "validate_remote_file": "true"
+            DbfsFileSchema.CONTENT_B64_MD5: f'${{md5(filebase64(pathexpand("{normalize_dbfs_file_name}")))}}',
+            DbfsFileSchema.MKDIRS: True,
+            DbfsFileSchema.OVERWRITE: True,
+            DbfsFileSchema.PATH: data["path"],
+            DbfsFileSchema.SOURCE: f'${{pathexpand("{normalize_dbfs_file_name}")}}',
+            DbfsFileSchema.VALIDATE_REMOTE_FILE: True
         }
 
     def __make_dbfs_file_data(self, dbfs_file_data: Dict[str, Any], dbfs_identifier: Callable[[Dict[str, str]], str]):
         dbfs_data = self._create_data(
             ResourceCatalog.DBFS_FILE_RESOURCE,
             dbfs_file_data,
-            #TODO fix this when fixing match_patterns
+            # TODO fix this when fixing match_patterns
             lambda: any([self._match_patterns(d["path"]) for _, d in dbfs_file_data.items()]) is False,
             dbfs_identifier,
             dbfs_identifier,
@@ -117,4 +118,4 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
             id_ = file['path']
             dbfs_files[id_] = self.__get_dbfs_file_dict(file, self.__get_dbfs_identifier(file))
 
-        yield self.__make_dbfs_file_data(dbfs_files, lambda x: ResourceCatalog.DBFS_FILE_RESOURCE)
+        yield self.__make_dbfs_file_data(dbfs_files, lambda x: ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER)

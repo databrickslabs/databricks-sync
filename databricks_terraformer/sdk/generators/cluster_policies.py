@@ -3,12 +3,12 @@ from typing import Generator, Dict, Any
 
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 
 
 class ClusterPolicyHCLGenerator(APIGenerator):

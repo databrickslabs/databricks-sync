@@ -5,11 +5,12 @@ from typing import Optional
 from databricks_cli.sdk import ApiClient
 
 from databricks_terraformer import log
-from databricks_terraformer.sdk.config import ExportConfig
+from databricks_terraformer.cmds.apply import SUPPORTED_IMPORTS
+from databricks_terraformer.sdk.config import export_config
 from databricks_terraformer.sdk.generators.factory import GeneratorFactory
 from databricks_terraformer.sdk.git_handler import GitHandler, LocalGitHandler, RemoteGitHandler
 from databricks_terraformer.sdk.pipeline import ExportFileUtils, Pipeline
-from databricks_terraformer.sdk.terraform import Terraform
+from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
 
 class ExportCoordinator:
@@ -39,14 +40,14 @@ class ExportCoordinator:
         tmp_dir = tempfile.TemporaryDirectory()
         try:
             geh, base_path = ExportCoordinator.get_git_handler(local_git_path, git_ssh_url, tmp_dir, branch=branch)
-            config = ExportConfig.from_yaml(
+            export_config.set_from_yaml(
                 yaml_file_path)
 
             generator_defaults = {
                 "api_client": api_client,
                 "base_path": base_path
             }
-            export_objects = config.objects
+            export_objects = export_config.objects
 
             if export_objects is not None:
                 generator_factory = GeneratorFactory.factory()
@@ -70,10 +71,14 @@ class ExportCoordinator:
                     log.info("No changes found.")
 
             # We should run validate in either case
-            tf = Terraform(working_dir=tmp_dir.name, is_env_vars_included=True)
-            tf.version()
-            tf.init()
-            tf.validate()
+            te = TerraformExecution(
+                SUPPORTED_IMPORTS,
+                refresh=False,
+                local_git_path=base_path,
+                api_client=api_client,
+                branch=branch,
+            )
+            te.execute()
 
         finally:
             tmp_dir.cleanup()

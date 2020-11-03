@@ -66,8 +66,10 @@ def shutdown_clusters(api_client):
 class TerraformExecution:
     def __init__(self, folders: List[str], refresh: bool = True, revision: str = None, plan: bool = False,
                  plan_location: Path = None, state_location: Path = None, apply: bool = False, destroy: bool = False,
-                 git_ssh_url: str = None, local_git_path=None, api_client: ApiClient = None, branch="master"):
+                 git_ssh_url: str = None, local_git_path=None, api_client: ApiClient = None, branch="master",
+                 post_import_shutdown=False):
 
+        self.post_import_shutdown = post_import_shutdown
         self.tmp_stage = tempfile.TemporaryDirectory()
         self.local_git_path = local_git_path
         self.revision = revision
@@ -131,4 +133,5 @@ class TerraformExecution:
                 plan_file=self.plan_location,
                 state_file_abs_path=self.state_location)
 
-        shutdown_clusters(self.api_client)
+        if self.post_import_shutdown is True:
+            shutdown_clusters(self.api_client)

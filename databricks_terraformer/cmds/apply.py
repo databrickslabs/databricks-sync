@@ -10,10 +10,20 @@ from databricks_cli.sdk import ApiClient
 from databricks_terraformer import CONTEXT_SETTINGS
 from databricks_terraformer.cmds.config import git_url_option, ssh_key_option, inject_profile_as_env, \
     absolute_path_callback, local_git_option, validate_git_params, handle_additional_debug
+from databricks_terraformer.sdk.sync.constants import GeneratorCatalog
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
-SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'instance_profile', 'instance_pool',
-                   'secrets', 'cluster', 'job']
+SUPPORTED_IMPORTS = [
+    GeneratorCatalog.CLUSTER_POLICY,
+    GeneratorCatalog.DBFS_FILE,
+    GeneratorCatalog.NOTEBOOK,
+    GeneratorCatalog.IDENTITY,
+    GeneratorCatalog.INSTANCE_POOL,
+    GeneratorCatalog.INSTANCE_PROFILE,
+    GeneratorCatalog.SECRETS,
+    GeneratorCatalog.CLUSTER,
+    GeneratorCatalog.JOB
+]
 
 
 # TODO: Custom state back ends using aws environment variables
@@ -30,8 +40,8 @@ SUPPORT_IMPORTS = ['cluster_policy', 'dbfs_file', 'notebook', 'identity', 'insta
               help='Will be where the plan/state file be saved, required unless backend state is specified.')
 @click.option("--revision", type=str, help='This is the git repo revision which can be a branch, commit, tag.')
 @click.option("--branch", type=str, help='This is the git repo branch.', default="master")
-@click.option('--databricks-object-type', type=click.Choice(SUPPORT_IMPORTS),
-              multiple=True, default=SUPPORT_IMPORTS,
+@click.option('--databricks-object-type', type=click.Choice(SUPPORTED_IMPORTS),
+              multiple=True, default=SUPPORTED_IMPORTS,
               help="This is the databricks object you wish to create a plan for. By default we will plan for all objects.")
 @click.option("--backend-file", type=str,
               help='Please provide this as this is where your backend configuration at which your terraform file will be saved.')
@@ -54,5 +64,5 @@ def import_cli(ctx, git_ssh_url, local_git_path, databricks_object_type, plan, a
                             plan_location=Path(artifact_dir) / "plan.out",
                             state_location=Path(artifact_dir) / "state.tfstate", apply=apply, destroy=destroy,
                             git_ssh_url=git_ssh_url, local_git_path=local_git_path, api_client=api_client,
-                            branch=branch)
+                            branch=branch, post_import_shutdown=True)
     te.execute()

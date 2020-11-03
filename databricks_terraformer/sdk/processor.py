@@ -39,7 +39,7 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
     def __sub_grok(self, key, value) -> Optional[str]:
         pattern = self.__dot_path_grok_dict[key] or "%{GREEDYDATA:value}"
         grok = Grok(pattern)
-        res = grok.match(value)
+        res: Dict[str, Any] = grok.match(value)
         if res is None:
             return None
         if res is not None and len(list(res.keys())) > 1:
@@ -47,17 +47,25 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
         for _, groked_val in res.items():
             return groked_val
 
-    def __get_resource_value(self, orig_value, groked_value, variable):
+    @staticmethod
+    def __get_resource_value(orig_value, groked_value, variable):
         parameter_wrapped = Interpolate.variable(variable)
         return orig_value.replace(groked_value, parameter_wrapped)
 
-    def _generate_keys_and_value(self, pattern, dotty_dict):
+    @staticmethod
+    def _generate_keys_and_value(pattern, dotty_dict):
         parts = pattern.split("[*]")
         if len(parts) not in [1, 2]:
             raise ValueError("you can only have 1 wildcard [*]")
         if len(parts) == 1:
-            yield pattern, dotty_dict[pattern]
-            return
+            try:
+                yield pattern, dotty_dict[pattern]
+            except KeyError as ke:
+                # TODO: change to log later
+                # You may set a default map var that does not yet exist
+                print(f"Created key error when search for pattern: {pattern} in dictionary: {dotty_dict.to_dict()}")
+            finally:
+                return
         idx = 0
         while True:
             try:
@@ -66,6 +74,9 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
                 idx += 1
             except IndexError:
                 break
+            except KeyError:
+                # key not found in this array slot lets go to next one
+                idx += 1
 
     def __process_map_var_in_dict(self, data: Dict[str, Any],
                                   map_var_dot_path: str,

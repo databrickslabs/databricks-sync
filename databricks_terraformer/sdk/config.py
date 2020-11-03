@@ -4,20 +4,50 @@ from typing import Dict, Any
 import yaml
 
 
+class ImmutableSingletonError(Exception):
+    pass
+
+
+class SingletonNotSetError(Exception):
+    pass
+
+# TODO: This immutable singleton may need to be changed if we are using beyond cli because
+# if its a long living interpreter we may want to change config values
 class ExportConfig:
+    class __ExportConfigImmutableSingleton:
+        def __init__(self, name, objects: Dict[str, Any] = None):
+            self.objects = objects
+            self.name = name
 
-    def __init__(self, name, objects: Dict[str, Any] = None):
-        self.objects = objects
-        self.name = name
+        def contains(self, item: str):
+            return item in self.objects
 
-    def to_dict(self):
-        return self.__dict__
+        def to_dict(self):
+            return self.__dict__
 
-    @classmethod
-    def from_dict(cls, dictionary):
-        return cls(**dictionary)
+    __instance = None
 
-    @classmethod
-    def from_yaml(cls, path: Path):
+    @staticmethod
+    def set_from_dict(dictionary) -> '__ExportConfigImmutableSingleton':
+        if ExportConfig.__instance is None:
+            ExportConfig.__instance = ExportConfig.__ExportConfigImmutableSingleton(**dictionary)
+        else:
+            raise ImmutableSingletonError("Export Config is an immutable singleton, values should only be set once.")
+
+    @staticmethod
+    def read_yaml(path: Path) -> Dict[str, Any]:
         with path.open("r") as f:
-            return ExportConfig.from_dict(yaml.load(f, Loader=yaml.SafeLoader))
+            return yaml.load(f, Loader=yaml.SafeLoader)
+
+    @staticmethod
+    def set_from_yaml(path: Path) -> '__ExportConfigImmutableSingleton':
+        ExportConfig.set_from_dict(ExportConfig.read_yaml(path))
+
+    def __getattr__(self, name):
+        # dont go to singleton for these funcs
+        if self.__instance is None:
+            raise SingletonNotSetError("The singleton for ExportConfig is not set.")
+        return getattr(self.__instance, name)
+
+
+export_config = ExportConfig()

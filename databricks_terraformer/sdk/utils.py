@@ -1,5 +1,6 @@
 import functools
 import re
+import urllib
 from typing import Dict
 
 
@@ -13,6 +14,57 @@ def azure_s3_dbfs(data: Dict) -> Dict:
                 return {key.lower().replace('s3', 'dbfs'): {dict_key: re.sub(r's3.*:\/', 'dbfs:/', value.lower())}}
         else:
             return {key: value.lower().replace('s3', 'dbfs')}
+
+
+def get_azure_path(path: str):
+    result = urllib.parse.urlparse(path)
+    if result.scheme in ["dbfs", "file"]:
+        return path
+    else:
+        return f"dbfs:/{result.netloc}{result.path}"
+
+
+def collect_to_list(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return list(func(*args, **kwargs))
+
+    return wrapper
+
+
+def contains_cloud_specific_path(path):
+    url = urllib.parse.urlparse(path)
+    return url.scheme == "s3"
+
+
+def contains_cloud_specific_storage_info(data: Dict):
+    for _, value in data.items():
+        path = value["destination"]
+        return contains_cloud_specific_path(path)
+
+
+def contains_cloud_specific_library_path(data: Dict):
+    for key, value in data.items():
+        if key in ["jar", "whl", "egg"]:
+            return contains_cloud_specific_path(value)
+
+
+@collect_to_list
+def handle_azure_storage_info(data: Dict):
+    # If creating storage info from aws we need to omit s3://path option into DBFS
+    # There should be atleast one value for cluster log conf or init scripts
+    for key, value in data.items():
+        yield {"dbfs": {"destination": get_azure_path(value["destination"])}}
+
+
+@collect_to_list
+def handle_azure_libraries(data: Dict):
+    # If creating libraries from aws we need to omit s3://path option into DBFS
+    for key, value in data.items():
+        if key in ["jar", "whl", "egg"]:
+            yield {key: get_azure_path(value)}
+        else:
+            yield {key: value}
 
 
 def normalize(func):

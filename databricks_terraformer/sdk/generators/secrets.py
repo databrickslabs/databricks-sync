@@ -7,7 +7,7 @@ from databricks_cli.sdk import SecretService
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, SecretSchema, SecretScopeAclSchema, get_members
 from databricks_terraformer.sdk.utils import normalize_identifier
 
 
@@ -81,9 +81,9 @@ class SecretHCLGenerator(APIGenerator):
             id_ = secret["key"]
             var_name = f"{self.get_identifier({}, lambda x: f'{scope_name}_{id_}')}_var"
             secret_data[id_] = {
-                "key": id_,
-                "scope": self.__interpolate_secret_scope(scope),
-                "string_value": Interpolate.variable(var_name)
+                SecretSchema.KEY: id_,
+                SecretSchema.SCOPE: self.__interpolate_secret_scope(scope),
+                SecretSchema.STRING_VALUE: Interpolate.variable(var_name)
             }
             variables.append(var_name)
 
@@ -103,11 +103,11 @@ class SecretHCLGenerator(APIGenerator):
             principal = secret_acl["principal"]
             acl_id = f'{principal}-{permission}'
             secret_acls_data[acl_id] = {
-                "permission": permission,
-                "principal": principal,
-                "scope": Interpolate.resource(ResourceCatalog.SECRET_SCOPE_RESOURCE,
-                                              self.__get_secret_scope_identifier(scope),
-                                              "id")
+                SecretScopeAclSchema.PERMISSION: permission,
+                SecretScopeAclSchema.PRINCIPAL: principal,
+                SecretScopeAclSchema.SCOPE: Interpolate.resource(ResourceCatalog.SECRET_SCOPE_RESOURCE,
+                                                                 self.__get_secret_scope_identifier(scope),
+                                                                 "id")
             }
         if len(secret_acls_data.keys()) > 0:
             return self.__create_secret_acl_data(scope_name,
@@ -159,7 +159,8 @@ class SecretHCLGenerator(APIGenerator):
 
     def __make_secret_dict(self, scope_name) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(x, lambda: self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name)). \
+            add_for_each(lambda: self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name),
+                         get_members(SecretSchema)). \
             to_dict()
 
     @staticmethod
@@ -171,5 +172,6 @@ class SecretHCLGenerator(APIGenerator):
 
     def __make_secret_acl_dict(self, scope_name) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(x, lambda: self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name)). \
+            add_for_each(lambda: self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name),
+                         get_members(SecretScopeAclSchema)). \
             to_dict()

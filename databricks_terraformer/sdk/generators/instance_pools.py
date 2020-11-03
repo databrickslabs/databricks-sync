@@ -8,7 +8,7 @@ from databricks_terraformer.sdk.generators.permissions import PermissionsHelper,
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants
 
 
 class InstancePoolHCLGenerator(APIGenerator):
@@ -80,7 +80,7 @@ class InstancePoolHCLGenerator(APIGenerator):
             add_optional("custom_tags", lambda: data["custom_tags"]). \
             add_optional("preloaded_spark_versions", lambda: data["preloaded_spark_versions"]). \
  \
-            add_cloud_optional_block("aws_attributes", lambda: data["aws_attributes"], 'AWS'). \
-            add_cloud_optional_block("disk_spec", lambda: data["disk_spec"], 'AWS'). \
+            add_dynamic_block("aws_attributes", lambda: data["aws_attributes"], CloudConstants.AWS). \
+            add_dynamic_block("disk_spec", lambda: data["disk_spec"], CloudConstants.AWS). \
  \
             to_dict()

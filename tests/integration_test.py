@@ -214,7 +214,6 @@ def test_src_secrete(src_secrets):
 
 
 def test_src_export_direct(src_api_client: ApiClient, env, caplog):
-
     caplog.set_level(logging.DEBUG)
     path = (Path(__file__).parent / 'integration_test.yaml').absolute()
     throws_exception = None
@@ -229,7 +228,7 @@ def test_src_export_direct(src_api_client: ApiClient, env, caplog):
     assert throws_exception is None, throws_exception
 
 
-def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
+def import_direct(tgt_api_config: DatabricksConfig, tgt_api_client: ApiClient, env, caplog):
     caplog.set_level(logging.DEBUG)
 
     # setup the env variable for Terraform, using the Target credentials
@@ -239,11 +238,11 @@ def import_direct(tgt_api_config: DatabricksConfig, env, caplog):
 
     print(f" env = {os.environ}")
 
-    print(f" will import : {apply.SUPPORT_IMPORTS}")
-    te = TerraformExecution(folders=apply.SUPPORT_IMPORTS, refresh=False, revision=env["revision"], plan=True,
+    print(f" will import : {apply.SUPPORTED_IMPORTS}")
+    te = TerraformExecution(folders=apply.SUPPORTED_IMPORTS, refresh=False, revision=env["revision"], plan=True,
                             plan_location=Path(env["directory"]) / "plan.out",
                             state_location=Path(env["directory"]) / "state.tfstate", apply=True, destroy=False,
-                            git_ssh_url=env["git_repo"], api_client=tgt_api_config, branch=env["revision"])
+                            git_ssh_url=env["git_repo"], api_client=tgt_api_client, branch=env["revision"])
     te.execute()
 
 

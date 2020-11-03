@@ -6,11 +6,11 @@ from databricks_cli.sdk import WorkspaceService, ApiClient
 from databricks_cli.workspace.api import WorkspaceFileInfo
 
 from databricks_terraformer import log
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Expression
 from databricks_terraformer.sdk.message import Artifact, APIData
 from databricks_terraformer.sdk.pipeline import DownloaderAPIGenerator
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 
 
 class NotebookArtifact(Artifact):
@@ -91,26 +91,6 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
             notebook_data = self.__create_notebook_data(notebook)
             yield notebook_data
             try:
-                yield self.__perms.create_permission_data(notebook_data,
-                                                          self.get_local_hcl_path)
+                yield self.__perms.create_permission_data(notebook_data, self.get_local_hcl_path)
             except NoDirectPermissionsError:
                 pass
-#
-# data = {
-#     "path": "test",
-#     "language": "test",
-#     "aws_attributes": {
-#         "test": "hello",
-#         "data": "hello2"
-#     }
-# }
-# tdb = TerraformDictBuilder()
-# tdb = tdb. \
-#     add_required("path", lambda: data["path"]). \
-#     add_required("overwrite", lambda: True). \
-#     add_required("mkdirs", lambda: True). \
-#     add_required("language", lambda: data['language']). \
-#     add_required("format", lambda: "SOURCE").\
-#     add_cloud_optional_block("aws_attributes", lambda:data["aws_attributes"], "aws").\
-#     to_dict()
-# print(tdb)

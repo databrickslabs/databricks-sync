@@ -7,8 +7,8 @@ from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.instace_profiles import InstanceProfilesService
-# TODO ommit this via CLOUD_FLAG
-from databricks_terraformer.sdk.sync.constants import CloudConstants
+from databricks_terraformer.sdk.sync.constants import CloudConstants, ForEachBaseIdentifierCatalog, \
+    InstanceProfileSchema, get_members
 from databricks_terraformer.sdk.sync.constants import ResourceCatalog
 
 
@@ -27,8 +27,6 @@ class InstanceProfileHCLGenerator(APIGenerator):
         ipd = self._create_data(
             ResourceCatalog.INSTANCE_PROFILE_RESOURCE,
             instance_profile_data,
-            #            lambda: any(
-            #                [self._match_patterns(ud["instance_profile_arn"]) for _, ud in instance_profile_data.items()]) is False,
             lambda: False,
             instance_profile_identifier,
             instance_profile_identifier,
@@ -40,16 +38,15 @@ class InstanceProfileHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         profiles = self.__service.list_instance_profiles()
-        instance_profile_identifier = "databricks_instance_profiles"
         instance_profiles_data = {}
         for profile in profiles.get("instance_profiles", []):
             id_ = profile["instance_profile_arn"]
             this_instance_profile_data = {
-                "instance_profile_arn": id_,
+                InstanceProfileSchema.INSTANCE_PROFILE_ARN: id_,
             }
             instance_profiles_data[id_] = this_instance_profile_data
-        yield self.__create_instance_profile_data(instance_profiles_data,
-                                                  lambda x: instance_profile_identifier)
+        yield self.__create_instance_profile_data(instance_profiles_data, lambda x:
+        ForEachBaseIdentifierCatalog.INSTANCE_PROFILES_BASE_IDENTIFIER)
 
     @property
     def folder_name(self) -> str:
@@ -65,5 +62,6 @@ class InstanceProfileHCLGenerator(APIGenerator):
     def __make_instance_profile_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
             add_required("skip_validation", lambda: False). \
-            add_for_each(data, lambda: self.INSTANCE_PROFILE_FOR_EACH, cloud=CloudConstants.AWS). \
+            add_for_each(lambda: self.INSTANCE_PROFILE_FOR_EACH, get_members(InstanceProfileSchema),
+                         cloud=CloudConstants.AWS). \
             to_dict()

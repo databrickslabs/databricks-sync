@@ -19,22 +19,110 @@ class ResourceCatalog:
     JOB_RESOURCE = "databricks_job"
 
 
-class DefaultDatabricksAdminGroup:
-    DATA_SOURCE_IDENTIFIER = "admins"
-    DATA_SOURCE_ATTRIBUTE = "id"
+class GeneratorCatalog:
+    IDENTITY = "identity"
+    CLUSTER_POLICY = "cluster_policy"
+    DBFS_FILE = "dbfs_file"
+    NOTEBOOK = "notebook"
+    INSTANCE_PROFILE = "instance_profile"
+    INSTANCE_POOL = "instance_pool"
+    SECRETS = "secrets"
+    CLUSTER = "cluster"
+    JOB = "job"
+
+
+class ForEachBaseIdentifierCatalog:
+    USERS_BASE_IDENTIFIER = "databricks_scim_users"
+    GROUPS_BASE_IDENTIFIER = "databricks_scim_groups"
+    DBFS_FILES_BASE_IDENTIFIER = "databricks_dbfs_files"
+    INSTANCE_PROFILES_BASE_IDENTIFIER = "databricks_instance_profiles"
+
+
+class DefaultDatabricksGroups:
+    ADMIN_DATA_SOURCE_IDENTIFIER = "admins"
+    USERS_DATA_SOURCE_IDENTIFIER = "users"
+    DATA_SOURCE_ID_ATTRIBUTE = "id"
     DATA_SOURCE_DEFINITION = {
         ResourceCatalog.GROUP_RESOURCE: {
-            DATA_SOURCE_IDENTIFIER: {
+            ADMIN_DATA_SOURCE_IDENTIFIER: {
                 "display_name": "admins"
+            },
+            USERS_DATA_SOURCE_IDENTIFIER: {
+                "display_name": "users"
             }
         }
     }
+
+
+class TfJsonSchema:
+    pass
+
+
+class DbfsFileSchema(TfJsonSchema):
+    CONTENT_B64_MD5 = "content_b64_md5"
+    MKDIRS = "mkdirs"
+    OVERWRITE = "overwrite"
+    PATH = "path"
+    SOURCE = "source"
+    VALIDATE_REMOTE_FILE = "validate_remote_file"
+
+
+class UserSchema(TfJsonSchema):
+    USER_NAME = "user_name"
+    DISPLAY_NAME = "display_name"
+    ALLOW_CLUSTER_CREATE = "allow_cluster_create"
+    ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
+    ACTIVE = "active"
+
+
+class GroupSchema(TfJsonSchema):
+    DISPLAY_NAME = "display_name"
+    ALLOW_CLUSTER_CREATE = "allow_cluster_create"
+    ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
+
+
+class UserInstanceProfileSchema(TfJsonSchema):
+    USER_ID = "user_id"
+    INSTANCE_PROFILE_ID = "instance_profile_id"
+
+
+class GroupInstanceProfileSchema(TfJsonSchema):
+    GROUP_ID = "group_id"
+    INSTANCE_PROFILE_ID = "instance_profile_id"
+
+
+class GroupMemberSchema(TfJsonSchema):
+    GROUP_ID = "group_id"
+    MEMBER_ID = "member_id"
+
+
+class InstanceProfileSchema(TfJsonSchema):
+    INSTANCE_PROFILE_ARN = "instance_profile_arn"
+
+
+class SecretSchema(TfJsonSchema):
+    KEY = "key"
+    SCOPE = "scope"
+    STRING_VALUE = "string_value"
+
+
+class SecretScopeAclSchema(TfJsonSchema):
+    PERMISSION = "permission"
+    PRINCIPAL = "principal"
+    SCOPE = "scope"
 
 
 class CloudConstants:
     AWS = "AWS"
     AZURE = "AZURE"
     CLOUD_VARIABLE = "var.CLOUD"
+
+
+def get_members(klass):
+    if not issubclass(klass, TfJsonSchema):
+        raise ValueError(f"{type(klass)} should be of type TfJsonSchema")
+    return [getattr(klass, attr) for attr in dir(klass)
+            if not callable(getattr(klass, attr)) and not attr.startswith("__")]
 
 
 ENTRYPOINT_MAIN_TF = {
@@ -55,5 +143,5 @@ ENTRYPOINT_MAIN_TF = {
     "variable": {
         "CLOUD": {}
     },
-    "data": DefaultDatabricksAdminGroup.DATA_SOURCE_DEFINITION
+    "data": DefaultDatabricksGroups.DATA_SOURCE_DEFINITION
 }

@@ -3,20 +3,21 @@ from typing import Generator, Dict, Any, Callable
 
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.sdk.generators.permissions import PermissionsHelper
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.scim import ScimService
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksAdminGroup
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksGroups, \
+    ForEachBaseIdentifierCatalog, UserSchema, get_members, GroupSchema, GroupInstanceProfileSchema, \
+    UserInstanceProfileSchema, GroupMemberSchema
 from databricks_terraformer.sdk.utils import normalize_identifier
 
 
 class IdentityHCLGenerator(APIGenerator):
     # static identifiers for the users an groups
-    USERS_BASE_IDENTIFIER = "databricks_scim_users"
-    GROUPS_BASE_IDENTIFIER = "databricks_scim_groups"
-
+    ADMIN_GROUP = "admins"
+    USERS_GROUP = "users"
+    DEFAULTED_GROUPS = [ADMIN_GROUP, USERS_GROUP]
     USERS_FOREACH_VAR = "databricks_scim_users_for_each_var"
     USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE = "databricks_user_instance_profiles_{}_for_each_var"
     GROUPS_FOREACH_VAR = "databricks_groups_for_each_var"
@@ -28,7 +29,6 @@ class IdentityHCLGenerator(APIGenerator):
         super().__init__(api_client, base_path, patterns=patterns)
         self.__custom_map_vars = custom_map_vars or {}
         self.__service = ScimService(self.api_client)
-        self.__perms = PermissionsHelper(self.api_client)
 
     @property
     def folder_name(self) -> str:
@@ -38,7 +38,8 @@ class IdentityHCLGenerator(APIGenerator):
         gd = self._create_data(
             ResourceCatalog.GROUP_RESOURCE,
             group_data,
-            lambda: any([self._match_patterns(d["display_name"]) for _, d in group_data.items()]) is False,
+            lambda: False,
+            # lambda: any([self._match_patterns(d["display_name"]) for _, d in group_data.items()]) is False,
             groups_identifier,
             groups_identifier,
             self.__make_group_dict,
@@ -81,15 +82,22 @@ class IdentityHCLGenerator(APIGenerator):
         return md
 
     def __interpolate_scim_user_id(self, user_name):
-        return Interpolate.resource(ResourceCatalog.USER_RESOURCE, f'{self.USERS_BASE_IDENTIFIER}["{user_name}"]',
+        return Interpolate.resource(ResourceCatalog.USER_RESOURCE,
+                                    f'{ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER}["{user_name}"]',
                                     'id')
 
     def __interpolate_scim_group_id(self, group_name):
-        if group_name == "admins":
+        if group_name == self.ADMIN_GROUP:
             return Interpolate.data_source(ResourceCatalog.GROUP_RESOURCE,
-                                           DefaultDatabricksAdminGroup.DATA_SOURCE_IDENTIFIER,
-                                           DefaultDatabricksAdminGroup.DATA_SOURCE_ATTRIBUTE)
-        return Interpolate.resource(ResourceCatalog.GROUP_RESOURCE, f'{self.GROUPS_BASE_IDENTIFIER}["{group_name}"]',
+                                           DefaultDatabricksGroups.ADMIN_DATA_SOURCE_IDENTIFIER,
+                                           DefaultDatabricksGroups.DATA_SOURCE_ID_ATTRIBUTE)
+        elif group_name == self.USERS_GROUP:
+            return Interpolate.data_source(ResourceCatalog.GROUP_RESOURCE,
+                                           DefaultDatabricksGroups.USERS_DATA_SOURCE_IDENTIFIER,
+                                           DefaultDatabricksGroups.DATA_SOURCE_ID_ATTRIBUTE)
+
+        return Interpolate.resource(ResourceCatalog.GROUP_RESOURCE,
+                                    f'{ForEachBaseIdentifierCatalog.GROUPS_BASE_IDENTIFIER}["{group_name}"]',
                                     'id')
 
     def __create_user_data(self, user_data: Dict[str, Any],
@@ -125,29 +133,31 @@ class IdentityHCLGenerator(APIGenerator):
 
     def __make_user_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_for_each(data, lambda: self.USERS_FOREACH_VAR). \
+            add_for_each(lambda: self.USERS_FOREACH_VAR, get_members(UserSchema)). \
             to_dict()
 
     def __make_user_instance_profile_dict(self, user_name: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(x, lambda: self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name)). \
+            add_for_each(lambda: self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name),
+                         get_members(UserInstanceProfileSchema)). \
             to_dict()
 
     def __make_group_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_for_each(data, lambda: self.GROUPS_FOREACH_VAR). \
+            add_for_each(lambda: self.GROUPS_FOREACH_VAR, get_members(GroupSchema)). \
             to_dict()
 
     def __make_group_instance_profile_dict(self, group_instance_profile_id: str) -> Callable[
         [Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(x, lambda: self.GROUP_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(group_instance_profile_id),
-                         cloud=CloudConstants.AWS). \
+            add_for_each(lambda: self.GROUP_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(group_instance_profile_id),
+                         get_members(GroupInstanceProfileSchema), cloud=CloudConstants.AWS). \
             to_dict()
 
     def __make_member_dict(self, member_id: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(x, lambda: self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(member_id)). \
+            add_for_each(lambda: self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(member_id),
+                         get_members(GroupMemberSchema)). \
             to_dict()
 
     def get_user_instance_profiles(self, user):
@@ -157,8 +167,8 @@ class IdentityHCLGenerator(APIGenerator):
             instance_profile_arn = instance_profile.get("value")
             id_ = f'{user_name}-{instance_profile_arn}'
             user_instance_profile_data[id_] = {
-                "user_id": self.__interpolate_scim_user_id(user_name),
-                "instance_profile_id": instance_profile_arn,
+                UserInstanceProfileSchema.USER_ID: self.__interpolate_scim_user_id(user_name),
+                UserInstanceProfileSchema.INSTANCE_PROFILE_ID: instance_profile_arn,
             }
         if len(user_instance_profile_data.keys()) > 0:
             return self.__create_user_instance_profile_data(
@@ -173,18 +183,18 @@ class IdentityHCLGenerator(APIGenerator):
         group_member_data = {}
         for member in group.get("members", []):
             member_data = {
-                "group_id": self.__interpolate_scim_group_id(group_name),
+                GroupMemberSchema.GROUP_ID: self.__interpolate_scim_group_id(group_name),
             }
             # Check if this is a User or a Group
             if "Users/" in member["$ref"]:
                 id_ = normalize_identifier(f"user-{member['value']}")
                 username = user_dict[member["value"]]["userName"]
-                member_data["member_id"] = self.__interpolate_scim_user_id(username)
+                member_data[GroupMemberSchema.MEMBER_ID] = self.__interpolate_scim_user_id(username)
 
             else:
                 id_ = normalize_identifier(f"group-{member['value']}")
                 this_memmber_group_name = member["display"]
-                member_data["member_id"] = self.__interpolate_scim_group_id(this_memmber_group_name)
+                member_data[GroupMemberSchema.MEMBER_ID] = self.__interpolate_scim_group_id(this_memmber_group_name)
 
             group_member_data[id_] = member_data
 
@@ -201,8 +211,8 @@ class IdentityHCLGenerator(APIGenerator):
             if ":instance-profile/" not in group_instance_profile_id:
                 continue
             group_instance_profile_data = {
-                "group_id": self.__interpolate_scim_group_id(group_name),
-                "instance_profile_id": group_instance_profile_id
+                GroupInstanceProfileSchema.GROUP_ID: self.__interpolate_scim_group_id(group_name),
+                GroupInstanceProfileSchema.INSTANCE_PROFILE_ID: group_instance_profile_id
             }
             group_instance_profiles_data[group_instance_profile_id] = group_instance_profile_data
         if len(group_instance_profiles_data.keys()) > 0:
@@ -223,11 +233,11 @@ class IdentityHCLGenerator(APIGenerator):
         allow_instance_pool_create = any([valuePair["value"] == 'allow-instance-pool-create'
                                           for valuePair in entitlements])
         return {
-            "user_name": user["userName"],
-            "display_name": display_name,
-            "allow_cluster_create": allow_cluster_create,
-            "allow_instance_pool_create": allow_instance_pool_create,
-            "active": user["active"]
+            UserSchema.USER_NAME: user["userName"],
+            UserSchema.DISPLAY_NAME: display_name,
+            UserSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
+            UserSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
+            UserSchema.ACTIVE: user["active"]
         }
 
     @staticmethod
@@ -237,9 +247,9 @@ class IdentityHCLGenerator(APIGenerator):
         allow_instance_pool_create = any([valuePair["value"] == 'allow-instance-pool-create'
                                           for valuePair in entitlements])
         return {
-            "display_name": group["displayName"],
-            "allow_cluster_create": allow_cluster_create,
-            "allow_instance_pool_create": allow_instance_pool_create,
+            GroupSchema.DISPLAY_NAME: group["displayName"],
+            GroupSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
+            GroupSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
         }
 
     async def _generate(self) -> Generator[APIData, None, None]:
@@ -263,11 +273,11 @@ class IdentityHCLGenerator(APIGenerator):
             if user_instance_profiles is not None:
                 yield user_instance_profiles
 
-        yield self.__create_user_data(user_data, lambda x: self.USERS_BASE_IDENTIFIER)
+        yield self.__create_user_data(user_data, lambda x: ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER)
 
         for group in groups:
             id_ = normalize_identifier(group["displayName"])
-            if id_ != "admins":
+            if id_ not in self.DEFAULTED_GROUPS:
                 groups_data[id_] = self.get_group_dict(group)
 
             # generate instance profiles and members
@@ -276,9 +286,11 @@ class IdentityHCLGenerator(APIGenerator):
             if group_instance_profiles is not None:
                 # return group instance profiles for each group
                 yield group_instance_profiles
-            members = self.get_group_members(group, group_name, user_lookup_dict)
-            if members is not None:
-                # return group members for each group
-                yield members
+            # If group is users added users to the workspace auto get added here, unable to modify this group
+            if id_ != self.USERS_GROUP:
+                members = self.get_group_members(group, group_name, user_lookup_dict)
+                if members is not None:
+                    # return group members for each group
+                    yield members
         # return the groups
-        yield self.__create_group_data(groups_data, lambda x: self.GROUPS_BASE_IDENTIFIER)
+        yield self.__create_group_data(groups_data, lambda x: ForEachBaseIdentifierCatalog.GROUPS_BASE_IDENTIFIER)

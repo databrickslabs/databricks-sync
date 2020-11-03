@@ -74,7 +74,8 @@ def cli_runner():
 @pytest.fixture(scope="session")
 def it_conf():
     path = (Path(__file__).parent / 'integration_test.yaml').absolute()
-    it_config = ExportConfig.from_yaml(path)
+    # export_config.set_from_yaml(path)
+    it_config = ExportConfig.set_from_yaml(path)
     return it_config.to_dict()
 
 
