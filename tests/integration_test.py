@@ -3,31 +3,29 @@ import logging
 import os
 import traceback
 from pathlib import Path
-from pygrok import Grok
 
+import pytest
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.configure.provider import DatabricksConfig
-from databricks_cli.instance_pools.api import InstancePoolsApi
+from databricks_cli.configure.provider import get_config_for_profile
 from databricks_cli.dbfs.api import DbfsApi, DbfsPath
-from databricks_cli.workspace.api import WorkspaceApi
-from databricks_terraformer.cmds import apply
-from databricks_cli.jobs.api import JobsApi
 from databricks_cli.groups.api import GroupsApi
-from databricks_cli.secrets.api import SecretApi
-
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_cli.instance_pools.api import InstancePoolsApi
+from databricks_cli.jobs.api import JobsApi
 from databricks_cli.sdk import ApiClient
-from databricks_terraformer import cli
-from databricks_terraformer.sdk.sync.import_ import TerraformExecution
-# TODO DOC README - Describe the integration Test in the READNE. Explain .env as well
-# TODO DOC README - Need to document 403 scenario due to token expiration date
+from databricks_cli.secrets.api import SecretApi
+from databricks_cli.workspace.api import WorkspaceApi
+from pygrok import Grok
 
+from databricks_terraformer.cmds import apply
+from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 # TODO explain this in README.md
 from databricks_terraformer.sdk.sync.export import ExportCoordinator
-
+from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 from tests import cleanup_workspace, cleanup_git
-import pytest
-from databricks_cli.configure.provider import get_config_for_profile
+
+# TODO DOC README - Describe the integration Test in the READNE. Explain .env as well
+# TODO DOC README - Need to document 403 scenario due to token expiration date
 
 
 db_objects = {'instance-pools':
@@ -276,12 +274,18 @@ def import_direct(tgt_api_config: DatabricksConfig, tgt_api_client: ApiClient, e
     caplog.set_level(logging.DEBUG)
 
     # setup the env variable for Terraform, using the Target credentials
-    # os.environ["DATABRICKS_HOST"] = tgt_api_config.host
-    # os.environ["DATABRICKS_TOKEN"] = tgt_api_config.token
-    os.putenv("DATABRICKS_TOKEN", tgt_api_config.host)
-    os.putenv("DATABRICKS_TOKEN", tgt_api_config.token)
-    os.environ["TF_VAR_CLOUD"] =  tgt_cloud_name #"AZURE"#CloudConstants.AZURE
+    os.environ["DATABRICKS_HOST"] = tgt_api_config.host
+    os.environ["DATABRICKS_TOKEN"] = tgt_api_config.token
+    # os.putenv("DATABRICKS_HOST", tgt_api_config.host)
+    # os.putenv("DATABRICKS_TOKEN", tgt_api_config.token)
+    os.environ["TF_VAR_CLOUD"] = tgt_cloud_name  # "AZURE"#CloudConstants.AZURE
     print(f" will import : {apply.SUPPORTED_IMPORTS}")
+
+    print(f' target is {os.environ.get("target")}')
+    print(f' DATABRICKS_HOST is {os.environ.get("DATABRICKS_HOST")}')
+    print(f' DATABRICKS_TOKEN is {os.environ.get("DATABRICKS_TOKEN")}')
+    print(f' TF_VAR_scope1_key1_var is {os.environ.get("TF_VAR_scope1_key1_var")}')
+    print(f' TF_VAR_CLOUD is {os.environ.get("TF_VAR_CLOUD")}')
     te = TerraformExecution(folders=apply.SUPPORTED_IMPORTS, refresh=False, revision=env["revision"], plan=True,
                             plan_location=Path(env["directory"]) / "plan.out",
                             state_location=Path(env["directory"]) / "state.tfstate", apply=True, destroy=False,
@@ -296,6 +300,8 @@ def test_tgt_import_direct(tgt_api_config: DatabricksConfig, tgt_api_client: Api
     os.environ["TF_VAR_scope2_key2_var"] = "secret2"
     os.environ["TF_VAR_IntegrationTest_scope1_it_key1_var"] = "secret3"
     os.environ["TF_VAR_IntegrationTest_scope2_it_key2_var"] = "secret3"
+    os.environ["TF_VAR_uz_IntegrationTest_scope1_it_key1_var"] = "secret3"
+    os.environ["TF_VAR_uz_IntegrationTest_scope2_it_key2_var"] = "secret3"
 
     throws_exception = None
 

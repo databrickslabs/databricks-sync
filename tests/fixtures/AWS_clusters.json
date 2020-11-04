@@ -26,14 +26,13 @@
     "spark.databricks.repl.allowedLanguages": "python,sql",
     "spark.databricks.pyspark.enableProcessIsolation": "true",
     "spark.databricks.delta.preview.enabled": "true",
-    "spark.databricks.passthrough.enabled": "true",
     "spark.databricks.cluster.profile": "serverless"
   },
   "custom_tags": {
     "ResourceClass": "Serverless"
   },
-  "node_type_id": "Standard_DS3_v2",
-  "driver_node_type_id": "Standard_DS3_v2",
+  "node_type_id": "r3.xlarge",
+  "driver_node_type_id": "r3.xlarge",
   "spark_env_vars": {
     "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
   },
@@ -57,7 +56,6 @@
       "spark.databricks.repl.allowedLanguages": "python,sql",
       "spark.databricks.pyspark.enableProcessIsolation": "true",
       "spark.databricks.delta.preview.enabled": "true",
-      "spark.databricks.passthrough.enabled": "true",
       "spark.databricks.cluster.profile": "serverless"
     },
     "custom_tags": {

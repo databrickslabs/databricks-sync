@@ -5,20 +5,20 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-from databricks_cli.instance_pools.api import InstancePoolsApi
-from databricks_cli.dbfs.api import DbfsApi, DbfsPath
-from databricks_cli.workspace.api import WorkspaceApi
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_cli.clusters.api import ClusterApi
+from databricks_cli.configure.provider import get_config_for_profile
+from databricks_cli.dbfs.api import DbfsApi, DbfsPath
+from databricks_cli.groups.api import GroupsApi
+from databricks_cli.instance_pools.api import InstancePoolsApi
 from databricks_cli.jobs.api import JobsApi
 from databricks_cli.libraries.api import LibrariesApi
-from databricks_cli.groups.api import GroupsApi
-from databricks_cli.secrets.api import SecretApi
-
-from databricks_cli.configure.provider import get_config_for_profile
 from databricks_cli.sdk import ApiClient
+from databricks_cli.secrets.api import SecretApi
+from databricks_cli.workspace.api import WorkspaceApi
 from dotenv import load_dotenv
+
 from databricks_terraformer.sdk.config import ExportConfig
+from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 
 
 def test_dummy(): pass
@@ -31,7 +31,6 @@ def pytest_generate_tests(metafunc):
     # src_tgt_clouds = ["AWS,AWS"]
     src_tgt_clouds = ["AZURE,AZURE"]
     # src_tgt_clouds = ["AWS,AWS", "AZURE,AZURE"]
-    # src_tgt_clouds = ["AWS,AWS", "AZURE,AZURE", "AWS,AZURE", "AZURE,AWS"]
 
     if "cloud" in metafunc.fixturenames:
         metafunc.parametrize("cloud", src_tgt_clouds, indirect=True)
@@ -330,7 +329,7 @@ def src_create_cluster(src_cluster_api, src_cluster_lib_api, tests_path, src_clo
         created_cluster = src_cluster_api.create_cluster(cluster)
 
         time.sleep(5)
-        # src_cluster_lib_api.install_libraries(created_cluster["cluster_id"], libs_json)
+        src_cluster_lib_api.install_libraries(created_cluster["cluster_id"], libs_json)
 
 
         clusters_list.append(created_cluster["cluster_id"])
