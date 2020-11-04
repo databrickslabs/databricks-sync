@@ -1,0 +1,46 @@
+[{
+  "cluster_name": "it_cluster_no_pool_std_cluster",
+  "spark_version": "6.5.x-scala2.11",
+  "spark_conf": {
+    "spark.databricks.delta.preview.enabled": "true"
+  },
+  "node_type_id": "Standard_DS3_v2",
+  "driver_node_type_id": "Standard_DS3_v2",
+  "spark_env_vars": {
+    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+  },
+  "autotermination_minutes": 10,
+  "init_scripts": [
+    {
+      "dbfs": {
+        "destination": "dbfs:/tests/empty.sh"
+      }
+    }
+  ],
+  "num_workers": 8
+},
+{
+  "cluster_name": "it_cluster_with_policy",
+  "spark_version": "6.5.x-scala2.11",
+  "spark_conf": {
+    "spark.databricks.delta.preview.enabled": "true"
+  },
+  "spark_env_vars": {
+    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+  },
+  "autotermination_minutes": 10,
+  "init_scripts": [
+    {
+      "dbfs": {
+        "destination": "dbfs:/tests/empty.sh"
+      }
+    }
+  ],
+  "autoscale": {
+    "min_workers": 2,
+    "max_workers": 8
+  },
+  "policy_id": "it_empty_policy",
+  "instance_pool_id": "medium instance pool 2"
+}
+]

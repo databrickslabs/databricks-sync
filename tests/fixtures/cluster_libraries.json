@@ -23,7 +23,7 @@
   },
   {
     "cran": {
-      "package": "ggplot2",
+      "package": "sampling",
       "repo": "https://cran.us.r-project.org"
     }
   }

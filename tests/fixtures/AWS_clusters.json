@@ -4,12 +4,12 @@
   "spark_conf": {
     "spark.databricks.delta.preview.enabled": "true"
   },
-  "node_type_id": "Standard_DS3_v2",
-  "driver_node_type_id": "Standard_DS3_v2",
+  "node_type_id": "r3.xlarge",
+  "driver_node_type_id": "r3.xlarge",
   "spark_env_vars": {
     "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
   },
-  "autotermination_minutes": 120,
+  "autotermination_minutes": 10,
   "init_scripts": [
     {
       "dbfs": {
@@ -17,10 +17,7 @@
       }
     }
   ],
-  "autoscale": {
-    "min_workers": 1,
-    "max_workers": 2
-  }
+  "num_workers": 8
 },
 {
   "cluster_name": "HC Library",
@@ -81,7 +78,7 @@
       "min_workers": 1,
       "max_workers": 2
     },
-    "policy_id": "ED5F86CD7C00006D",
-    "instance_pool_id": "1019-140122-romps370-pool-PEbE83Rs"
+    "policy_id": "it_empty_policy",
+    "instance_pool_id": "medium instance pool 2"
   }
 ]

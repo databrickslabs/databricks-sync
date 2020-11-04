@@ -1,14 +1,18 @@
 [
   {
+    "name": "it_empty_policy",
+    "definition": "{}"
+  },
+  {
+    "name": "it_general_cluster_policy",
+    "definition": "{\n  \"spark_conf.spark.databricks.cluster.profile\": {\n    \"type\": \"fixed\",\n    \"value\": \"serverless\",\n    \"hidden\": true\n  },\n  \"instance_pool_id\": {\n    \"type\": \"forbidden\",\n    \"hidden\": true\n  },\n  \"spark_version\": {\n    \"type\": \"regex\",\n    \"pattern\": \"7\\\\.[0-9]+\\\\.x-scala.*\"\n  },\n  \"node_type_id\": {\n    \"type\": \"allowlist\",\n    \"values\": [\n      \"i3.xlarge\",\n      \"i3.2xlarge\",\n      \"i3.4xlarge\"\n    ],\n    \"defaultValue\": \"i3.2xlarge\"\n  },\n  \"driver_node_type_id\": {\n    \"type\": \"fixed\",\n    \"value\": \"i3.2xlarge\",\n    \"hidden\": true\n  },\n  \"autoscale.min_workers\": {\n    \"type\": \"fixed\",\n    \"value\": 1,\n    \"hidden\": true\n  },\n  \"autoscale.max_workers\": {\n    \"type\": \"range\",\n    \"maxValue\": 25,\n    \"defaultValue\": 5\n  },\n  \"enable_elastic_disk\": {\n    \"type\": \"fixed\",\n    \"value\": \"true\",\n    \"hidden\": true\n  },\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30,\n    \"hidden\": true\n  },\n  \"custom_tags.team\": {\n    \"type\": \"fixed\",\n    \"value\": \"product\"\n  }\n}"
+  },
+  {
     "name": "second policy",
     "definition": "{\n\t\"autotermination_minutes\": {\n    \t\"type\":\"range\",\n        \"minValue\": 15,\n        \"maxValue\": 120\n    }\n}"
   },
   {
     "name": "first policy",
-    "definition": "{\n  \"spark_version\": {\n    \"type\": \"regex\",\n    \"pattern\": \"7\\\\.[0-9]+\\\\.x-scala.*\"\n  },\n  \"dbus_per_hour\": {\n    \"type\": \"range\",\n    \"maxValue\": 10\n  },\n  \"instance_pool_id\": {\n    \"type\": \"forbidden\",\n    \"hidden\": true\n  },\n  \"spark_conf.spark.databricks.io.cache.enabled\": {\n    \"type\": \"fixed\",\n    \"value\": \"true\"\n  },\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 20,\n    \"hidden\": true\n  }\n}"
-  },
-  {
-    "name": "test_policy",
-    "definition": "{}"
+    "definition": "{\n  \"spark_conf.spark.databricks.cluster.profile\": {\n    \"type\": \"fixed\",\n    \"value\": \"serverless\",\n    \"hidden\": true\n  },\n  \"instance_pool_id\": {\n    \"type\": \"forbidden\",\n    \"hidden\": true\n  },\n  \"spark_version\": {\n    \"type\": \"regex\",\n    \"pattern\": \"7\\\\.[0-9]+\\\\.x-scala.*\"\n  },\n  \"node_type_id\": {\n    \"type\": \"allowlist\",\n    \"values\": [\n      \"i3.xlarge\",\n      \"i3.2xlarge\",\n      \"i3.4xlarge\"\n    ],\n    \"defaultValue\": \"i3.2xlarge\"\n  },\n  \"driver_node_type_id\": {\n    \"type\": \"fixed\",\n    \"value\": \"i3.2xlarge\",\n    \"hidden\": true\n  },\n  \"autoscale.min_workers\": {\n    \"type\": \"fixed\",\n    \"value\": 1,\n    \"hidden\": true\n  },\n  \"autoscale.max_workers\": {\n    \"type\": \"range\",\n    \"maxValue\": 25,\n    \"defaultValue\": 5\n  },\n  \"enable_elastic_disk\": {\n    \"type\": \"fixed\",\n    \"value\": true,\n    \"hidden\": true\n  },\n  \"autotermination_minutes\": {\n    \"type\": \"fixed\",\n    \"value\": 30,\n    \"hidden\": true\n  },\n  \"custom_tags.team\": {\n    \"type\": \"fixed\",\n    \"value\": \"product\"\n  }\n}"
   }
 ]

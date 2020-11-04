@@ -1,14 +1,14 @@
 [
   {
-    "name": "py_code.py",
+    "name": "py_code1.py",
+    "path": "files"
+  },
+  {
+    "name": "py_code2.py",
     "path": "files"
   },
   {
     "name": "empty.sh",
-    "path": "files"
-  },
-  {
-    "name": "sample.egg",
     "path": "files"
   },
   {

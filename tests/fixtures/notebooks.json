@@ -1,9 +1,30 @@
 [
   {
-    "name": "example_notebook",
+    "name": "it_empty_python_nb",
+    "src_dir": "notebooks",
+    "file_name": "it_empty_python_nb.py",
+    "format": "SOURCE",
+    "language": "PYTHON"
+  },
+  {
+    "name": "it_example_notebook",
     "src_dir": "notebooks",
     "file_name": "example_notebook.py",
     "format": "SOURCE",
     "language": "PYTHON"
+  },
+  {
+    "name": "it_python_notebook",
+    "src_dir": "notebooks",
+    "file_name": "it_py_nb.py",
+    "format": "SOURCE",
+    "language": "PYTHON"
+  },
+  {
+    "name": "it_scala_notebook",
+    "src_dir": "notebooks",
+    "file_name": "it_scala_nb.scala",
+    "format": "SOURCE",
+    "language": "SCALA"
   }
 ]

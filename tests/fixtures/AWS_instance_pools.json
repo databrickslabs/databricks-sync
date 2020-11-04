@@ -2,7 +2,7 @@
     "instance_pool_name": "small instance pool 2",
     "min_idle_instances": 0,
     "max_capacity": 5,
-    "node_type_id": "Standard_DS3_v2",
+    "node_type_id": "r3.xlarge",
     "custom_tags": {
       "custom": "1"
     },
@@ -16,7 +16,7 @@
     "instance_pool_name": "medium instance pool 2",
     "min_idle_instances": 0,
     "max_capacity": 5,
-    "node_type_id": "Standard_DS5_v2",
+    "node_type_id": "r3.xlarge",
     "custom_tags": {
       "pool": "Medium"
     },
