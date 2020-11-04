@@ -258,3 +258,6 @@ tmp*
 dask-workerspace/*
 dask-worker-space/**
 .terraform/
+
+*.tfstate
+*.tfstate.*
