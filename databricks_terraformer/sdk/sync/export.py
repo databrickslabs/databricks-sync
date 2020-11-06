@@ -74,6 +74,9 @@ class ExportCoordinator:
             te = TerraformExecution(
                 SUPPORTED_IMPORTS,
                 refresh=False,
+                plan=False,
+                apply=False,
+                destroy=False,
                 local_git_path=base_path,
                 api_client=api_client,
                 branch=branch,

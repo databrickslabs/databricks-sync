@@ -23,11 +23,13 @@ data "external" "me" {
 module "src_az_ws" {
   source = "../modules/az-common"
   owner  = lookup(data.external.me.result, "name")
+  prefix = "src"
 }
 
 module "tgt_az_ws" {
   source = "../modules/az-common"
   owner  = lookup(data.external.me.result, "name")
+  prefix = "tgt"
 }
 
 output "cloud_env" {
@@ -47,7 +49,7 @@ output "src_workspace_resource_id" {
 }
 
 output "src_workspace_url" {
-  value = module.tgt_az_ws.databricks_host
+  value = module.src_az_ws.databricks_host
 }
 
 output "tgt_resource_group" {

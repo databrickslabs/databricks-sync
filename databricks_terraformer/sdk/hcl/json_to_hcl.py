@@ -76,10 +76,11 @@ class Expression(TerraformValueWrapper):
     @staticmethod
     def make(field: str, input_dictionary: Dict[str, Any]):
         value = input_dictionary[field]
-        if isinstance(value, str):
-            input_dictionary[field] = "${" + value + "}"
+        if type(value) == str:
+            input_dictionary[field] = Expression.wrap(value)
         else:
-            raise ValueError("value needs to be either a list or a dictionary to be a block")
+            raise ValueError(f"value needs to be either a list or a dictionary to be a block instead got: {value} "
+                             f"and type: {type(value)}")
 
     @staticmethod
     def wrap(value):
@@ -108,15 +109,17 @@ class TerraformDictBuilder:
         return self
 
     # the data should map exactly all the fields you want to interpolate directly
-    def add_for_each(self, var_name_func: Callable[[], Any], schema_key_list: List[str], cloud=None):
-        var_name_func_val: str = var_name_func()
+    def add_for_each(self, for_each_field_content: Callable[[], Any], schema_key_list: List[str], cloud=None,
+                     just_local=True):
+        for_each_field_raw: str = for_each_field_content()
+        for_each_field_val = f"local.{for_each_field_raw}" if just_local is True else for_each_field_raw
 
         if cloud is None:
-            var_name = var_name_func_val if var_name_func_val.startswith("local.") else f"local.{var_name_func_val}"
+            var_name = for_each_field_val if for_each_field_val.startswith("local.") else for_each_field_val
             self.__add_field("for_each", var_name, Expression())
         else:
             self.__add_field("for_each",
-                             f'{CloudConstants.CLOUD_VARIABLE} == "{cloud}" ? local.{var_name_func_val} : {{}}',
+                             f'{CloudConstants.CLOUD_VARIABLE} == "{cloud}" ? {for_each_field_val} : {{}}',
                              Expression())
         for key in schema_key_list:
             self.__add_field(key, f"each.value.{key}", Expression())

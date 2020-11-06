@@ -5,11 +5,11 @@ install:
 	@pip install . --upgrade
 
 azure-create:
-	@echo "✓ Running Terraform Acceptance Tests for Azure..."
+	@echo "✓ Creating Azure Src and Tgt workspaces..."
 	@/bin/bash scripts/run.sh azcli --debug
 
 azure-destroy:
-	@echo "✓ Destroying Azure Environment..."
+	@echo "✓ Destroying Azure Src and Tgt workspaces..."
 	@/bin/bash scripts/run.sh azcli --destroy
 
 

@@ -1,3 +1,6 @@
+import copy
+
+
 class ResourceCatalog:
     NOTEBOOK_RESOURCE = "databricks_notebook"
     CLUSTER_POLICY_RESOURCE = "databricks_cluster_policy"
@@ -112,9 +115,32 @@ class SecretScopeAclSchema(TfJsonSchema):
     SCOPE = "scope"
 
 
+class MeConstants:
+    USERNAME_REGEX = "ME_USERNAME_REGEX"
+    USERNAME_REGEX_VAR = f"var.{USERNAME_REGEX}"
+    USERNAME = "ME_USERNAME"
+    USERNAME_VAR = f"var.{USERNAME}"
+
+    @staticmethod
+    def set_me_variable(input_dict, username):
+        output = copy.deepcopy(input_dict)
+        if "variable" not in input_dict:
+            output["variable"] = {}
+        output["variable"][MeConstants.USERNAME_REGEX] = {
+            "default": f"(^|-|_){username}$"
+        }
+        output["variable"][MeConstants.USERNAME] = {
+            "default": f"{username}"
+        }
+        return output
+
+
+
+
 class CloudConstants:
     AWS = "AWS"
     AZURE = "AZURE"
+    CLOUD = "CLOUD"
     CLOUD_VARIABLE = "var.CLOUD"
 
 
@@ -141,7 +167,9 @@ ENTRYPOINT_MAIN_TF = {
         }
     },
     "variable": {
-        "CLOUD": {}
+        CloudConstants.CLOUD: {},
     },
     "data": DefaultDatabricksGroups.DATA_SOURCE_DEFINITION
 }
+
+

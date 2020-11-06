@@ -9,9 +9,13 @@ from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.scim import ScimService
 from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksGroups, \
     ForEachBaseIdentifierCatalog, UserSchema, get_members, GroupSchema, GroupInstanceProfileSchema, \
-    UserInstanceProfileSchema, GroupMemberSchema
+    UserInstanceProfileSchema, GroupMemberSchema, MeConstants
 from databricks_terraformer.sdk.utils import normalize_identifier
 
+
+def skip_me(local_name):
+    return str(f"{{ for k, v in local.{local_name} : k => v " \
+           f"if length(regexall({MeConstants.USERNAME_REGEX_VAR}, k)) == 0 }}")
 
 class IdentityHCLGenerator(APIGenerator):
     # static identifiers for the users an groups
@@ -82,9 +86,12 @@ class IdentityHCLGenerator(APIGenerator):
         return md
 
     def __interpolate_scim_user_id(self, user_name):
-        return Interpolate.resource(ResourceCatalog.USER_RESOURCE,
+        # Short circuit interpolation if it is "Me" as we are skipping this use
+        member_interpolation = Interpolate.resource(ResourceCatalog.USER_RESOURCE,
                                     f'{ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER}["{user_name}"]',
-                                    'id')
+                                    'id', wrap_json_syntax=False)
+        return Interpolate.ternary(f'"{user_name}" == {MeConstants.USERNAME_VAR}', '"something temp will be skipped"',
+                                   member_interpolation)
 
     def __interpolate_scim_group_id(self, group_name):
         if group_name == self.ADMIN_GROUP:
@@ -133,13 +140,13 @@ class IdentityHCLGenerator(APIGenerator):
 
     def __make_user_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(). \
-            add_for_each(lambda: self.USERS_FOREACH_VAR, get_members(UserSchema)). \
+            add_for_each(lambda: skip_me(self.USERS_FOREACH_VAR), get_members(UserSchema), just_local=False). \
             to_dict()
 
     def __make_user_instance_profile_dict(self, user_name: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(lambda: self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name),
-                         get_members(UserInstanceProfileSchema)). \
+            add_for_each(lambda: skip_me(self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name)),
+                         get_members(UserInstanceProfileSchema), just_local=False). \
             to_dict()
 
     def __make_group_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -156,8 +163,8 @@ class IdentityHCLGenerator(APIGenerator):
 
     def __make_member_dict(self, member_id: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(lambda: self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(member_id),
-                         get_members(GroupMemberSchema)). \
+            add_for_each(lambda: skip_me(self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(member_id)),
+                         get_members(GroupMemberSchema), just_local=False). \
             to_dict()
 
     def get_user_instance_profiles(self, user):
@@ -187,12 +194,12 @@ class IdentityHCLGenerator(APIGenerator):
             }
             # Check if this is a User or a Group
             if "Users/" in member["$ref"]:
-                id_ = normalize_identifier(f"user-{member['value']}")
+                id_ = f"user-{user_dict[member['value']]['userName']}"
                 username = user_dict[member["value"]]["userName"]
                 member_data[GroupMemberSchema.MEMBER_ID] = self.__interpolate_scim_user_id(username)
 
             else:
-                id_ = normalize_identifier(f"group-{member['value']}")
+                id_ = f"group-{member['display']}"
                 this_memmber_group_name = member["display"]
                 member_data[GroupMemberSchema.MEMBER_ID] = self.__interpolate_scim_group_id(this_memmber_group_name)
 

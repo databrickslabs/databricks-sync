@@ -138,6 +138,7 @@ class ClusterHCLGenerator(APIGenerator):
                          lambda: Interpolate.resource(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
                                                       f"databricks_cluster_policy_{data['policy_id']}",
                                                       id_field)). \
+            add_optional("num_workers", lambda: data["num_workers"]). \
             add_optional("autotermination_minutes", lambda: data["autotermination_minutes"]). \
             add_optional("enable_local_disk_encryption", lambda: data["enable_local_disk_encryption"]). \
             add_optional("single_user_name", lambda: data["single_user_name"]). \

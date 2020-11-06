@@ -3,6 +3,11 @@ variable "owner" {
   default = ""
 }
 
+variable "prefix" {
+  type    = string
+  default = ""
+}
+
 provider "azurerm" {
   version = "~> 2.14"
   features {}
@@ -32,7 +37,7 @@ locals {
 }
 
 resource "azurerm_resource_group" "example" {
-  name     = "${local.prefix}-rg"
+  name     = "${var.prefix}-${local.prefix}-rg"
   location = "eastus2"
   tags     = local.tags
 }
@@ -46,11 +51,11 @@ output "test_resource_group" {
 }
 
 resource "azurerm_databricks_workspace" "example" {
-  name                        = "${local.prefix}-workspace"
+  name                        = "${var.prefix}-${local.prefix}-workspace"
   resource_group_name         = azurerm_resource_group.example.name
   location                    = azurerm_resource_group.example.location
   sku                         = "premium"
-  managed_resource_group_name = "${local.prefix}-workspace-rg"
+  managed_resource_group_name = "${var.prefix}-${local.prefix}-workspace-rg"
   tags                        = local.tags
 }
 

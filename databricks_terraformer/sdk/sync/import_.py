@@ -8,7 +8,8 @@ from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.sdk import ApiClient
 
 from databricks_terraformer.sdk.git_handler import RemoteGitHandler
-from databricks_terraformer.sdk.sync.constants import ENTRYPOINT_MAIN_TF
+from databricks_terraformer.sdk.service.scim import ScimService
+from databricks_terraformer.sdk.sync.constants import ENTRYPOINT_MAIN_TF, MeConstants
 from databricks_terraformer.sdk.terraform import ImportStage, Terraform
 
 
@@ -63,6 +64,11 @@ def shutdown_clusters(api_client):
         cluster_api.delete_cluster(cluster["cluster_id"])
 
 
+def get_me_username(api_client):
+    scim_api = ScimService(api_client)
+    me = scim_api.me()
+    return me["userName"]
+
 class TerraformExecution:
     def __init__(self, folders: List[str], refresh: bool = True, revision: str = None, plan: bool = False,
                  plan_location: Path = None, state_location: Path = None, apply: bool = False, destroy: bool = False,
@@ -100,8 +106,7 @@ class TerraformExecution:
         for folder in self.folders:
             istg.stage_files(self.__get_exports_path(repo_path) / folder)
         istg.stage_file(self.__get_exports_path(repo_path) / "mapped_variables.tf.json")
-        with (stage_path / "main.tf.json").open("w+") as w:
-            w.write(json.dumps(ENTRYPOINT_MAIN_TF))
+
 
     @setup_empty_stage
     @setup_repo
@@ -110,13 +115,18 @@ class TerraformExecution:
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            w.write(json.dumps(ENTRYPOINT_MAIN_TF))
+            print(json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
+            w.write(json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
         tf = Terraform(working_dir=str(stage_path), is_env_vars_included=True)
         tf.version()
         tf.init()
         # if we are not destroying download the git repo and stage tf files
-        if not self.destroy:
+        if self.destroy is False:
             self.__stage_all_json_files(stage_path, repo_path)
+        else:
+            # TODO: Edge case incase the user switches to another admin user, there is a chance the prior user will be scimmed
+            # in and managed. So if the current user is in state and we run destroy we should run terraform state rm curr_user
+            pass
 
         # We should run validate in either case
         tf.validate()

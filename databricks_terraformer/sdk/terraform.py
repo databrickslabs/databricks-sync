@@ -45,33 +45,7 @@ class Terraform:
         self.is_env_vars_included = is_env_vars_included
         self.working_dir = working_dir
 
-    def cmd(self, cmds, *args, **kwargs):
-        """
-        run a terraform command, if success, will try to read state file
-        :param cmd: command and sub-command of terraform, seperated with space
-                    refer to https://www.terraform.io/docs/commands/index.html
-        :param args: arguments of a command
-        :param kwargs:  any option flag with key value without prefixed dash character
-                if there's a dash in the option name, use under line instead of dash,
-                    ex. -no-color --> no_color
-                if it's a simple flag with no value, value should be IsFlagged
-                    ex. cmd('taint', allow＿missing=IsFlagged)
-                if it's a boolean value flag, assign True or false
-                if it's a flag could be used multiple times, assign list to it's value
-                if it's a "var" variable flag, assign dictionary to it
-                if a value is None, will skip this option
-                if the option 'capture_output' is passed (with any value other than
-                    True), terraform output will be printed to stdout/stderr and
-                    "None" will be returned as out and err.
-                if the option 'raise_on_error' is passed (with any value that evaluates to True),
-                    and the terraform command returns a nonzerop return code, then
-                    a TerraformCommandError exception will be raised. The exception object will
-                    have the following properties:
-                      returncode: The command's return code
-                      out: The captured stdout, or None if not captured
-                      err: The captured stderr, or None if not captured
-        :return: ret_code, out, err
-        """
+    def _cmd(self, cmds, *args, **kwargs):
         capture_output = kwargs.pop('capture_output', True)
         # TODO maybe figure out where to set this and how to pass it here
         raise_on_error = True
@@ -95,20 +69,14 @@ class Terraform:
         p = subprocess.Popen(cmds, stdout=stdout, stderr=stderr,
                              cwd=working_folder, env=environ_vars)
 
-        # synchronous = kwargs.pop('synchronous', True)
-        # if not synchronous:
-        #     return p, None, None
-
         for line in p.stdout:
-            # print(line.decode("utf-8"), end="")
             log.info(line.decode("utf-8").rstrip("\n"))
-            # log.debug('output: {o}'.format(o=line.decode("utf-8")))
+
         out, err = p.communicate()
         ret_code = p.returncode
         if capture_output is True:
             out = out.decode('utf-8')
             err = None
-            # err = err.decode('utf-8')
         else:
             out = None
             err = None
@@ -121,15 +89,15 @@ class Terraform:
 
     def version(self):
         version_cmd = self.BASE_COMMAND + ["--version"]
-        return self.cmd(version_cmd)
+        return self._cmd(version_cmd)
 
     def init(self):
         version_cmd = self.BASE_COMMAND + ["init"]
-        return self.cmd(version_cmd)
+        return self._cmd(version_cmd)
 
     def validate(self):
         validate_cmd = self.BASE_COMMAND + ["validate"]
-        return self.cmd(validate_cmd)
+        return self._cmd(validate_cmd)
 
     def plan(self, output_file: Path = None, targets=None, state_file_abs_path: Path = None, refresh=None):
         plan_cmd = self.BASE_COMMAND + ["plan"]
@@ -142,7 +110,7 @@ class Terraform:
         if targets is not None:
             plan_cmd += targets
 
-        return self.cmd(plan_cmd)
+        return self._cmd(plan_cmd)
 
     def apply(self, plan_file: Path = None, state_file_abs_path: Path = None, refresh=None):
         apply_cmd = self.BASE_COMMAND + ["apply"]
@@ -152,4 +120,4 @@ class Terraform:
             apply_cmd += ["-refresh=false"]
         if plan_file is not None:
             apply_cmd += [str(plan_file.absolute())]
-        return self.cmd(apply_cmd)
+        return self._cmd(apply_cmd)
