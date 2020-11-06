@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Callable, Dict
 
 from databricks_terraformer.sdk.config import export_config
-from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Block, Interpolate
+from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData, HCLConvertData
 from databricks_terraformer.sdk.service.permissions import PermissionService
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog, GeneratorCatalog, CloudConstants, \
-    ForEachBaseIdentifierCatalog
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, GeneratorCatalog, ForEachBaseIdentifierCatalog, \
+    MeConstants
 from databricks_terraformer.sdk.utils import normalize
 
 
@@ -74,7 +74,7 @@ class PermissionsHelper:
         perms: TerraformPermissionType = self.perm_mapping[src_obj_data.resource_name]
         tdb = TerraformDictBuilder()
 
-        # If cloud dep is not none that means there is a count flag on the parent resource
+        # TODO: doc => If cloud dep is not none that means there is a count flag on the parent resource
         # indexed resources get interpolated on value of count
         resource_id_attribute = Interpolate.resource(src_obj_data.resource_name,
                                                      src_obj_data.hcl_resource_identifier,
@@ -82,8 +82,16 @@ class PermissionsHelper:
         self._handle_depends_on(tdb)
         tdb. \
             add_required(perms.object_id_name,
-                         lambda: resource_id_attribute). \
-            add_required("access_control", lambda: permission_list, Block())
+                         lambda: resource_id_attribute)
+        # If there is only one permission we also need to add a count to skip this (you cannot create a permissions
+        # resource that does not have a single access_control block which dynamic makes it empty)
+        if len(permission_list) == 1:
+            tdb.add_required("count", lambda: Interpolate.count_ternary(
+                f'{MeConstants.USERNAME_VAR} != "{permission_list[0]["user_name"]}"'
+            ))
+        for permission in permission_list:
+            tdb.add_dynamic_block("access_control", lambda: permission,
+                                  custom_ternary_bool=f'{MeConstants.USERNAME_VAR} != "{permission["user_name"]}"')
         return tdb.to_dict()
 
     def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path]):

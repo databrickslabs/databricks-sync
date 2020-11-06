@@ -131,25 +131,27 @@ class TerraformDictBuilder:
         self.__add_field(field, value, tf_field_name=tf_field_name, *convertors)
         return self
 
-    def add_dynamic_blocks(self, field, value_func: Callable[[], Any], cloud_name=None):
+    def add_dynamic_blocks(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool=None):
         try:
             val = value_func()
             if not isinstance(val, list):
                 raise ValueError(f"expected value in field {field} to be a list but got {type(val)}")
             for item in val:
-                self.add_dynamic_block(field, lambda: item, cloud_name)
+                self.add_dynamic_block(field, lambda: item, cloud_name, custom_ternary_bool)
         except Exception as e:
             print("permitting error: " + str(e))
         return self
 
-    def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None):
+    def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool=None):
         dynamic_block = {
             field: {
             }
         }
-        if cloud_name is not None:
+        ternary_expr = f'{CloudConstants.CLOUD_VARIABLE} == "{cloud_name}"' if cloud_name is not None \
+            else custom_ternary_bool
+        if cloud_name is not None or custom_ternary_bool is not None:
             dynamic_block[field]["for_each"] = \
-                Interpolate.ternary(f'{CloudConstants.CLOUD_VARIABLE} == "{cloud_name}"',
+                Interpolate.ternary(ternary_expr,
                                     "[1]",
                                     "[]")
         else:
