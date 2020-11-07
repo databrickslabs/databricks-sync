@@ -5,10 +5,10 @@ from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import InstancePoolService
 
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
-from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
+from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DrConstants
 
 
 class InstancePoolHCLGenerator(APIGenerator):
@@ -21,12 +21,19 @@ class InstancePoolHCLGenerator(APIGenerator):
         self.__service = InstancePoolService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
 
+    @staticmethod
+    def handle_min_idle_instance_passive(value):
+        if value == 0:
+            return value
+        else:
+            return Interpolate.ternary(
+                DrConstants.PASSIVE_MODE_VARIABLE,
+                0,
+                value
+            )
+
     def __create_instance_pool_data(self, instance_pool_data: Dict[str, Any]):
-
-        var_name = f"{self.__get_instance_pool_identifier(instance_pool_data)}_var"
-        instance_pool_data["var"] = f"${{var.{var_name}}}"
-
-        ret_pool = self._create_data(
+        return self._create_data(
             ResourceCatalog.INSTANCE_POOL_RESOURCE,
             instance_pool_data,
             lambda: any([self._match_patterns(instance_pool_data["instance_pool_name"])]) is False,
@@ -35,10 +42,6 @@ class InstancePoolHCLGenerator(APIGenerator):
             self.__make_instance_pool_dict,
             self.map_processors(self.__custom_map_vars)
         )
-
-        ret_pool.add_resource_variable(var_name, 0)
-
-        return ret_pool
 
     async def _generate(self) -> Generator[APIData, None, None]:
         instance_pools = self.__service.list_instance_pools().get("instance_pools", [])
@@ -71,7 +74,9 @@ class InstancePoolHCLGenerator(APIGenerator):
 
         return TerraformDictBuilder(). \
             add_required("instance_pool_name", lambda: data["instance_pool_name"]). \
-            add_required("min_idle_instances", lambda: data["var"]). \
+            add_required("min_idle_instances", lambda: InstancePoolHCLGenerator.handle_min_idle_instance_passive(
+                data["min_idle_instances"]
+            )). \
             add_required("node_type_id", lambda: data["node_type_id"]). \
             add_required("idle_instance_autotermination_minutes",
                          lambda: data["idle_instance_autotermination_minutes"]). \
@@ -79,8 +84,6 @@ class InstancePoolHCLGenerator(APIGenerator):
             add_optional("enable_elastic_disk", lambda: data["enable_elastic_disk"]). \
             add_optional("custom_tags", lambda: data["custom_tags"]). \
             add_optional("preloaded_spark_versions", lambda: data["preloaded_spark_versions"]). \
- \
             add_dynamic_block("aws_attributes", lambda: data["aws_attributes"], CloudConstants.AWS). \
             add_dynamic_block("disk_spec", lambda: data["disk_spec"], CloudConstants.AWS). \
- \
             to_dict()

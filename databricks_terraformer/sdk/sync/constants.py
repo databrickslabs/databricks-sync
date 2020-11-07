@@ -135,13 +135,15 @@ class MeConstants:
         return output
 
 
-
-
 class CloudConstants:
     AWS = "AWS"
     AZURE = "AZURE"
     CLOUD = "CLOUD"
-    CLOUD_VARIABLE = "var.CLOUD"
+    CLOUD_VARIABLE = f"var.{CLOUD}"
+
+class DrConstants:
+    PASSIVE_MODE = "PASSIVE_MODE"
+    PASSIVE_MODE_VARIABLE = f"var.{PASSIVE_MODE}"
 
 
 def get_members(klass):
@@ -168,8 +170,9 @@ ENTRYPOINT_MAIN_TF = {
     },
     "variable": {
         CloudConstants.CLOUD: {},
+        DrConstants.PASSIVE_MODE: {
+            "default": False
+        },
     },
     "data": DefaultDatabricksGroups.DATA_SOURCE_DEFINITION
 }
-
-

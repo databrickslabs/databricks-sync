@@ -91,7 +91,7 @@ class PermissionsHelper:
             ))
         for permission in permission_list:
             tdb.add_dynamic_block("access_control", lambda: permission,
-                                  custom_ternary_bool=f'{MeConstants.USERNAME_VAR} != "{permission["user_name"]}"')
+                                  custom_ternary_bool_expr=f'{MeConstants.USERNAME_VAR} != "{permission["user_name"]}"')
         return tdb.to_dict()
 
     def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path]):

@@ -9,7 +9,7 @@ from databricks_terraformer.sdk.generators.permissions import PermissionsHelper,
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_terraformer.sdk.message import APIData
 from databricks_terraformer.sdk.pipeline import APIGenerator
-from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants
+from databricks_terraformer.sdk.sync.constants import ResourceCatalog, CloudConstants, DrConstants
 from databricks_terraformer.sdk.utils import normalize_identifier
 
 
@@ -103,7 +103,8 @@ class JobHCLGenerator(APIGenerator):
             add_optional("min_retry_interval_millis", lambda: data["settings"]["min_retry_interval_millis"]). \
             add_optional("max_concurrent_runs", lambda: data["settings"]["max_concurrent_runs"]). \
             add_optional("email_notifications", lambda: data["settings"]["email_notifications"]). \
-            add_optional("schedule", lambda: data["settings"]["schedule"]). \
+            add_dynamic_block("schedule", lambda: data["settings"]["schedule"],
+                              custom_ternary_bool_expr=f"{DrConstants.PASSIVE_MODE_VARIABLE} == false"). \
             add_optional("spark_jar_task", lambda: data["settings"]["spark_jar_task"]). \
             add_optional("spark_submit_task", lambda: data["settings"]["spark_submit_task"]). \
             add_optional("spark_python_task", lambda: data["settings"]["spark_python_task"]). \

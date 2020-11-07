@@ -2,7 +2,7 @@ import abc
 import collections
 import copy
 import json
-from typing import Any, Dict, Callable, List
+from typing import Any, Dict, Callable, List, Union
 
 from databricks_terraformer.sdk.sync.constants import CloudConstants
 
@@ -35,7 +35,7 @@ class Interpolate:
         return Interpolate.ternary(boolean_expr, "1", "0")
 
     @staticmethod
-    def ternary(boolean_expr: str, true_expr: str, false_expr: str):
+    def ternary(boolean_expr: str, true_expr: Union[str, int], false_expr: Union[str, int]):
         false_expr = str(false_expr).lower() if type(false_expr) == bool else false_expr
         return Expression.wrap(f"{boolean_expr} ? {true_expr} : {false_expr}")
 
@@ -131,25 +131,25 @@ class TerraformDictBuilder:
         self.__add_field(field, value, tf_field_name=tf_field_name, *convertors)
         return self
 
-    def add_dynamic_blocks(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool=None):
+    def add_dynamic_blocks(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool_expr=None):
         try:
             val = value_func()
             if not isinstance(val, list):
                 raise ValueError(f"expected value in field {field} to be a list but got {type(val)}")
             for item in val:
-                self.add_dynamic_block(field, lambda: item, cloud_name, custom_ternary_bool)
+                self.add_dynamic_block(field, lambda: item, cloud_name, custom_ternary_bool_expr)
         except Exception as e:
             print("permitting error: " + str(e))
         return self
 
-    def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool=None):
+    def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool_expr=None):
         dynamic_block = {
             field: {
             }
         }
         ternary_expr = f'{CloudConstants.CLOUD_VARIABLE} == "{cloud_name}"' if cloud_name is not None \
-            else custom_ternary_bool
-        if cloud_name is not None or custom_ternary_bool is not None:
+            else custom_ternary_bool_expr
+        if cloud_name is not None or custom_ternary_bool_expr is not None:
             dynamic_block[field]["for_each"] = \
                 Interpolate.ternary(ternary_expr,
                                     "[1]",
