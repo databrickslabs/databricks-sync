@@ -85,8 +85,7 @@ $ docker build -t databricks-terraformer:latest .
 ## Dependencies
 
 This project requires the following environment dependencies:
-* [golang 1.13.x](https://golang.org/dl/)
-* [terraform 0.12.x](https://www.terraform.io/downloads.html)
+* [terraform 0.13.x](https://www.terraform.io/downloads.html)
 * [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
 
 
@@ -109,32 +108,27 @@ private keys in a read only fashion for accessing the git repository. This is al
 | -----------------------------|---------------|---------------------|-------------|
 | | **User Objects** |
 | cluster policy               | [x]           | [x]              | |
-| cluster                      | []            | []               | |
+| cluster                      | [x]            |[x]               | |
 | dbfs file                    | [x]           | [x]              | |
 | instance pool                | [x]           | [x]              | |
 | instance profile             | [x]           | [x]              | |
-| job                          | [x]           | []               | |
+| job                          | [x]           | [x]               | |
 | notebook                     | [x]           | [x]              | |
 | | **Administrator Setup** |
-| mws credentials              | []            | []               | |
-| mws networks                 | []            | []               | |
-| mws storage configurations   | []            | []               | |
-| mws workspaces               | []            | []               | |
 | aws s3 mount                 | []            | []               | |
 | azure adls gen1 mount        | []            | []               | |
 | azure adls gen2 mount        | []            | []               | |
 | azure blob mount             | []            | []               | |
-| secret                       | [x]           | []               | |
+| secret                       | [x]           | [x]               | |
 | secret acl                   | [x]           | [x]              | |
-| secret scope                 | [x]           | [x]              |TF provider does not support byte_value |
+| secret scope                 | [x]           | [x]              | |
 | metastore tables             | []            | []               | |
 | metastore table ACLs         | []            | []               | |
 | | **Users Management** |
-| group                        | []            | []               | |
-| group instance profile       | []            | []               | |
-| group member                 | []            | []               | |
-| scim group                   | []            | []               | |
-| scim user                    | []            | []               | |
+| group                        | [x]            | [x]               | |
+| group instance profile       | [x]            | [x]               | |
+| group member                 | [x]            | [x]               | |
+| scim user                    | [x]            | [x]               | |
 
 ## Project Description
 Short description of project's purpose
