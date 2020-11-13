@@ -16,7 +16,9 @@ class InstancePoolHCLGenerator(APIGenerator):
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
                  custom_map_vars=None):
         super().__init__(api_client, base_path, patterns=patterns)
-        default_custom_map_vars = {"node_type_id": "%{GREEDYDATA:variable}"}
+        default_custom_map_vars = {"node_type_id": "%{GREEDYDATA:variable}",
+                                   "dynamic.[*].disk_spec.content.ebs_volume_type": None,
+                                   "dynamic.[*].disk_spec.content.azure_disk_volume_type": None}
         self.__custom_map_vars = {**default_custom_map_vars, **(custom_map_vars or {})}
         self.__service = InstancePoolService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
@@ -86,9 +88,9 @@ class InstancePoolHCLGenerator(APIGenerator):
             add_optional("preloaded_spark_versions", lambda: data["preloaded_spark_versions"]). \
             add_dynamic_block("aws_attributes", lambda: data["aws_attributes"], CloudConstants.AWS). \
             add_dynamic_block("disk_spec", lambda: {
-                "disk_size": data["disk_spec"].get("disk_size", None),
-                "disk_count": data["disk_spec"].get("disk_count", None),
-                "ebs_volume_type": data["disk_spec"].get("disk_type", {}).get("ebs_volume_type", None),
-                "azure_disk_volume_type": data["disk_spec"].get("disk_type", {}).get("azure_disk_volume_type", None),
-            }, CloudConstants.AWS). \
+                "disk_size": data["disk_spec"]["disk_size"],
+                "disk_count": data["disk_spec"]["disk_count"],
+                "ebs_volume_type": data["disk_spec"]["disk_type"].get("ebs_volume_type", None),
+                "azure_disk_volume_type": data["disk_spec"]["disk_type"].get("azure_disk_volume_type", None),
+            }). \
             to_dict()

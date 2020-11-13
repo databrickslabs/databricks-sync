@@ -57,8 +57,12 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
         parts = pattern.split("[*]")
         if len(parts) not in [1, 2]:
             raise ValueError("you can only have 1 wildcard [*]")
+        # No wild card path
         if len(parts) == 1:
             try:
+                # skip if value is None
+                if dotty_dict[pattern] is None:
+                    return
                 yield pattern, dotty_dict[pattern]
             except KeyError as ke:
                 # TODO: change to log later
@@ -70,6 +74,9 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
         while True:
             try:
                 key = str(idx).join(parts)
+                # skip if value is None
+                if dotty_dict[key] is None:
+                    return
                 yield key, dotty_dict[key]
                 idx += 1
             except IndexError:
