@@ -107,28 +107,28 @@ private keys in a read only fashion for accessing the git repository. This is al
 | Component                    | Export to HCL | Import to Workspace |Comments     |  
 | -----------------------------|---------------|---------------------|-------------|
 | | **User Objects** |
-| cluster policy               | [x]           | [x]              | |
-| cluster                      | [x]            |[x]               | |
-| dbfs file                    | [x]           | [x]              | |
-| instance pool                | [x]           | [x]              | |
-| instance profile             | [x]           | [x]              | |
-| job                          | [x]           | [x]               | |
-| notebook                     | [x]           | [x]              | |
+| cluster policy               | ✅           |  ✅              | |
+| cluster                      |  ✅            | ✅               | |
+| dbfs file                    |  ✅           |  ✅              | |
+| instance pool                |  ✅           |  ✅              | |
+| instance profile             |  ✅           |  ✅              | |
+| job                          |  ✅           |  ✅               | |
+| notebook                     |  ✅           |  ✅              | |
 | | **Administrator Setup** |
-| aws s3 mount                 | []            | []               | |
-| azure adls gen1 mount        | []            | []               | |
-| azure adls gen2 mount        | []            | []               | |
-| azure blob mount             | []            | []               | |
-| secret                       | [x]           | [x]               | |
-| secret acl                   | [x]           | [x]              | |
-| secret scope                 | [x]           | [x]              | |
-| metastore tables             | []            | []               | |
-| metastore table ACLs         | []            | []               | |
+| aws s3 mount                 | ⬜️            | ⬜️               | |
+| azure adls gen1 mount        | ⬜️            | ⬜️               | |
+| azure adls gen2 mount        | ⬜️            | ⬜️               | |
+| azure blob mount             | ⬜️            | ⬜️               | |
+| secret                       |  ✅           |  ✅               | |
+| secret acl                   |  ✅           |  ✅              | |
+| secret scope                 |  ✅           |  ✅              | |
+| metastore tables             | ⬜️            | ⬜️               | |
+| metastore table ACLs         | ⬜️            | ⬜️               | |
 | | **Users Management** |
-| group                        | [x]            | [x]               | |
-| group instance profile       | [x]            | [x]               | |
-| group member                 | [x]            | [x]               | |
-| scim user                    | [x]            | [x]               | |
+| group                        |  ✅            |  ✅               | |
+| group instance profile       |  ✅            |  ✅               | |
+| group member                 |  ✅            |  ✅               | |
+| scim user                    |  ✅            |  ✅               | |
 
 ## Project Description
 Short description of project's purpose
