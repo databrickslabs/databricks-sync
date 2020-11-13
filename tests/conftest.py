@@ -61,6 +61,13 @@ def load_env():
 
 
 @pytest.fixture(scope="session")
+def src_api_clients(env):
+    target_profile = env["source"]
+    config = get_config_for_profile(target_profile)
+    return ApiClient(host=config.host, token=config.token)
+
+
+@pytest.fixture(scope="session")
 def src_api_client(env):
     target_profile = env["source"]
     config = get_config_for_profile(target_profile)

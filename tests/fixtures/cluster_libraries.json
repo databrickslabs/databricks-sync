@@ -23,7 +23,7 @@
   },
   {
     "cran": {
-      "package": "sampling",
+      "package": "jsonlite",
       "repo": "https://cran.us.r-project.org"
     }
   }

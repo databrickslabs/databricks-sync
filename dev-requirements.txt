@@ -62,3 +62,4 @@ typing-extensions==3.7.4.2
 urllib3==1.25.9
 zict==2.0.0
 zipp==3.1.0
+deepdiff==5.0.2

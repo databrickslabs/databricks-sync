@@ -84,6 +84,9 @@ class ClusterHCLGenerator(APIGenerator):
                 resp["aws_libraries"] += [library]
                 resp["azure_libraries"] += handle_azure_libraries(library)
             else:
+                # for some reason, R library import fails when we use cran.us.r-project.org repo. We have to remove it
+                if 'https://cran.us.r-project.org' in library.get('cran', {}).get('repo', ''):
+                    library['cran']['repo'] = None
                 resp["cloud_agnostic_libraries"] += [library]
         return resp
 
@@ -94,6 +97,7 @@ class ClusterHCLGenerator(APIGenerator):
 
             resp = self.get_dynamic_libraries(
                 self.__lib_service.cluster_status(cluster_spec["cluster_id"]).get("library_statuses", []))
+
             cluster_spec["aws_libraries"] = resp["aws_libraries"]
             cluster_spec["azure_libraries"] = resp["azure_libraries"]
             cluster_spec["cloud_agnostic_libraries"] = resp["cloud_agnostic_libraries"]

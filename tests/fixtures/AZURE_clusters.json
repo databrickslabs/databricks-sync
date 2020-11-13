@@ -17,7 +17,7 @@
       }
     }
   ],
-  "num_workers": 8
+  "num_workers": 1
 },
 {
   "cluster_name": "it_cluster_with_policy",
