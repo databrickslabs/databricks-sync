@@ -90,8 +90,7 @@ $ docker build -t databricks-terraformer:latest .
 ## Dependencies
 
 This project requires the following environment dependencies:
-* [golang 1.13.x](https://golang.org/dl/)
-* [terraform 0.12.x](https://www.terraform.io/downloads.html)
+* [terraform 0.13.x](https://www.terraform.io/downloads.html)
 * [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
 
 
@@ -113,33 +112,28 @@ private keys in a read only fashion for accessing the git repository. This is al
 | Component                    | Export to HCL | Import to Workspace |Comments     |  
 | -----------------------------|---------------|---------------------|-------------|
 | | **User Objects** |
-| cluster policy               | [x]           | [x]              | |
-| cluster                      | []            | []               | |
-| dbfs file                    | [x]           | [x]              | |
-| instance pool                | [x]           | [x]              | |
-| instance profile             | [x]           | [x]              | |
-| job                          | [x]           | []               | |
-| notebook                     | [x]           | [x]              | |
+| cluster policy               | ✅           |  ✅              | |
+| cluster                      |  ✅            | ✅               | |
+| dbfs file                    |  ✅           |  ✅              | |
+| instance pool                |  ✅           |  ✅              | |
+| instance profile             |  ✅           |  ✅              | |
+| job                          |  ✅           |  ✅               | |
+| notebook                     |  ✅           |  ✅              | |
 | | **Administrator Setup** |
-| mws credentials              | []            | []               | |
-| mws networks                 | []            | []               | |
-| mws storage configurations   | []            | []               | |
-| mws workspaces               | []            | []               | |
-| aws s3 mount                 | []            | []               | |
-| azure adls gen1 mount        | []            | []               | |
-| azure adls gen2 mount        | []            | []               | |
-| azure blob mount             | []            | []               | |
-| secret                       | [x]           | []               | |
-| secret acl                   | [x]           | [x]              | |
-| secret scope                 | [x]           | [x]              |TF provider does not support byte_value |
-| metastore tables             | []            | []               | |
-| metastore table ACLs         | []            | []               | |
+| aws s3 mount                 | ⬜️            | ⬜️               | |
+| azure adls gen1 mount        | ⬜️            | ⬜️               | |
+| azure adls gen2 mount        | ⬜️            | ⬜️               | |
+| azure blob mount             | ⬜️            | ⬜️               | |
+| secret                       |  ✅           |  ✅               | |
+| secret acl                   |  ✅           |  ✅              | |
+| secret scope                 |  ✅           |  ✅              | |
+| metastore tables             | ⬜️            | ⬜️               | |
+| metastore table ACLs         | ⬜️            | ⬜️               | |
 | | **Users Management** |
-| group                        | []            | []               | |
-| group instance profile       | []            | []               | |
-| group member                 | []            | []               | |
-| scim group                   | []            | []               | |
-| scim user                    | []            | []               | |
+| group                        |  ✅            |  ✅               | |
+| group instance profile       |  ✅            |  ✅               | |
+| group member                 |  ✅            |  ✅               | |
+| scim user                    |  ✅            |  ✅               | |
 
 ## Project Description
 Short description of project's purpose
