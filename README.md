@@ -39,12 +39,16 @@ $ alias dbsync='docker run -it --rm --name docker-terraformer --env-file <(env |
 ## Common commands
 
 ```bash
-$ GIT_PYTHON_TRACE=full databricks-terraformer -v DEBUG export \
-    --profile field-eng \
+$ databricks-terraformer  export \
+    --profile <db cli profile> \
     --git-ssh-url git@github.com:..../.....git \
-    -c ....test.yaml \
-    --dry-run \
-    --dask-mode
+    -c ....test.yaml 
+ 
+optional flags:
+    -v DEBUG
+    --dry-run 
+    --dask
+    --branch # support new main name convention
 
 $ GIT_PYTHON_TRACE=full databricks-terraformer import \
     -g git@github.com:.../....git \
