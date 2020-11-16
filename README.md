@@ -60,6 +60,11 @@ $ GIT_PYTHON_TRACE=full databricks-terraformer import \
     --revision ....
 ```
 
+Control the databricks provider version by using:
+
+```
+export DATABRICKS_TERRAFORM_PROVIDER_VERSION="<version here>"
+```
 
 ## Backend Instructions (Storing terraform state in azure blob or aws s3)
 
