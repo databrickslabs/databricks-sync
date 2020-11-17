@@ -1,7 +1,7 @@
 ---
 layout: "databricks"
 page_title: "Provider: Databricks"
-sidebar_current: "docs-databricks-index"
+sidebar_current: "docs-databricks-setup"
 description: |-
   Databricks sync databricks.
 ---
@@ -53,21 +53,21 @@ Databricks-Sync has two commands:
 
 ### Arguments for export and import
 
-* `--git-ssh-url flag | --local-git-path` - Required and mutually exclusive - i.e. only one is allowed, but you need at least one of these two.
+* `--git-ssh-url flag | --local-git-path` - (Required) Required and mutually exclusive - i.e. only one is allowed, but you need at least one of the following two:
   * `--git-ssh-url` or `-g` - The URL of the git repo should look like `git@github.com:USERNAME/REPOSITORY.git`
   * `--local-git-path` or `-l` - The path of a local git repo `/path/to/local/git/repo`
 * `--branch` (Optional) This is the git repo branch of the repo designated by `--git-ssh-url flag | --local-git-path`. If not given, the default branch is `master`.
-* `--ssh-key-path` or `-k` - CLI connection profile to use. The default value is "~/.ssh/id_rsa". This is equivalent to the `-i` switch when using `ssh`.
-* `--verbosity` or `-v` - For logging, takes a value of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
-* `--version` - A version can be attached.
+* `--ssh-key-path` or `-k` - (Optional) CLI connection profile to use. The default value is "~/.ssh/id_rsa". This is equivalent to the `-i` switch when using `ssh`.
+* `--verbosity` or `-v` - (Optional) For logging, takes a value of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
+* `--version` - (Optional) A version can be attached.
 
 ### Export - arguments for export
 
 * `--config-path` or `-c` - This is the relative path (to the root directory of this repo) or the full path of the yaml file which is used to drive which bjects are imported/exported.
-* `--delete` - When fetching and pulling remote state this will delete any items that are managed and not retrieved.
-* `--dask` - Use [dask](https://docs.dask.org/en/latest/) to parallelize the process.
-* `--dry-run` - This will only log to console the actions but not commit to git remote state.
-* `--tag` - Assigns metadata to the cloud resource with [AWS tags](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) or [Azure tags](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support).
+* `--delete` - (Optional) A flag that when fetching and pulling remote state this will delete any items that are managed and not retrieved.
+* `--dask` - (Optional) This is a flag to use [dask](https://docs.dask.org/en/latest/) to parallelize the process.
+* `--dry-run` - This flag will only log to console the actions but not commit to git remote state.
+* `--tag` - (Optional) Assigns metadata to the cloud resource with [AWS tags](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) or [Azure tags](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support).
 
 ### Import - arguments for import
 
@@ -86,7 +86,7 @@ The following configuration attributes can be passed via environment variables:
 
 | Argument | Environment variable |
 | --: | --- |
-| `--profile` | `AZURE_SOURCE_WORKSPACE` | `AZURE_TARGET_WORKSPACE`
+| `--profile` | `AZURE_SOURCE_WORKSPACE` or `AZURE_TARGET_WORKSPACE` |
 | `--git-ssh-url` | `GIT_REPO` |
 | `--branch` | `MASTER_REVISION` |
 | `--revision` | `MASTER_REVISION` |
@@ -96,7 +96,7 @@ The following configuration attributes can be passed via environment variables:
 
 ### Using .env file
 
-Change the `.env.template` to just `.env` and replace the values in `.env` with the values for your environment.  Then give this file 
+This project also uses the `python-dotenv` library and calls `load_dotenv` when the application starts. You can also use a `.env` file. Just change `.env.template` to `.env` and replace the values in `.env` with the values for your environment.  Leave the `.env` file in same direcetory as `.env.template` for `dot_env` library to read it.
 
 ## Project Support
 
