@@ -1,6 +1,6 @@
 from base64 import b64decode
 from pathlib import Path
-from typing import List, Generator, Dict, Any
+from typing import List, Generator, Dict, Any, Union
 
 from databricks_cli.sdk import WorkspaceService, ApiClient
 from databricks_cli.workspace.api import WorkspaceFileInfo
@@ -25,10 +25,13 @@ class NotebookArtifact(Artifact):
 
 class NotebookHCLGenerator(DownloaderAPIGenerator):
 
-    def __init__(self, api_client: ApiClient, base_path: Path, notebook_path: str, patterns=None,
+    def __init__(self, api_client: ApiClient, base_path: Path, notebook_path: Union[str, List], patterns=None,
                  custom_map_vars=None):
         super().__init__(api_client, base_path, patterns=patterns)
-        self.__notebook_path = notebook_path
+        if isinstance(notebook_path, str):
+            self.__notebook_path = [notebook_path]
+        else:
+            self.__notebook_path = notebook_path
         self.__service = WorkspaceService(self.api_client)
         self.__custom_map_vars = custom_map_vars or {}
         self.__perms = PermissionsHelper(self.api_client)
@@ -87,10 +90,11 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         service = WorkspaceService(self.api_client)
-        for notebook in NotebookHCLGenerator._get_notebooks_recursive(service, self.__notebook_path):
-            notebook_data = self.__create_notebook_data(notebook)
-            yield notebook_data
-            try:
-                yield self.__perms.create_permission_data(notebook_data, self.get_local_hcl_path)
-            except NoDirectPermissionsError:
-                pass
+        for p in self.__notebook_path:
+            for notebook in NotebookHCLGenerator._get_notebooks_recursive(service, p):
+                notebook_data = self.__create_notebook_data(notebook)
+                yield notebook_data
+                try:
+                    yield self.__perms.create_permission_data(notebook_data, self.get_local_hcl_path)
+                except NoDirectPermissionsError:
+                    pass
