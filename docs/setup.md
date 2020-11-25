@@ -12,19 +12,19 @@ Databricks-Sync is for workspace disaster recovery. You can use it to import or 
 
 ## Prerequisites
 
-Visit the [prerequisites page](prerequisites.md) to make sure you have all the prerequisites before beginning installation.
+Visit the [prerequisites page](prerequisites.md) to check if you are missing any prerequisites before beginning installation.
 
 ## Dependencies
 
 This project requires the following environment dependencies:
 
-* [terraform 0.12.x](https://www.terraform.io/downloads.html)
+* [terraform 0.13.x](https://www.terraform.io/downloads.html)
 * [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
 
 ## Installation
 
-1. Ensure Terraform and Golang dependencies (install via the package manager of your choice):
-    1. Verify `terraform` version 0.12.x: `$ terraform version`
+1. Ensure Terraform dependencies (install via the package manager of your choice):
+    1. Verify `terraform` version 0.13.x: `$ terraform version`
     2. Verify `make` version 3.81: `$ make --version`
 2. Install other dependencies: `$ cd terraform-provider-databricks && pip install -r requirements.txt`
 3. Install this project: `$ make shared install`
@@ -52,7 +52,6 @@ Databricks-Sync has two commands:
 ### Export - arguments for export only
 
 * `--config-path` or `-c` - This is the relative path (to the root directory of this repo) or the full path of the yaml file which is used to drive which bjects are imported/exported.
-* `--delete` - (Optional) A flag that when fetching and pulling remote state this will delete any items that are managed and not retrieved.
 * `--dask` - (Optional) This is a flag to use [dask](https://docs.dask.org/en/latest/) to parallelize the process.
 * `--dry-run` - This flag will only log to console the actions but not commit to git remote state.
 * `--tag` - (Optional) Assigns metadata to the cloud resource with [AWS tags](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) or [Azure tags](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support).
@@ -67,6 +66,20 @@ Databricks-Sync has two commands:
 * `--apply` - (Optional) This flag will apply the plan and will make modifications to your infrastructure.
 * `--revision` - (Optional) This is the git repo revision which can be a branch, commit, tag.
 * `--skip-refresh` - (Optional) Will be where the plan/state file be saved, required unless backend state is specified. The default is false.
+
+## Environment variables
+
+The following configuration attributes can be passed via environment variables:
+
+| Argument | Environment variable |
+| --: | --- |
+| `--profile` | `AZURE_SOURCE_WORKSPACE` or `AZURE_TARGET_WORKSPACE` |
+| `--git-ssh-url` | `GIT_REPO` |
+| `--branch` | `MASTER_REVISION` |
+| `--revision` | `MASTER_REVISION` |
+| `--destroy` | `DESTROY` |
+| `--artifact-dir` | `ARTIFACT_DIR` |
+| `--backup` | `BACKUP_FILE` |
 
 ## Project Support
 

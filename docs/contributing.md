@@ -2,19 +2,9 @@
 
 This page can help contributors get started.
 
-## Environment variables
+## OS
 
-The following configuration attributes can be passed via environment variables:
-
-| Argument | Environment variable |
-| --: | --- |
-| `--profile` | `AZURE_SOURCE_WORKSPACE` or `AZURE_TARGET_WORKSPACE` |
-| `--git-ssh-url` | `GIT_REPO` |
-| `--branch` | `MASTER_REVISION` |
-| `--revision` | `MASTER_REVISION` |
-| `--destroy` | `DESTROY` |
-| `--artifact-dir` | `ARTIFACT_DIR` |
-| `--backup` | `BACKUP_FILE` |
+Development so far has only been using Unix/Linux/MacOS. We could use someone looking to begin testing on Windows though.
 
 ### Using .env file
 
