@@ -10,37 +10,25 @@ description: |-
 
 Databricks-Sync is for workspace disaster recovery. You can use it to import or export some, or all, objects within a workspace. Databricks-Sync can also be used as a migration utility.
 
+## Prerequisites
+
+Visit the [prerequisites page](prerequisites.md) to make sure you have all the prerequisites before beginning installation.
+
 ## Dependencies
 
 This project requires the following environment dependencies:
 
-* [golang 1.13.x](https://golang.org/dl/)
 * [terraform 0.12.x](https://www.terraform.io/downloads.html)
 * [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
 
 ## Installation
 
-0. Download: `$ git clone https://github.com/databrickslabs/terraform-provider-databricks.git`
-1. Install Databricks Terraform provider: `$ curl https://raw.githubusercontent.com/databrickslabs/databricks-terraform/master/godownloader-databricks-provider.sh | bash -s -- -b $HOME/.terraform.d/plugins`
-2. Ensure Terraform and Golang dependencies (install via the package manager of your choice):
+1. Ensure Terraform and Golang dependencies (install via the package manager of your choice):
     1. Verify `terraform` version 0.12.x: `$ terraform version`
-    2. Verify `golang` version 1.13.x: `$ go version`
-    3. Verify `make` version 3.81: `$ make --version`
-3. Install other dependencies: `$ cd terraform-provider-databricks && pip install -r requirements.txt`
-4. Install this project: `$ make shared install`
-5. Test that the installation succeeded: `databricks-terraformer --version`
-
-## Authentication
-
-### [Databricks-CLI](https://docs.databricks.com/dev-tools/cli/index.html)
-
-* [PAT Tokens](https://docs.databricks.com/dev-tools/api/latest/authentication.html)
-* Username and password pair
-
-### Authenticating with Databricks CLI credentials
-
-When exporting or importing use a "profile" from the `~/.databrickscfg` file. It is created by the `databricks configure --token` command. Check [this page](https://docs.databricks.com/dev-tools/cli/index.html#set-up-authentication)
-for more details.
+    2. Verify `make` version 3.81: `$ make --version`
+2. Install other dependencies: `$ cd terraform-provider-databricks && pip install -r requirements.txt`
+3. Install this project: `$ make shared install`
+4. Test that the installation succeeded: `databricks-terraformer --version`
 
 ## Command Reference
 
@@ -51,7 +39,7 @@ Databricks-Sync has two commands:
 
 ## Argument Reference
 
-### Arguments for export and import
+### Arguments for both export and import
 
 * `--git-ssh-url flag | --local-git-path` - (Required) Required and mutually exclusive - i.e. only one is allowed, but you need at least one of the following two:
   * `--git-ssh-url` or `-g` - The URL of the git repo should look like `git@github.com:USERNAME/REPOSITORY.git`
@@ -61,7 +49,7 @@ Databricks-Sync has two commands:
 * `--verbosity` or `-v` - (Optional) For logging, takes a value of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
 * `--version` - (Optional) A version can be attached.
 
-### Export - arguments for export
+### Export - arguments for export only
 
 * `--config-path` or `-c` - This is the relative path (to the root directory of this repo) or the full path of the yaml file which is used to drive which bjects are imported/exported.
 * `--delete` - (Optional) A flag that when fetching and pulling remote state this will delete any items that are managed and not retrieved.
@@ -69,7 +57,7 @@ Databricks-Sync has two commands:
 * `--dry-run` - This flag will only log to console the actions but not commit to git remote state.
 * `--tag` - (Optional) Assigns metadata to the cloud resource with [AWS tags](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) or [Azure tags](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support).
 
-### Import - arguments for import
+### Import - arguments for import only
 
 * `--artifact-dir` - (Required) Will be where the plan/state file be saved, required unless backend state is specified.
 * `--databricks-object-type` - (Optional) This is the databricks object you wish to create a plan for. By default we will plan for all objects.
@@ -79,24 +67,6 @@ Databricks-Sync has two commands:
 * `--apply` - (Optional) This flag will apply the plan and will make modifications to your infrastructure.
 * `--revision` - (Optional) This is the git repo revision which can be a branch, commit, tag.
 * `--skip-refresh` - (Optional) Will be where the plan/state file be saved, required unless backend state is specified. The default is false.
-
-## Environment variables
-
-The following configuration attributes can be passed via environment variables:
-
-| Argument | Environment variable |
-| --: | --- |
-| `--profile` | `AZURE_SOURCE_WORKSPACE` or `AZURE_TARGET_WORKSPACE` |
-| `--git-ssh-url` | `GIT_REPO` |
-| `--branch` | `MASTER_REVISION` |
-| `--revision` | `MASTER_REVISION` |
-| `--destroy` | `DESTROY` |
-| `--artifact-dir` | `ARTIFACT_DIR` |
-| `--backup` | `BACKUP_FILE` |
-
-### Using .env file
-
-This project also uses the `python-dotenv` library and calls `load_dotenv` when the application starts. You can also use a `.env` file. Just change `.env.template` to `.env` and replace the values in `.env` with the values for your environment.  Leave the `.env` file in same direcetory as `.env.template` for `dot_env` library to read it.
 
 ## Project Support
 
