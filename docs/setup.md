@@ -23,12 +23,12 @@ This project requires the following environment dependencies:
 
 ## Installation
 
-1. Ensure Terraform dependencies (install via the package manager of your choice):
+1. Download: `$ git clone https://github.com/databrickslabs/databricks-sync.git`
+2. Ensure Terraform dependencies (install via the package manager of your choice):
     1. Verify `terraform` version 0.13.x: `$ terraform version`
     2. Verify `make` version 3.81: `$ make --version`
-2. Install other dependencies: `$ cd terraform-provider-databricks && pip install -r requirements.txt`
-3. Install this project: `$ make shared install`
-4. Test that the installation succeeded: `databricks-terraformer --version`
+3. Install other dependencies: `$ cd databricks-sync && pip install -r requirements.txt`
+4. Install this project: `$ make shared install`
 
 ## Command Reference
 

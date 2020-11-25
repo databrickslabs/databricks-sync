@@ -26,6 +26,7 @@ If using GitHub to store state (instead of local git repo), you may need to set 
 
 If you will be using no public connectivity, then you may need to download the Databricks terraform provider, and tfenv, before installation.
 
-1. Download: `brew install tfenv` - [tfenv documentation](https://github.com/tfutils/tfenv)
+1. Download: `$ brew install tfenv` - [tfenv documentation](https://github.com/tfutils/tfenv)
 2. Download: `$ git clone https://github.com/databrickslabs/terraform-provider-databricks.git`
 3. Install Databricks Terraform provider: `$ curl https://raw.githubusercontent.com/databrickslabs/databricks-terraform/master/godownloader-databricks-provider.sh | bash -s -- -b $HOME/.terraform.d/plugins`
+4. Test that the installation succeeded: `databricks-terraformer --version`
