@@ -67,20 +67,6 @@ Databricks-Sync has two commands:
 * `--revision` - (Optional) This is the git repo revision which can be a branch, commit, tag.
 * `--skip-refresh` - (Optional) Will be where the plan/state file be saved, required unless backend state is specified. The default is false.
 
-## Environment variables
-
-The following configuration attributes can be passed via environment variables:
-
-| Argument | Environment variable |
-| --: | --- |
-| `--profile` | `AZURE_SOURCE_WORKSPACE` or `AZURE_TARGET_WORKSPACE` |
-| `--git-ssh-url` | `GIT_REPO` |
-| `--branch` | `MASTER_REVISION` |
-| `--revision` | `MASTER_REVISION` |
-| `--destroy` | `DESTROY` |
-| `--artifact-dir` | `ARTIFACT_DIR` |
-| `--backup` | `BACKUP_FILE` |
-
 ## Project Support
 
 **Important:** Projects in the `databrickslabs` GitHub account, including the Databricks Terraform Provider, are not formally supported by Databricks. They are maintained by Databricks Field teams and provided as-is. There is no service level agreement (SLA). Databricks makes no guarantees of any kind. If you discover an issue with the provider, please file a GitHub Issue on the repo, and it will be reviewed by project maintainers as time permits.
