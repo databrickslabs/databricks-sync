@@ -77,12 +77,6 @@ To install this tool please run the following command:
 $ docker build -t databricks-terraformer:latest .
 ```
 
-## Dependencies
-
-This project requires the following environment dependencies:
-* [terraform 0.13.x](https://www.terraform.io/downloads.html)
-* [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
-
 
 ## Aliasing
 
