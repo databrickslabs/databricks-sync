@@ -1,5 +1,5 @@
 # Databricks Sync (dbSync)
-Use Databricks Sync to backup, restore, and sync Databricks workspaces
+Databricks Sync is an object synchronization tool to backup, restore, and sync Databricks workspaces.
 
 High level use cases include:
 - Disaster Recovery
@@ -8,21 +8,11 @@ High level use cases include:
 
 This package uses credentials from the [Databricks CLI](https://docs.databricks.com/user-guide/dev-tools/databricks-cli.html)
 
-# Quick Install
+# Documentation
 
-0. Download: `$ git clone https://github.com/databrickslabs/terraform-provider-databricks.git`
-1. Install Databricks Terraform provider: `$ curl https://raw.githubusercontent.com/databrickslabs/databricks-terraform/master/godownloader-databricks-provider.sh | bash -s -- -b $HOME/.terraform.d/plugins`
-2. Ensure Terraform and Golang dependencies (install via the package manager of your choice):
-2a. Verify `terraform` version 0.12.x: `$ terraform version`
-2b. Verify `golang` version 1.13.x: `$ go version`
-2c. Verify `make` version 3.81: `$ make --version`
-3. Install other dependencies: `$ cd terraform-provider-databricks && pip install -r requirementx.txt`
-3. Install this project: `$ make shared install`
-4. Test that the installation succeeded: `databricks-terraformer --version`
-5. (Recommended) Run the following to alias CLI to `dbsync` (for more details, see "Aliasing" below):
-```bash
-$ alias dbsync='docker run -it --rm --name docker-terraformer --env-file <(env | grep "ARM\|AWS") -v "$PWD":/usr/src/databricks-terraformer -v ~/.databrickscfg:/root/.databrickscfg:ro -v ~/.ssh:/root/.ssh:ro -w /usr/src/databricks-terraformer databricks-terraformer'
-```
+See the [Databricks Sync Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs/) Markdown files for details.
+
+Instructions to install Databricks Sync can be found [here](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md).
 
 # Quickstart
 
