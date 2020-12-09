@@ -1,0 +1,43 @@
+#commit_msg_template:
+    name: test
+    objects:
+      notebook:
+        notebook_path: "/Shared/"
+    #    patterns:
+    #      - "*"
+    ##    custom_map_vars:
+    ##      path: "/Users/%{DATA:variable}/%{GREEDYDATA}"
+    
+      cluster_policy:
+        patterns:
+          - "*"
+    ##TODO this map generated an error : Error: TypeError: 'list' object is not a mapping
+    ##    custom_map_vars:
+    ##        - "dat"
+    #  driver_node_type_id: "%{GREEDYDATA:variable}"
+    
+      ##    custom_dynamic_vars:
+      ##      - "format"
+      dbfs_file:
+        dbfs_path: "dbfs:/tests/"
+    
+      instance_pool:
+        patterns:
+          - "*"
+      #    custom_map_vars:
+      #      node_type_id: "%{GREEDYDATA:variable}"
+      #  instance_profile:
+      #    patterns:
+      #      - "*"
+      secret:
+        patterns:
+          - "*"
+      identity:
+        patterns:
+          - "*"
+      cluster:
+        patterns:
+          - "*"
+      job:
+        patterns:
+          - "*"

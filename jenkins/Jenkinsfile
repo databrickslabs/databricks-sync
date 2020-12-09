@@ -1,0 +1,52 @@
+// Jenkinsfile
+node {
+  def DB_SYNC_REPO                   = "https://github.com/itaiw/databricks-terraformer.git"
+  def DB_SYNC_VERSION                = "<dbsync-stable-release>"
+  def GIT_REPO                       = "https://github.com/amineds/databricks-dr-demo"
+  def MASTER_REVISION                = "MASTER_REVISION"
+  def ARTIFACT_DIR                   = ""
+  def AZURE_SOURCE_WORKSPACE         = "https://adb-455883741320485.5.azuredatabricks.net"
+  def AZURE_TARGET_WORKSPACE         = "https://adb-7231012948833884.4.azuredatabricks.net"
+  def LOCAL_GIT_REPO                 = "/var/lib/jenkins/workspace/${env.JOB_NAME}"
+
+
+  stage('Setup') {
+      withCredentials([
+          string(credentialsId: AZURE_SOURCE_WORKSPACE_TOKEN, variable: 'SOURCETOKEN'),
+          string(credentialsId: DAZURE_TARGET_WORKSPACE_TOKEN, variable: 'SINKTOKEN')
+      ]) {
+        sh """#!/bin/bash
+
+            # Configure Databricks CLI for source workspace
+            echo "${AZURE_SOURCE_WORKSPACE}
+            $SOURCETOKEN" | databricks configure --profile azure_dr_source --token
+
+            # Configure Databricks CLI for target workspace
+            echo "${AZURE_TARGET_WORKSPACE}
+            $SINKTOKEN" | databricks configure --profile azure_dr_target --token
+
+            # Set up the docker image
+            git clone --branch ${DB_SYNC_VERSION} ${DB_SYNC_REPO}
+            cd databricks-terraformer && docker build -t databricks-terraformer:latest .
+
+           """
+      }
+  }
+  
+  stage('Checkout') {
+    git branch: MASTER_REVISION, credentialsId: GIT_REPO_CREDENTIALS, url: GIT_REPO
+  } 
+  
+  stage('Export') {
+    sh "${LOCAL_GIT_REPO}/scripts/export.sh ${LOCAL_GIT_REPO}/scripts/migrate.yaml ${LOCAL_GIT_REPO}"
+  }
+  
+  stage('Import') {
+    sh "${LOCAL_GIT_REPO}/scripts/import.sh ${LOCAL_GIT_REPO}" 
+  }
+
+  stage('Notify') {
+    
+  }
+
+}
