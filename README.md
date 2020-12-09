@@ -1,4 +1,9 @@
 # Databricks Sync (dbSync)
+
+![Reference Architecture for Databricks-Sync](https://github.com/R7L208/databricks-sync/blob/master/docs/solution-arch.png?raw=true)
+
+## Introduction
+
 Databricks Sync is an object synchronization tool to backup, restore, and sync Databricks workspaces.
 
 High level use cases include:
@@ -8,15 +13,15 @@ High level use cases include:
 
 This package uses credentials from the [Databricks CLI](https://docs.databricks.com/user-guide/dev-tools/databricks-cli.html)
 
-# Documentation
+## Documentation
 
 See the [Databricks Sync Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs/) Markdown files for details.
 
 Instructions to install Databricks Sync can be found [here](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md).
 
-# Quickstart
+## Quickstart
 
-## Next steps:
+### Next steps:
 * Add Terraform output to capture dependent ID (such as cluster policy ID for a cluster)
 * Export object permissions and import them to the target with the object
 * Add examples for different scenarios:
@@ -26,7 +31,7 @@ Instructions to install Databricks Sync can be found [here](https://github.com/d
     * Batch modification (will require Terraform Object Import support)
       
 
-## Common commands
+### Common commands
 
 ```bash
 $ GIT_PYTHON_TRACE=full databricks-terraformer -v DEBUG export \
@@ -52,7 +57,7 @@ Control the databricks provider version by using:
 export DATABRICKS_TERRAFORM_PROVIDER_VERSION="<version here>"
 ```
 
-## Backend Instructions (Storing terraform state in azure blob or aws s3)
+### Backend Instructions (Storing terraform state in azure blob or aws s3)
 
 When importing you are able to store and manage your state using blob or s3. You can do this by using the `--backend-file`.
 This `--backend-file` will take a file path to the back end file. You can name the file `backend.tf`. This backend file will use
@@ -65,7 +70,7 @@ regards to policies and permissions. If you want to make the region dynamic you 
 1. Storing state in aws s3: https://www.terraform.io/docs/backends/types/s3.html
 2. Storing state in azure blob (only azure blob is support as it supports locking): https://www.terraform.io/docs/backends/types/azurerm.html
 
-## Docker instructions
+### Docker instructions
 
 These set of instructions are to use docker to build and use the CLI. It avoids the need to have golang, 
 Terraform, the databricks-terraform-provider to get this to run. If you do want to work on this tool please 
@@ -78,7 +83,7 @@ $ docker build -t databricks-terraformer:latest .
 ```
 
 
-## Aliasing
+### Aliasing
 
 How our alias command works:
 
@@ -91,7 +96,7 @@ This mount is read only.
 private keys in a read only fashion for accessing the git repository. This is also a read only mount.
 
 
-## Support Matrix for Import and Export Operations:
+### Support Matrix for Import and Export Operations:
 
 | Component                    | Export to HCL | Import to Workspace |Comments     |  
 | -----------------------------|---------------|---------------------|-------------|
@@ -119,23 +124,23 @@ private keys in a read only fashion for accessing the git repository. This is al
 | group member                 |  ✅            |  ✅               | |
 | scim user                    |  ✅            |  ✅               | |
 
-## Project Description
+### Project Description
 Short description of project's purpose
 
-## Project Support
+### Project Support
 Please note that all projects in the /databrickslabs github account are provided for your exploration only, and are not formally supported by Databricks with Service Level Agreements (SLAs).  They are provided AS-IS and we do not make any guarantees of any kind.  Please do not submit a support ticket relating to any issues arising from the use of these projects.
 
 Any issues discovered through the use of this project should be filed as GitHub Issues on the Repo.  They will be reviewed as time permits, but there are no formal SLAs for support.
 
 
-## Building the Project
+### Building the Project
 Instructions for how to build the project
 
-## Deploying / Installing the Project
+### Deploying / Installing the Project
 Instructions for how to deploy the project, or install it
 
-## Releasing the Project
+### Releasing the Project
 Instructions for how to release a version of the project
 
-## Using the Project
+### Using the Project
 Simple examples on how to use the project
