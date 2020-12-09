@@ -2,32 +2,29 @@
 
 This guide gives indications on how to operate DB sync using Jenkins. The repo contains example of Jenkinsile and other necessary components.
 
-**Assumptions**
-* Per the DB Sync design, it’s necessary to define one pipeline per workspace to synchronise
-* DB Sync will be called from custom scripts stored in a private Git. DB Sync will not be called directly from the Jenkinsfile
-* DB Sync framework is accessible via a public Git
 
-### Configure Agent
+### Configure Jenkins Agent
 Install : 
 * Docker
 * Jenkins’ Docker plugins
 * Databricks CLI
 
-Setup :
-* ssh for git
+### Also :
+* Set up ssh for git
+* Make sure jenkins user has access to all needed commands
  
 ### Define environment variables
 Define environment variables to be used in pipelines stage : 
 * `DB_SYNC_REPO`: url to Git repository holding dbsync framework
 * `DB_SYNC_VERSION`: stable version of the DR Framework
-* `GIT_REPO`: url to Git repository holding custom DR scripts
+* `GIT_REPO`: url to Git repository holding custom DR configuration files and scripts
 * `MASTER_REVISION` : stable version of customer DR framework
 * `AZURE_SOURCE_WORKSPACE`: Source Workspace url
 * `AZURE_TARGET_WORKSPACE` : Target Workspace url
 * `LOCAL_GIT_REPO` : repository of Jenkins Job Name
 
 ```Groovy
-  def DB_SYNC_REPO                   = "https://github.com/itaiw/databricks-terraformer.git"
+  def DB_SYNC_REPO                   = "https://github.com/databrickslabs/databricks-sync"
   def DB_SYNC_VERSION                = "<dbsync-stable-release>"
   def GIT_REPO                       = "https://github.com/amineds/databricks-dr-demo"
   def MASTER_REVISION                = "MASTER_REVISION"
