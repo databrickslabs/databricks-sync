@@ -146,19 +146,19 @@ private keys in a read only fashion for accessing the git repository. This is al
 | group member                 |  ✅            |  ✅               | |
 | scim user                    |  ✅            |  ✅               | |
 
-# Project Support
+## Project Support
 Please note that all projects in the /databrickslabs github account are provided for your exploration only, and are not formally supported by Databricks with Service Level Agreements (SLAs).  They are provided AS-IS and we do not make any guarantees of any kind.  Please do not submit a support ticket relating to any issues arising from the use of these projects.
 
 Any issues discovered through the use of this project should be filed as GitHub Issues on the Repo.  They will be reviewed as time permits, but there are no formal SLAs for support.
 
-# Building the Project
+## Building the Project
 Instructions for how to build the project
 
-# Deploying / Installing the Project
+## Deploying / Installing the Project
 Instructions for how to deploy the project, or install it
 
-# Releasing the Project
+## Releasing the Project
 Instructions for how to release a version of the project
 
-# Using the Project
+## Using the Project
 Simple examples on how to use the project
