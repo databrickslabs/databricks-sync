@@ -13,16 +13,38 @@ High level use cases include:
 
 This package uses credentials from the [Databricks CLI](https://docs.databricks.com/user-guide/dev-tools/databricks-cli.html)
 
+## Table of Contents
+
+1. [Introduction](https://github.com/databrickslabs/databricks-sync#Introduction)
+2. [Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs)
+   * [Setup](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md)
+   * [Prerequisites](https://github.com/databrickslabs/databricks-sync/blob/master/docs/prerequisites.md)
+   * [Import](https://github.com/databrickslabs/databricks-sync/blob/master/docs/import.md)
+   * [Export](https://github.com/databrickslabs/databricks-sync/blob/master/docs/export.md)
+   * [Contributing](https://github.com/databrickslabs/databricks-sync/blob/master/docs/contributing.md)
+3. [Quickstart](https://github.com/databrickslabs/databricks-sync#Quickstart)
+   * [Next Steps](https://github.com/databrickslabs/databricks-sync#next-steps)
+   * [Common Commands](https://github.com/databrickslabs/databricks-sync#common-commands)
+   * [Backend Instructions](https://github.com/databrickslabs/databricks-sync#backend-instructions-storing-terraform-state-in-azure-blob-or-aws-s3)
+   * [Docker Instructions](https://github.com/databrickslabs/databricks-sync#docker-instructions)
+   * [Aliasing](https://github.com/databrickslabs/databricks-sync#aliasing)
+   * [Support Matrix for Import and Export Operations](https://github.com/databrickslabs/databricks-sync#support-matrix-for-import-and-export-operations)
+4. [Project Support](https://github.com/databrickslabs/databricks-sync#project-support)
+5. [Building the Project](https://github.com/databrickslabs/databricks-sync#building-the-project)
+6. [Deploying / Installing the Project](https://github.com/databrickslabs/databricks-sync#deploying--installing-the-project)
+7. [Releasing the Project](https://github.com/databrickslabs/databricks-sync#releasing-the-project)
+8. [Using the Project](https://github.com/databrickslabs/databricks-sync#using-the-project)
+
 ## Documentation
 
-See the [Databricks Sync Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs/) Markdown files for details.
+See the [Databricks Sync Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs) Markdown files for details.
 
 Instructions to install Databricks Sync can be found [here](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md).
 
 ## Quickstart
 
 ### Next steps:
-* Add Terraform output to capture dependent ID (such as cluster policy ID for a cluster)
+* Configure YAML file
 * Export object permissions and import them to the target with the object
 * Add examples for different scenarios:
     * Backup and Restore
@@ -124,23 +146,19 @@ private keys in a read only fashion for accessing the git repository. This is al
 | group member                 |  ✅            |  ✅               | |
 | scim user                    |  ✅            |  ✅               | |
 
-### Project Description
-Short description of project's purpose
-
-### Project Support
+# Project Support
 Please note that all projects in the /databrickslabs github account are provided for your exploration only, and are not formally supported by Databricks with Service Level Agreements (SLAs).  They are provided AS-IS and we do not make any guarantees of any kind.  Please do not submit a support ticket relating to any issues arising from the use of these projects.
 
 Any issues discovered through the use of this project should be filed as GitHub Issues on the Repo.  They will be reviewed as time permits, but there are no formal SLAs for support.
 
-
-### Building the Project
+# Building the Project
 Instructions for how to build the project
 
-### Deploying / Installing the Project
+# Deploying / Installing the Project
 Instructions for how to deploy the project, or install it
 
-### Releasing the Project
+# Releasing the Project
 Instructions for how to release a version of the project
 
-### Using the Project
+# Using the Project
 Simple examples on how to use the project
