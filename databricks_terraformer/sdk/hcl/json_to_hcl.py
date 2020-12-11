@@ -166,6 +166,7 @@ class TerraformDictBuilder:
             self.__tf_dict["dynamic"].append(dynamic_block)
         except KeyError as e:
             print("permitting optional key error: " + str(e))
+            print(self.__tf_dict)
         return self
 
     def __add_field(self, field: str, value: Any, *convertors: TerraformValueWrapper,

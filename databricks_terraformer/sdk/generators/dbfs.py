@@ -7,6 +7,7 @@ from databricks_cli.dbfs.api import FileInfo, BUFFER_SIZE_BYTES
 from databricks_cli.sdk import DbfsService, ApiClient
 from databricks_cli.utils import error_and_quit
 
+from databricks_terraformer import log
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import APIData, Artifact
 from databricks_terraformer.sdk.pipeline import DownloaderAPIGenerator
@@ -63,6 +64,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
             if file["is_dir"] is True:
                 yield from DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, file["path"])
             else:
+                log.debug(f"Fetching data for file: {file['path']}")
                 yield file
 
     def construct_artifacts(self, data: Dict[str, Any]) -> List[Artifact]:
