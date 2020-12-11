@@ -12,10 +12,10 @@ dask==2.23.0
 databricks-cli==0.11.0
 decorator==4.4.2
 distributed==2.23.0
-dotty-dict==1.2.1
+dotty-dict==1.3.0
 fsspec==0.8.0
 gitdb==4.0.5
-GitPython==3.1.7
+GitPython==3.1.11
 HeapDict==1.0.1
 idna==2.9
 immutables==0.14

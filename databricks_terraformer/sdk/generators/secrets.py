@@ -33,7 +33,7 @@ class SecretHCLGenerator(APIGenerator):
             self.__make_secret_dict(scope_name),
             self.map_processors(self.__custom_map_vars)
         )
-        sd.upsert_local_variable(self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name), secret_data)
+        sd.upsert_local_variable(normalize_identifier(self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name)), secret_data)
         for var in variables:
             sd.add_resource_variable(var)
         return sd
@@ -63,7 +63,7 @@ class SecretHCLGenerator(APIGenerator):
             self.map_processors(self.__custom_map_vars)
         )
         ssad.upsert_local_variable(
-            self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name),
+            normalize_identifier(self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name)),
             secret_acl_data
         )
         return ssad
@@ -159,7 +159,7 @@ class SecretHCLGenerator(APIGenerator):
 
     def __make_secret_dict(self, scope_name) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(lambda: self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name),
+            add_for_each(lambda: normalize_identifier(self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name)),
                          get_members(SecretSchema)). \
             to_dict()
 
@@ -172,6 +172,6 @@ class SecretHCLGenerator(APIGenerator):
 
     def __make_secret_acl_dict(self, scope_name) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
         return lambda x: TerraformDictBuilder(). \
-            add_for_each(lambda: self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name),
+            add_for_each(lambda: normalize_identifier(self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name)),
                          get_members(SecretScopeAclSchema)). \
             to_dict()
