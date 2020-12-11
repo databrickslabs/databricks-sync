@@ -5,7 +5,7 @@ from databricks_cli.sdk import ApiClient
 
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
-from databricks_terraformer.sdk.message import APIData
+from databricks_terraformer.sdk.message import APIData, HCLConvertData
 from databricks_terraformer.sdk.pipeline import APIGenerator
 from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_terraformer.sdk.sync.constants import ResourceCatalog
@@ -31,15 +31,20 @@ class ClusterPolicyHCLGenerator(APIGenerator):
             self.map_processors(self.__custom_map_vars)
         )
 
+    def __process(self, policy):
+        cluster_policy_data = self.__create_cluster_policy_data(policy)
+        yield cluster_policy_data
+        try:
+            yield self.__perms.create_permission_data(cluster_policy_data, self.get_local_hcl_path)
+        except NoDirectPermissionsError:
+            pass
+
     async def _generate(self) -> Generator[APIData, None, None]:
         policies = self.__service.list_policies()
         for policy in policies.get("policies", []):
-            cluster_policy_data = self.__create_cluster_policy_data(policy)
-            yield cluster_policy_data
-            try:
-                yield self.__perms.create_permission_data(cluster_policy_data, self.get_local_hcl_path)
-            except NoDirectPermissionsError:
-                pass
+            for data in HCLConvertData.process_data(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
+                                                    policy, self.__process, self.__get_cluster_policy_raw_id):
+                yield data
 
     @property
     def folder_name(self) -> str:

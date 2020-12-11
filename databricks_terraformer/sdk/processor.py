@@ -70,6 +70,14 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
                 print(f"Created key error when search for pattern: {pattern} in dictionary: {dotty_dict.to_dict()}")
             finally:
                 return
+        else:
+            first_part = parts[0]
+            try:
+                dotty_dict[first_part]
+            except KeyError as ke:
+                print(f"First part ({first_part}) of the key {pattern} does not exist in dict")
+                return
+
         idx = 0
         while True:
             try:

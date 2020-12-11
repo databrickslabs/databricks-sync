@@ -69,6 +69,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
                 log.info(" Export DBFS folder:{file['path']")
                 yield from DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, file["path"])
             else:
+                log.debug(f"Fetching data for file: {file['path']}")
                 yield file
 
     def construct_artifacts(self, data: Dict[str, Any]) -> List[Artifact]:

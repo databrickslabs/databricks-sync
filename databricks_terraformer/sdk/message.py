@@ -113,6 +113,7 @@ class ErrorMixin:
             if not isinstance(inp, ErrorMixin):
                 return func(inp)
 
+            log.debug(f"Running: {func.__name__}")
             if len(inp.errors) > 0:
                 # This is if the function gets called and an error already exists
                 log.info("Found error when processing function: " + func.__name__)
@@ -207,10 +208,21 @@ class HCLConvertData(ErrorMixin):
             tjb.add_locals(l_var.variable_name, l_var.to_dict())
         tjb.add_resource(self.resource_name, self.hcl_resource_identifier, self.latest_version)
         return tjb.to_json()
-        # variable_hcls = "\n".join([r_var.to_hcl(debug) for r_var in self.resource_variables])
-        # resource_hcl = create_resource_from_dict(self.resource_name, self.hcl_resource_identifier,
-        #                                          self.latest_version,
-        #                                          debug)
-        # hcl_code = "\n".join([variable_hcls, resource_hcl])
-        # return create_hcl_file(self.hcl_resource_identifier, self.__raw_api_data.workspace_url, self.latest_version,
-        #                        hcl_code)
+
+    @classmethod
+    def make_empty_with_error(cls, resource_type, identifier_func, data, err):
+        id_ = identifier_func(data)
+        hcl_data = cls(resource_type, APIData(id_, None, id_, data, Path(), None), None)
+        hcl_data.add_error(err)
+        return hcl_data
+
+    def __str__(self):
+        return f"{self.hcl_resource_identifier} - {self.errors}"
+
+    @staticmethod
+    def process_data(resource_type, data, process_func, id_func):
+        try:
+            for hcl_convert_data in process_func(data):
+                yield hcl_convert_data
+        except Exception as e:
+            yield HCLConvertData.make_empty_with_error(resource_type, id_func, data, e)

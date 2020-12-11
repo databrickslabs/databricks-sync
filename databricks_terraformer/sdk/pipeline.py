@@ -2,6 +2,7 @@ import abc
 import asyncio
 import copy
 import fnmatch
+import json
 from abc import ABC
 from functools import reduce, singledispatch
 from pathlib import Path
@@ -256,6 +257,30 @@ class DownloaderAPIGenerator(APIGenerator, ABC):
 def before_retry(fn, attempt_number):
     log.info(f"Attempt {attempt_number}: attempting to retry {fn.__name__}")
 
+class PipelineResults:
+
+    def __init__(self):
+        self.summary = {}
+
+    def __str__(self):
+        return json.dumps(self.summary, indent=4)
+
+    def add_hcl_data(self, hcl_convert_data: HCLConvertData):
+        get_name = lambda x: " ".join(x.split("_"))
+        r_name = get_name(hcl_convert_data.resource_name)
+        if r_name not in self.summary:
+            self.summary[r_name] = {
+                "count": 0,
+                "success": 0,
+                "failed": 0
+            }
+        if r_name in self.summary:
+            self.summary[r_name]["count"] += 1
+            if len(hcl_convert_data.errors) == 0:
+                self.summary[r_name]["success"] += 1
+            else:
+                self.summary[r_name]["failed"] += 1
+
 
 class Pipeline:
 
@@ -267,6 +292,7 @@ class Pipeline:
         self.__sinks = sinks
         self.__collectors = []
         self.__generators = generators
+        self.__pipeline_results = PipelineResults()
 
     @property
     def has_dask_client(self):
@@ -398,7 +424,8 @@ class Pipeline:
         tfvars_s = StreamUtils.apply_filter(
             Pipeline.filter_tfvars,
             processed_stream)
-        tfvars_values_s = tfvars_s.map(Pipeline.map_tfvars)
+        # Filter all errored out data and then process the variables
+        tfvars_values_s = tfvars_s.filter(lambda data: len(data.errors) == 0).map(Pipeline.map_tfvars)
 
         tfvars_collector = tfvars_values_s.flatten().unique().collect()
         self.__collectors.append(tfvars_collector)
@@ -409,7 +436,7 @@ class Pipeline:
             processed_stream,
             is_dask_enabled=self.has_dask_client
         )
-        resource_s.sink(print)
+        resource_s.sink(self.__pipeline_results.add_hcl_data)
 
     @retry(wait=wait_fixed(10), before=before_retry)
     def __wait_for_all_dask_futures(self) -> None:
@@ -436,3 +463,4 @@ class Pipeline:
     def run(self):
         self.__generate_all()
         self.__flush_map_var_collectors()
+        print(self.__pipeline_results)
