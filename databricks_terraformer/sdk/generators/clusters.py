@@ -126,13 +126,12 @@ class ClusterHCLGenerator(APIGenerator):
         return ClusterHCLGenerator.make_cluster_dict(data, depends_on=True)
 
     @staticmethod
-    def make_cluster_dict(data: Dict[str, Any], depends_on=False) -> Dict[str, Any]:
+    def make_cluster_dict(data: Dict[str, Any], depends_on=False, is_job=False) -> Dict[str, Any]:
         id_field = "id"
         tdb = TerraformDictBuilder(). \
             add_required("cluster_name", lambda: data.get("cluster_name", "")). \
             add_required("spark_version", lambda: data["spark_version"]). \
             add_optional("driver_node_type_id", lambda: data["driver_node_type_id"]). \
-            add_required("node_type_id", lambda: data["node_type_id"]). \
             add_optional("instance_pool_id",
                          lambda: Interpolate.resource(ResourceCatalog.INSTANCE_POOL_RESOURCE,
                                                       f"databricks_instance_pool"
@@ -170,4 +169,9 @@ class ClusterHCLGenerator(APIGenerator):
             add_dynamic_blocks("cluster_log_conf", lambda: data["cloud_agnostic_cluster_log_conf"])
         if depends_on is True:
             ClusterHCLGenerator._handle_depends_on(tdb)
+        if is_job is True:
+            tdb.add_optional("node_type_id", lambda: data["node_type_id"])
+        else:
+            tdb.add_required("node_type_id", lambda: data["node_type_id"])
+
         return tdb.to_dict()

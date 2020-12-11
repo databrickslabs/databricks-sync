@@ -1,7 +1,7 @@
 import io
 from base64 import b64decode
 from pathlib import Path
-from typing import Generator, List, Dict, Any, Callable
+from typing import Generator, List, Dict, Any, Callable, Union
 
 from databricks_cli.dbfs.api import FileInfo, BUFFER_SIZE_BYTES
 from databricks_cli.sdk import DbfsService, ApiClient
@@ -43,9 +43,13 @@ class DbfsFile(Artifact):
 class DbfsFileHCLGenerator(DownloaderAPIGenerator):
     DBFS_FOREACH_VAR = "databricks_dbfs_file_for_each_var"
 
-    def __init__(self, api_client: ApiClient, base_path: Path, dbfs_path: str, patterns=None,
+    def __init__(self, api_client: ApiClient, base_path: Path, dbfs_path: Union[str, List], patterns=None,
                  custom_map_vars=None):
         super().__init__(api_client, base_path, patterns=patterns)
+        if isinstance(dbfs_path, str):
+            self.__dbfs_path = [dbfs_path]
+        else:
+            self.__dbfs_path = dbfs_path
         self.__dbfs_path = dbfs_path
         self.__service = DbfsService(self.api_client)
         self.__custom_map_vars = custom_map_vars
@@ -62,6 +66,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
         files = resp["files"]
         for file in files:
             if file["is_dir"] is True:
+                log.info(" Export DBFS folder:{file['path']")
                 yield from DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, file["path"])
             else:
                 log.debug(f"Fetching data for file: {file['path']}")
@@ -116,8 +121,9 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
         # Dictionary to create one hcl json file with foreach for dbfs files
         dbfs_files = {}
 
-        for file in DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, self.__dbfs_path):
-            id_ = file['path']
-            dbfs_files[id_] = self.__get_dbfs_file_dict(file, self.__get_dbfs_identifier(file))
+        for p in self.__dbfs_path:
+            for file in DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, p):
+                id_ = file['path']
+                dbfs_files[id_] = self.__get_dbfs_file_dict(file, self.__get_dbfs_identifier(file))
 
         yield self.__make_dbfs_file_data(dbfs_files, lambda x: ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER)

@@ -59,7 +59,7 @@ class JobHCLGenerator(APIGenerator):
                 transformed_cluster_spec = ClusterHCLGenerator. \
                     get_cluster_spec(databricks_job["settings"]["new_cluster"])
                 databricks_job["settings"]["new_cluster"] = \
-                    ClusterHCLGenerator.make_cluster_dict(transformed_cluster_spec)
+                    ClusterHCLGenerator.make_cluster_dict(transformed_cluster_spec, is_job=True)
 
             else:
                 databricks_job['settings']['existing_cluster_id'] = Interpolate.resource(
