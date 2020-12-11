@@ -437,7 +437,6 @@ class Pipeline:
             is_dask_enabled=self.has_dask_client
         )
         resource_s.sink(self.__pipeline_results.add_hcl_data)
-        resource_s.visualize("test.png")
 
     @retry(wait=wait_fixed(10), before=before_retry)
     def __wait_for_all_dask_futures(self) -> None:
