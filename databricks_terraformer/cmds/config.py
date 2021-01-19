@@ -5,18 +5,20 @@ import uuid
 import click
 from click import ClickException
 from databricks_cli.click_types import ContextObject
-from databricks_cli.configure.config import get_profile_from_context, provide_api_client
+from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
 from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import InvalidConfigurationError
 
 from databricks_terraformer import log
+from databricks_terraformer.cmds.version import version
 
 
 def absolute_path_callback(ctx, param, value):  # NOQA
     if value is not None:
         return os.path.abspath(value)
     return value
+
 
 def validate_git_params(git_ssh_url, local_git_path):
     inputs = [git_ssh_url, local_git_path]
@@ -25,6 +27,7 @@ def validate_git_params(git_ssh_url, local_git_path):
 
     if all(inputs) is True:
         raise ClickException("Only one of --git-ssh-url or --local-git-path can be provided but not both")
+
 
 def git_url_option(f):
     def callback(ctx, param, value):  # NOQA
@@ -127,15 +130,20 @@ def inject_profile_as_env(function):
     return decorator
 
 
-def provide_api_client_with_user_agent(function):
-    @provide_api_client
-    @functools.wraps(function)
-    def decorator(*args, **kwargs):
-        api_client: ApiClient = kwargs["api_client"]
-        # TODO: identify the right way to generate the user agent, for now its hard coded
-        api_client.default_headers.update({"user-agent": "databricks-sync-0.1.0-dev"})
-        kwargs["api_client"] = api_client
-        return function(*args, **kwargs)
+def get_user_agent():
+    return f'databricks-sync-{version}'
 
-    decorator.__doc__ = function.__doc__
-    return decorator
+def wrap_with_user_agent(api_client_provider_func):
+    def wrap_client(function):
+        @api_client_provider_func
+        @functools.wraps(function)
+        def modify_user_agent(*args, **kwargs):
+            api_client: ApiClient = kwargs["api_client"]
+            api_client.default_headers.update({"user-agent": get_user_agent()})
+            kwargs["api_client"] = api_client
+            return function(*args, **kwargs)
+
+        modify_user_agent.__doc__ = function.__doc__
+        return modify_user_agent
+
+    return wrap_client

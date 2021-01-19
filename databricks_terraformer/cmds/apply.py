@@ -2,14 +2,14 @@ from pathlib import Path
 
 import click
 from click import pass_context
-from databricks_cli.configure.config import debug_option
+from databricks_cli.configure.config import debug_option, provide_api_client
 from databricks_cli.configure.config import profile_option
 from databricks_cli.sdk import ApiClient
 
 from databricks_terraformer import CONTEXT_SETTINGS
 from databricks_terraformer.cmds.config import git_url_option, ssh_key_option, inject_profile_as_env, \
     absolute_path_callback, local_git_option, validate_git_params, handle_additional_debug, \
-    provide_api_client_with_user_agent
+    wrap_with_user_agent
 from databricks_terraformer.sdk.sync.constants import GeneratorCatalog
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
@@ -49,7 +49,7 @@ SUPPORTED_IMPORTS = [
 @profile_option
 # @eat_exceptions
 @local_git_option
-@provide_api_client_with_user_agent
+@wrap_with_user_agent(provide_api_client)
 @git_url_option
 @ssh_key_option
 @inject_profile_as_env

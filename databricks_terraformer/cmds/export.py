@@ -2,13 +2,13 @@ from pathlib import Path
 
 import click
 from click import pass_context
-from databricks_cli.configure.config import profile_option, debug_option
+from databricks_cli.configure.config import profile_option, debug_option, provide_api_client
 from databricks_cli.sdk import ApiClient
 
 from databricks_terraformer import CONTEXT_SETTINGS
 from databricks_terraformer.cmds.config import git_url_option, ssh_key_option, dry_run_option, \
     dask_option, local_git_option, validate_git_params, config_path_option, handle_additional_debug, \
-    provide_api_client_with_user_agent
+    wrap_with_user_agent
 from databricks_terraformer.sdk.sync.export import ExportCoordinator
 
 
@@ -17,7 +17,7 @@ from databricks_terraformer.sdk.sync.export import ExportCoordinator
 @debug_option
 @profile_option
 # @eat_exceptions
-@provide_api_client_with_user_agent
+@wrap_with_user_agent(provide_api_client)
 @config_path_option
 @local_git_option
 @git_url_option
