@@ -7,6 +7,7 @@ from click import ClickException
 from databricks_cli.click_types import ContextObject
 from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
+from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import InvalidConfigurationError
 
 from databricks_terraformer import log
@@ -120,6 +121,19 @@ def inject_profile_as_env(function):
             raise InvalidConfigurationError.for_profile(profile)
         os.environ["DATABRICKS_HOST"] = config.host
         os.environ["DATABRICKS_TOKEN"] = config.token
+        return function(*args, **kwargs)
+
+    decorator.__doc__ = function.__doc__
+    return decorator
+
+
+def add_user_agent(function):
+    @functools.wraps(function)
+    def decorator(*args, **kwargs):
+        api_client: ApiClient = kwargs["api_client"]
+        # TODO: identify the right way to generate the user agent, for now its hard coded
+        api_client.default_headers.update({"user-agent": "databricks-sync-0.1.0-dev"})
+        kwargs["api_client"] = api_client
         return function(*args, **kwargs)
 
     decorator.__doc__ = function.__doc__
