@@ -5,7 +5,7 @@ import uuid
 import click
 from click import ClickException
 from databricks_cli.click_types import ContextObject
-from databricks_cli.configure.config import get_profile_from_context
+from databricks_cli.configure.config import get_profile_from_context, provide_api_client
 from databricks_cli.configure.provider import ProfileConfigProvider
 from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import InvalidConfigurationError
@@ -127,7 +127,8 @@ def inject_profile_as_env(function):
     return decorator
 
 
-def add_user_agent(function):
+def provide_api_client_with_user_agent(function):
+    @provide_api_client
     @functools.wraps(function)
     def decorator(*args, **kwargs):
         api_client: ApiClient = kwargs["api_client"]
