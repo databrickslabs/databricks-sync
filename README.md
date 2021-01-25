@@ -44,7 +44,7 @@ See the [Databricks Sync Documentation](https://github.com/databrickslabs/databr
 ## Quickstart
 
 ### Next steps:
-* Configure [YAML file](https://github.com/databrickslabs/databricks-sync/blob/main/tests/integration_test.yaml).
+* Configure [YAML file](https://github.com/databrickslabs/databricks-sync/blob/master/tests/integration_test.yaml).
 * Export object permissions and import them to the target with the object
 * Add examples for different scenarios:
   * Backup and Restore
