@@ -10,6 +10,7 @@ from databricks_terraformer.sdk.config import export_config
 from databricks_terraformer.sdk.generators.factory import GeneratorFactory
 from databricks_terraformer.sdk.git_handler import GitHandler, LocalGitHandler, RemoteGitHandler
 from databricks_terraformer.sdk.pipeline import ExportFileUtils, Pipeline
+from databricks_terraformer.sdk.sync import validate_dict
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
 
 
@@ -47,6 +48,9 @@ class ExportCoordinator:
                 "api_client": api_client,
                 "base_path": base_path
             }
+
+            validate_dict(api_client)
+
             export_objects = export_config.objects
 
             if export_objects is not None:
@@ -82,6 +86,7 @@ class ExportCoordinator:
                 branch=branch,
             )
             te.execute()
+
 
         finally:
             tmp_dir.cleanup()
