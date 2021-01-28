@@ -50,7 +50,6 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
             self.__dbfs_path = [dbfs_path]
         else:
             self.__dbfs_path = dbfs_path
-        self.__dbfs_path = dbfs_path
         self.__service = DbfsService(self.api_client)
         self.__custom_map_vars = custom_map_vars
 

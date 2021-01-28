@@ -117,7 +117,7 @@ class SecretHCLGenerator(APIGenerator):
             return None
 
     async def _generate(self) -> Generator[APIData, None, None]:
-        secret_scopes = self.__service.list_scopes().get("scopes")
+        secret_scopes = self.__service.list_scopes().get("scopes", [])
         for secret_scope in secret_scopes:
             secret_scope_data = self.__create_secret_scope_data(secret_scope)
             yield secret_scope_data
