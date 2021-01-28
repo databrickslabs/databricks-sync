@@ -9,6 +9,7 @@ from databricks_terraformer import log
 from databricks_terraformer.sdk.config import export_config
 from databricks_terraformer.sdk.service.cluster_policies import PolicyService
 from databricks_terraformer.sdk.service.scim import ScimService
+from databricks_terraformer.sdk.sync.constants import DefaultDatabricksGroups, GeneratorCatalog
 
 
 def validate_dict(api_client: ApiClient):
@@ -24,7 +25,7 @@ def validate_dict(api_client: ApiClient):
             user_info = ScimService(api_client).me()
 
             for group in user_info['groups']:
-                if group['display'] == 'admins':
+                if group['display'] == DefaultDatabricksGroups.ADMIN_DATA_SOURCE_IDENTIFIER:
                     user_is_admin = True
 
         except Exception as e:
@@ -34,22 +35,24 @@ def validate_dict(api_client: ApiClient):
 
         # validate the rest of the objects
         for object_name, object_data in export_objects.items():
-            if object_name == 'identity' and (user_info is None or user_is_admin is False):
+            if object_name == GeneratorCatalog.IDENTITY and (user_info is None or user_is_admin is False):
                 log.error(
                     f"Cannot export admin objects w/o admin privileges, Remove the identity or use an admin user token")
                 found_exception = True
-            if object_name == 'cluster' and ClusterApi(api_client).list_clusters().get("clusters", []) == []:
+            if object_name == GeneratorCatalog.CLUSTER and ClusterApi(api_client).list_clusters().get("clusters",
+                                                                                                      []) == []:
                 log.warning(f"There are no clusters to export")
-            if object_name == 'cluster_policy' and PolicyService(api_client).list_policies().get("policies", []) == []:
-                log.warning(f"There are no clusters to export")
-            if object_name == 'instance_pool' and InstancePoolsApi(api_client).list_instance_pools().get(
+            if object_name == GeneratorCatalog.CLUSTER_POLICY and PolicyService(api_client).list_policies().get(
+                    "policies", []) == []:
+                log.warning(f"There are no cluster policies to export")
+            if object_name == GeneratorCatalog.INSTANCE_POOL and InstancePoolsApi(api_client).list_instance_pools().get(
                     "instance_pools", []) == []:
-                log.warning(f"There are no clusters to export")
-            if object_name == 'secret' and SecretApi(api_client).list_scopes().get("scopes", []) == []:
-                log.warning(f"There are no clusters to export")
-            if object_name == 'job' and JobsApi(api_client).list_jobs().get("jobs", []) == []:
-                log.warning(f"There are no clusters to export")
-            if object_name == 'notebook':
+                log.warning(f"There are no pools to export")
+            if object_name == GeneratorCatalog.SECRETS and SecretApi(api_client).list_scopes().get("scopes", []) == []:
+                log.warning(f"There are no secrets to export")
+            if object_name == GeneratorCatalog.JOB and JobsApi(api_client).list_jobs().get("jobs", []) == []:
+                log.warning(f"There are no jobs to export")
+            if object_name == GeneratorCatalog.NOTEBOOK:
                 path = object_data['notebook_path']
                 for p in path if not isinstance(path, str) else [path]:
                     try:
@@ -59,7 +62,7 @@ def validate_dict(api_client: ApiClient):
                         found_exception = True
                         log.error(f"At least one Notebook path ({p}) does not exists")
                         log.debug(f"Error stack:{str(e)}")
-            if object_name == 'dbfs_file':
+            if object_name == GeneratorCatalog.DBFS_FILE:
                 path = object_data['dbfs_path']
                 for p in path if not isinstance(path, str) else [path]:
                     try:
