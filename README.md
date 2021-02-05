@@ -39,18 +39,18 @@ This package uses credentials from the [Databricks CLI](https://docs.databricks.
 
 See the [Databricks Sync Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs) Markdown files for details.
 
-Instructions to install Databricks Sync can be found [here](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md).
+[Instructions to install Databricks Sync](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md) can be found here.
 
 ## Quickstart
 
 ### Next steps:
-* Configure YAML file
+* Configure [YAML file](https://github.com/databrickslabs/databricks-sync/blob/master/tests/integration_test.yaml).
 * Export object permissions and import them to the target with the object
 * Add examples for different scenarios:
-    * Backup and Restore
-    * CI/CD
-    * Disaster Recovery Sync
-    * Batch modification (will require Terraform Object Import support)
+  * Backup and Restore
+  * CI/CD
+  * Disaster Recovery Sync
+  * Batch modification (will require Terraform Object Import support)
       
 
 ### Common commands
