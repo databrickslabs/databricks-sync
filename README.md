@@ -1,6 +1,6 @@
 # Databricks Sync (dbSync)
 
-![Reference Architecture for Databricks-Sync](https://github.com/R7L208/databricks-sync/blob/master/docs/solution-arch.png?raw=true)
+![Reference Architecture for Databricks-Sync](docs/solution-arch.png?raw=true)
 
 ## Introduction
 
