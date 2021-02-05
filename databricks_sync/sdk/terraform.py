@@ -118,7 +118,7 @@ class Terraform:
             plan_cmd += ["-refresh=false"]
         if targets is not None:
             plan_cmd += targets
-
+        plan_cmd += ["-input=false"]
         return self._cmd(plan_cmd)
 
     def apply(self, plan_file: Path = None, state_file_abs_path: Path = None, refresh=None):
@@ -129,4 +129,5 @@ class Terraform:
             apply_cmd += ["-refresh=false"]
         if plan_file is not None:
             apply_cmd += [str(plan_file.absolute())]
+        apply_cmd += ["-input=false"]
         return self._cmd(apply_cmd)
