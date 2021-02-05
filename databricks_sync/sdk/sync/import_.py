@@ -74,7 +74,8 @@ def get_me_username(api_client):
 
 class TerraformExecution:
     def __init__(self, folders: List[str], refresh: bool = True, revision: str = None, plan: bool = False,
-                 plan_location: Path = None, local_state_location: Path = None, apply: bool = False, destroy: bool = False,
+                 plan_location: Path = None, local_state_location: Path = None, apply: bool = False,
+                 destroy: bool = False,
                  git_ssh_url: str = None, local_git_path=None, api_client: ApiClient = None, branch="master",
                  post_import_shutdown=False, back_end_json: Path = None):
 
@@ -118,9 +119,11 @@ class TerraformExecution:
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            log.info("Main TF File: " + json.dumps(
-                MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
-            w.write(json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
+            main_tf_file_content = json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
+                                                                          get_me_username(self.api_client)),
+                                              indent=4, sort_keys=True)
+            log.info("Main TF File: " + main_tf_file_content)
+            w.write(main_tf_file_content)
             if self.back_end_json is not None:
                 log.info("Backend Json TF File: " + str(self.back_end_json))
                 shutil.copy(self.back_end_json, stage_path / "backend.tf.json")
