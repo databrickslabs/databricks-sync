@@ -4,6 +4,7 @@ from typing import Generator, Dict, Any
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import JobsService
 
+from databricks_terraformer.sdk.generators import drop_all_but
 from databricks_terraformer.sdk.generators.clusters import ClusterHCLGenerator
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
@@ -37,7 +38,8 @@ class JobHCLGenerator(APIGenerator):
             self.__get_job_identifier,
             self.__get_job_raw_id,
             self.__make_job_dict,
-            self.map_processors(self.__custom_map_vars)
+            self.map_processors(self.__custom_map_vars),
+            human_readable_name_func=self.__get_job_name
         )
 
     async def _generate(self) -> Generator[APIData, None, None]:
@@ -76,7 +78,7 @@ class JobHCLGenerator(APIGenerator):
 
             yield job_data
             try:
-                yield self.__perms.create_permission_data(job_data, self.get_local_hcl_path)
+                yield self.__perms.create_permission_data(job_data, self.get_local_hcl_path, self.get_relative_hcl_path)
             except NoDirectPermissionsError:
                 pass
 
@@ -89,11 +91,18 @@ class JobHCLGenerator(APIGenerator):
 
     @staticmethod
     def __get_job_raw_id(data: Dict[str, Any]) -> str:
-        return data['job_id']
+        return data["job_id"]
+
+    @staticmethod
+    def __get_job_name(data: Dict[str, Any]) -> str:
+        return data["settings"].get("name", None)
 
     @staticmethod
     def __make_job_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
+        name = data["settings"].get("name", "noname")
+        return TerraformDictBuilder(ResourceCatalog.JOB_RESOURCE, data,
+                                    object_id=JobHCLGenerator.__get_job_raw_id,
+                                    object_name=JobHCLGenerator.__get_job_name). \
             add_optional("new_cluster", lambda: data["settings"]["new_cluster"]). \
             add_optional("name", lambda: data["settings"]["name"]). \
             add_optional("existing_cluster_id", lambda: data['settings']['existing_cluster_id']). \
@@ -102,10 +111,15 @@ class JobHCLGenerator(APIGenerator):
             add_optional("timeout_seconds", lambda: data["settings"]["timeout_seconds"]). \
             add_optional("min_retry_interval_millis", lambda: data["settings"]["min_retry_interval_millis"]). \
             add_optional("max_concurrent_runs", lambda: data["settings"]["max_concurrent_runs"]). \
-            add_optional("email_notifications", lambda: data["settings"]["email_notifications"]). \
+            add_optional("email_notifications", lambda: drop_all_but(data["settings"]["email_notifications"],
+                                                                     "on_start", "on_success", "on_failure",
+                                                                     "no_alert_for_skipped_runs",
+                                                                     dictionary_name=f"{name}-email_notifications")). \
             add_dynamic_block("schedule", lambda: data["settings"]["schedule"],
                               custom_ternary_bool_expr=f"{DrConstants.PASSIVE_MODE_VARIABLE} == false"). \
-            add_optional("spark_jar_task", lambda: data["settings"]["spark_jar_task"]). \
+            add_optional("spark_jar_task", lambda: drop_all_but(data["settings"]["spark_jar_task"],
+                                                                "jar_uri", "main_class_name", "parameters",
+                                                                dictionary_name=f"{name}-spark_jar_task")). \
             add_optional("spark_submit_task", lambda: data["settings"]["spark_submit_task"]). \
             add_optional("spark_python_task", lambda: data["settings"]["spark_python_task"]). \
             add_optional("notebook_task", lambda: data["settings"]["notebook_task"]). \

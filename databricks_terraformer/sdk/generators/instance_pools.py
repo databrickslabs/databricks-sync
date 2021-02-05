@@ -42,7 +42,8 @@ class InstancePoolHCLGenerator(APIGenerator):
             self.__get_instance_pool_identifier,
             self.__get_instance_pool_raw_id,
             self.__make_instance_pool_dict,
-            self.map_processors(self.__custom_map_vars)
+            self.map_processors(self.__custom_map_vars),
+            human_readable_name_func=self.__get_instance_pool_name
         )
 
     async def _generate(self) -> Generator[APIData, None, None]:
@@ -56,7 +57,8 @@ class InstancePoolHCLGenerator(APIGenerator):
 
             yield instance_pools_data
             try:
-                yield self.__perms.create_permission_data(instance_pools_data, self.get_local_hcl_path)
+                yield self.__perms.create_permission_data(instance_pools_data, self.get_local_hcl_path,
+                                                          self.get_relative_hcl_path)
             except NoDirectPermissionsError:
                 pass
 
@@ -72,9 +74,15 @@ class InstancePoolHCLGenerator(APIGenerator):
         return data['instance_pool_id']
 
     @staticmethod
+    def __get_instance_pool_name(data: Dict[str, Any]) -> str:
+        return data.get('instance_pool_name', None)
+
+    @staticmethod
     def __make_instance_pool_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 
-        return TerraformDictBuilder(). \
+        return TerraformDictBuilder(ResourceCatalog.INSTANCE_POOL_RESOURCE,
+                                    data, object_id=InstancePoolHCLGenerator.__get_instance_pool_raw_id,
+                                    object_name=InstancePoolHCLGenerator.__get_instance_pool_name). \
             add_required("instance_pool_name", lambda: data["instance_pool_name"]). \
             add_required("min_idle_instances", lambda: InstancePoolHCLGenerator.handle_min_idle_instance_passive(
                 data["min_idle_instances"]

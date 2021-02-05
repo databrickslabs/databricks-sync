@@ -1,8 +1,10 @@
 import logging
-import click_log
 
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S')
 log = logging.getLogger(__name__)
-click_log.basic_config(log)
+
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 API_VERSION_2_0 = "2.0"
 API_VERSION_1_2 = "1.2"

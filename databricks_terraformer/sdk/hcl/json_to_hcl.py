@@ -4,6 +4,7 @@ import copy
 import json
 from typing import Any, Dict, Callable, List, Union
 
+from databricks_terraformer import log
 from databricks_terraformer.sdk.sync.constants import CloudConstants
 
 
@@ -89,8 +90,22 @@ class Expression(TerraformValueWrapper):
 
 class TerraformDictBuilder:
 
-    def __init__(self):
+    def __init__(self, o_type=None, data=None, **kwargs):
         self.__tf_dict = {}
+        self.__base_msg = ""
+        # Purely for the purpose of logging
+        if o_type is not None:
+            self.__base_msg += f"Object: {o_type} "
+        for key, value in kwargs.items():
+            if callable(value) and data is not None:
+                res = value(data)
+                if res is not None:
+                    self.__base_msg += f"{key}: {res} "
+            if isinstance(value, str):
+                self.__base_msg += f"{key}: {value} "
+        if len(self.__base_msg) > 0:
+            self.__base_msg += "=> "
+
 
     def add_optional_if(self, condition_func: Callable[[], bool], field: str, value_func: Callable[[], Any],
                         *convertors: TerraformValueWrapper, tf_field_name=None):
@@ -105,7 +120,7 @@ class TerraformDictBuilder:
             value = value_func()
             self.__add_field(field, value, tf_field_name=tf_field_name, *convertors)
         except KeyError as e:
-            print("permitting optional key error: " + str(e))
+            log.debug(self.__base_msg+"permitting optional key error: " + str(e))
         return self
 
     # the data should map exactly all the fields you want to interpolate directly
@@ -139,7 +154,7 @@ class TerraformDictBuilder:
             for item in val:
                 self.add_dynamic_block(field, lambda: item, cloud_name, custom_ternary_bool_expr)
         except Exception as e:
-            print("permitting error: " + str(e))
+            log.debug(self.__base_msg+"permitting error: " + str(e))
         return self
 
     def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool_expr=None):
@@ -165,8 +180,8 @@ class TerraformDictBuilder:
             self.__tf_dict.setdefault("dynamic", [])
             self.__tf_dict["dynamic"].append(dynamic_block)
         except KeyError as e:
-            print("permitting optional key error: " + str(e))
-            print(self.__tf_dict)
+            log.debug(self.__base_msg+"permitting optional key error: " + str(e))
+            log.debug(self.__base_msg+"Dynamic Block Dict: "+str(self.__tf_dict))
         return self
 
     def __add_field(self, field: str, value: Any, *convertors: TerraformValueWrapper,

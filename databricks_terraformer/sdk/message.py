@@ -3,7 +3,7 @@ import functools
 import json
 import traceback
 from pathlib import Path
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Tuple
 
 from databricks_terraformer import log
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformJsonBuilder, \
@@ -24,13 +24,35 @@ class Artifact(abc.ABC):
 class APIData:
 
     def __init__(self, raw_identifier, workspace_url,
-                 hcl_resource_identifier, data, local_save_path: Path, artifacts: Optional[List[Any]] = None):
+                 hcl_resource_identifier, data, local_save_path: Path, relative_save_path: str = None,
+                 artifacts: Optional[List[Any]] = None, human_readable_name=None):
+        self.__relative_save_path = relative_save_path
         self.__workspace_url = workspace_url
         self.__raw_identifier = raw_identifier
+        self.__human_readable_name = human_readable_name if human_readable_name is not None else raw_identifier
         self.__local_save_path = local_save_path
         self.__data = data
         self.__hcl_resource_identifier = hcl_resource_identifier
         self.__artifacts: List[Artifact] = artifacts or []
+
+    def clone_with(self, **kwargs):
+        return APIData(**{**self.to_dict(), **kwargs})
+
+    def to_dict(self):
+        return {
+            "raw_identifier": self.raw_identifier,
+            "workspace_url": self.workspace_url,
+            "hcl_resource_identifier": self.hcl_resource_identifier,
+            "human_readable_name": self.human_readable_name,
+            "data": self.data,
+            "local_save_path": self.local_save_path,
+            "relative_save_path": self.relative_save_path,
+            "artifacts": self.artifacts,
+        }
+
+    @property
+    def relative_save_path(self):
+        return self.__relative_save_path
 
     @property
     def artifacts(self) -> List[Artifact]:
@@ -43,6 +65,10 @@ class APIData:
     @property
     def raw_identifier(self):
         return self.__raw_identifier
+
+    @property
+    def human_readable_name(self):
+        return self.__human_readable_name
 
     @property
     def hcl_resource_identifier(self):
@@ -113,7 +139,11 @@ class ErrorMixin:
             if not isinstance(inp, ErrorMixin):
                 return func(inp)
 
-            log.debug(f"Running: {func.__name__}")
+            if isinstance(inp, HCLConvertData):
+                log.debug(f"Running: {func.__name__} for {inp.resource_name}: {inp.human_readable_name} with "
+                          f"tf id: {inp.hcl_resource_identifier}")
+            else:
+                log.debug(f"Running: {func.__name__}")
             if len(inp.errors) > 0:
                 # This is if the function gets called and an error already exists
                 log.info("Found error when processing function: " + func.__name__)
@@ -143,10 +173,23 @@ class HCLConvertData(ErrorMixin):
         self.__mapped_variables = []
         self.__resource_variables = []
         self.__local_variables = {}
+        self.__for_each_var_id_name_pairs = []
+
+    @property
+    def workspace_url(self):
+        return self.__raw_api_data.workspace_url
+
+    @property
+    def relative_save_path(self):
+        return self.__raw_api_data.relative_save_path
 
     @property
     def raw_id(self):
         return self.__raw_api_data.raw_identifier
+
+    @property
+    def human_readable_name(self):
+        return self.__raw_api_data.human_readable_name
 
     @property
     def local_save_path(self):
@@ -188,6 +231,10 @@ class HCLConvertData(ErrorMixin):
     def local_variables(self) -> List[LocalVariable]:
         return list(self.__local_variables.values())
 
+    @property
+    def for_each_var_id_name_pairs(self):
+        return self.__for_each_var_id_name_pairs
+
     def modify_json(self, value):
         self.__lineage.append(value)
 
@@ -199,6 +246,10 @@ class HCLConvertData(ErrorMixin):
 
     def upsert_local_variable(self, local_var_name, local_var_value):
         self.__local_variables[local_var_name] = LocalVariable(local_var_name, local_var_value)
+
+    def add_for_each_var_name_pairs(self, pairs: List[Tuple[str, str]]):
+        if pairs is not None:
+            self.__for_each_var_id_name_pairs += pairs
 
     def to_hcl(self, debug: bool):
         tjb = TerraformJsonBuilder()

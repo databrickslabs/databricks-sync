@@ -131,7 +131,7 @@ def import_direct(tgt_api_config: DatabricksConfig, tgt_api_client: ApiClient, e
 
     te = TerraformExecution(folders=apply.SUPPORTED_IMPORTS, refresh=False, revision=env["revision"], plan=True,
                             plan_location=Path(env["directory"]) / "plan.out",
-                            state_location=Path(env["directory"]) / "state.tfstate", apply=True, destroy=False,
+                            local_state_location=Path(env["directory"]) / "state.tfstate", apply=True, destroy=False,
                             git_ssh_url=env["git_repo"], api_client=tgt_api_client, branch=env["revision"],
                             post_import_shutdown=True)
     te.execute()

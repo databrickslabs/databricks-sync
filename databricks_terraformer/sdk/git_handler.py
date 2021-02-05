@@ -104,7 +104,7 @@ class LocalGitHandler(GitHandler):
 
     def _get_repo(self, branch, revision=None) -> git.Repo:
         repo = git.Repo.init(self.base_path.absolute())
-        print("running git init")
+        log.info("running git init")
         if revision is not None:
             repo.git.checkout(revision)
         return repo

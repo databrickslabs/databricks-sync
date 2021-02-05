@@ -24,7 +24,10 @@ setuptools.setup(
         'streamz==0.5.5',
         'tenacity==6.2.0',
         'dotty_dict==1.3.0',
-        'pygrok==1.0.0'
+        'pygrok==1.0.0',
+        'pandas==1.1.1',
+        'SQLAlchemy==1.3.22',
+        'styleframe==3.0.6'
     ],
     package_data={
         'databricks_terraformer': ['sdk/hcl/json2hcl.so', 'utils/changelog.md.j2', 'sdk/hcl/hcl.tf.j2'],

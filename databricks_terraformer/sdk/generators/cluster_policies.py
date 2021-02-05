@@ -28,14 +28,16 @@ class ClusterPolicyHCLGenerator(APIGenerator):
             self.__get_cluster_policy_identifier,
             self.__get_cluster_policy_raw_id,
             self.__make_cluster_policy_dict,
-            self.map_processors(self.__custom_map_vars)
+            self.map_processors(self.__custom_map_vars),
+            human_readable_name_func=self.__get_cluster_policy_name
         )
 
     def __process(self, policy):
         cluster_policy_data = self.__create_cluster_policy_data(policy)
         yield cluster_policy_data
         try:
-            yield self.__perms.create_permission_data(cluster_policy_data, self.get_local_hcl_path)
+            yield self.__perms.create_permission_data(cluster_policy_data, self.get_local_hcl_path,
+                                                      self.get_relative_hcl_path)
         except NoDirectPermissionsError:
             pass
 
@@ -58,8 +60,14 @@ class ClusterPolicyHCLGenerator(APIGenerator):
         return data['policy_id']
 
     @staticmethod
+    def __get_cluster_policy_name(data: Dict[str, Any]) -> str:
+        return data.get('name', None)
+
+    @staticmethod
     def __make_cluster_policy_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
+        return TerraformDictBuilder(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
+                                    data, object_id=ClusterPolicyHCLGenerator.__get_cluster_policy_raw_id,
+                                    object_name=ClusterPolicyHCLGenerator.__get_cluster_policy_name). \
             add_required("definition", lambda: data["definition"]). \
             add_required("name", lambda: data["name"]). \
             to_dict()

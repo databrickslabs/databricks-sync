@@ -42,9 +42,11 @@ SUPPORTED_IMPORTS = [
 @click.option("--branch", type=str, help='This is the git repo branch.', default="master")
 @click.option('--databricks-object-type', type=click.Choice(SUPPORTED_IMPORTS),
               multiple=True, default=SUPPORTED_IMPORTS,
-              help="This is the databricks object you wish to create a plan for. By default we will plan for all objects.")
-@click.option("--backend-file", type=str,
-              help='Please provide this as this is where your backend configuration at which your terraform file will be saved.')
+              help="This is the databricks object you wish to create a plan for. By default we will plan for "
+                   "all objects.")
+@click.option("--backend-file", type=click.Path(exists=True, resolve_path=True),
+              help='Please provide this as this is where your backend configuration at which your terraform file '
+                   'will be saved.')
 @debug_option
 @profile_option
 # @eat_exceptions
@@ -61,9 +63,10 @@ def import_cli(ctx, git_ssh_url, local_git_path, databricks_object_type, plan, a
     # TODO: log the api client config and etc
     handle_additional_debug(ctx)
     validate_git_params(git_ssh_url, local_git_path)
+    back_end_json = Path(backend_file) if backend_file is not None else None
     te = TerraformExecution(folders=databricks_object_type, refresh=not skip_refresh, revision=revision, plan=plan,
                             plan_location=Path(artifact_dir) / "plan.out",
-                            state_location=Path(artifact_dir) / "state.tfstate", apply=apply, destroy=destroy,
+                            local_state_location=Path(artifact_dir) / "state.tfstate", apply=apply, destroy=destroy,
                             git_ssh_url=git_ssh_url, local_git_path=local_git_path, api_client=api_client,
-                            branch=branch, post_import_shutdown=True)
+                            branch=branch, post_import_shutdown=True, back_end_json=back_end_json)
     te.execute()

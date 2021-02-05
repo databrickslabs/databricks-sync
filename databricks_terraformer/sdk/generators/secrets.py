@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Generator, Dict, Any, Callable, List
+from typing import Generator, Dict, Any, Callable, List, Tuple
 
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import SecretService
@@ -23,7 +23,8 @@ class SecretHCLGenerator(APIGenerator):
 
     def __create_secret_data(self, scope_name: str, secret_data: Dict[str, Any],
                              variables: List[str],
-                             secret_identifier: Callable[[Dict[str, str]], str]):
+                             secret_identifier: Callable[[Dict[str, str]], str],
+                             for_each_var_id_name_pairs: List[Tuple[str, str]] = None):
         sd = self._create_data(
             ResourceCatalog.SECRET_RESOURCE,
             secret_data,
@@ -34,6 +35,7 @@ class SecretHCLGenerator(APIGenerator):
             self.map_processors(self.__custom_map_vars)
         )
         sd.upsert_local_variable(normalize_identifier(self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name)), secret_data)
+        sd.add_for_each_var_name_pairs(for_each_var_id_name_pairs)
         for var in variables:
             sd.add_resource_variable(var)
         return sd
@@ -52,7 +54,8 @@ class SecretHCLGenerator(APIGenerator):
     def __create_secret_acl_data(self,
                                  scope_name: str,
                                  secret_acl_data: Dict[str, Any],
-                                 acl_identifier: Callable[[Dict[str, str]], str]):
+                                 acl_identifier: Callable[[Dict[str, str]], str],
+                                 for_each_var_id_name_pairs: List[Tuple[str, str]] = None):
         ssad = self._create_data(
             ResourceCatalog.SECRET_ACL_RESOURCE,
             secret_acl_data,
@@ -66,6 +69,7 @@ class SecretHCLGenerator(APIGenerator):
             normalize_identifier(self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name)),
             secret_acl_data
         )
+        ssad.add_for_each_var_name_pairs(for_each_var_id_name_pairs)
         return ssad
 
     def __interpolate_secret_scope(self, scope):
@@ -77,6 +81,7 @@ class SecretHCLGenerator(APIGenerator):
         scope_name = self.__get_secret_scope_raw_id(scope)
         secret_data = {}
         variables = []
+        secrets_id_name_pairs = []
         for secret in secrets:
             id_ = secret["key"]
             var_name = f"{self.get_identifier({}, lambda x: f'{scope_name}_{id_}')}_var"
@@ -86,18 +91,21 @@ class SecretHCLGenerator(APIGenerator):
                 SecretSchema.STRING_VALUE: Interpolate.variable(var_name)
             }
             variables.append(var_name)
+            secrets_id_name_pairs.append((f"{scope_name}/{id_}", id_))
 
         if len(secret_data.keys()) > 0:
             return self.__create_secret_data(scope_name,
                                              secret_data,
                                              variables,
-                                             lambda x: normalize_identifier(f"{scope_name}-secrets"))
+                                             lambda x: normalize_identifier(f"{scope_name}-secrets"),
+                                             for_each_var_id_name_pairs=secrets_id_name_pairs)
         else:
             return None
 
     def get_secret_scope_acls(self, scope, secret_scope_acls):
         scope_name = self.__get_secret_scope_raw_id(scope)
         secret_acls_data = {}
+        secret_acls_id_name_pairs = []
         for secret_acl in secret_scope_acls:
             permission = secret_acl["permission"]
             principal = secret_acl["principal"]
@@ -109,10 +117,12 @@ class SecretHCLGenerator(APIGenerator):
                                                                  self.__get_secret_scope_identifier(scope),
                                                                  "id")
             }
+            secret_acls_id_name_pairs.append((f"{scope_name}/{acl_id}", acl_id))
         if len(secret_acls_data.keys()) > 0:
             return self.__create_secret_acl_data(scope_name,
                                                  secret_acls_data,
-                                                 lambda x: normalize_identifier(f"{scope_name}-acls"))
+                                                 lambda x: normalize_identifier(f"{scope_name}-acls"),
+                                                 for_each_var_id_name_pairs=secret_acls_id_name_pairs)
         else:
             return None
 
@@ -158,20 +168,20 @@ class SecretHCLGenerator(APIGenerator):
         return data["name"]
 
     def __make_secret_dict(self, scope_name) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
-        return lambda x: TerraformDictBuilder(). \
+        return lambda x: TerraformDictBuilder(ResourceCatalog.SECRET_RESOURCE). \
             add_for_each(lambda: normalize_identifier(self.SECRET_FOREACH_VAR_TEMPLATE.format(scope_name)),
                          get_members(SecretSchema)). \
             to_dict()
 
     @staticmethod
     def __make_secret_scope_dict(data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
+        return TerraformDictBuilder(ResourceCatalog.SECRET_SCOPE_RESOURCE). \
             add_required("name", lambda: data["name"]). \
             add_optional("initial_manage_principal", lambda: data["initial_manage_principal"]). \
             to_dict()
 
     def __make_secret_acl_dict(self, scope_name) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
-        return lambda x: TerraformDictBuilder(). \
+        return lambda x: TerraformDictBuilder(ResourceCatalog.SECRET_ACL_RESOURCE). \
             add_for_each(lambda: normalize_identifier(self.SECRET_SCOPE_ACL_FOREACH_VAR_TEMPLATE.format(scope_name)),
                          get_members(SecretScopeAclSchema)). \
             to_dict()

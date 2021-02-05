@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -50,7 +51,7 @@ class Terraform:
         # TODO maybe figure out where to set this and how to pass it here
         raise_on_error = True
         if capture_output is True:
-            stderr = sys.stdout
+            stderr = subprocess.PIPE
             stdout = subprocess.PIPE
         else:
             stderr = sys.stderr
@@ -58,7 +59,6 @@ class Terraform:
 
         # cmds = self.generate_cmd_string(cmd, *args, **kwargs)
         log.info('command: {c}'.format(c=' '.join(cmds)))
-        # print('command: {c}'.format(c=' '.join(cmds)))
 
         working_folder = self.working_dir if self.working_dir is not None else None
 
@@ -69,14 +69,23 @@ class Terraform:
         p = subprocess.Popen(cmds, stdout=stdout, stderr=stderr,
                              cwd=working_folder, env=environ_vars)
 
+        output = []
+        error = []
         for line in p.stdout:
+            content = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line.decode("utf-8").rstrip("\n"))
+            output.append(content)
             log.info(line.decode("utf-8").rstrip("\n"))
 
-        out, err = p.communicate()
+        for line in p.stderr:
+            content = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line.decode("utf-8").rstrip("\n"))
+            error.append(content)
+            log.info(line.decode("utf-8").rstrip("\n"))
+
+        p.communicate()
         ret_code = p.returncode
         if capture_output is True:
-            out = out.decode('utf-8')
-            err = None
+            out = "\n".join(output)
+            err = "\n".join(error)
         else:
             out = None
             err = None

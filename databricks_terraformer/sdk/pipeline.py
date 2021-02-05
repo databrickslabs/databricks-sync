@@ -3,6 +3,7 @@ import asyncio
 import copy
 import fnmatch
 import json
+import traceback
 from abc import ABC
 from functools import reduce, singledispatch
 from pathlib import Path
@@ -16,6 +17,7 @@ from databricks_terraformer import log
 from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformJsonBuilder
 from databricks_terraformer.sdk.message import HCLConvertData, APIData, Artifact
 from databricks_terraformer.sdk.processor import Processor, MappedGrokVariableBasicAnnotationProcessor
+from databricks_terraformer.sdk.report.model import event_manager, EventManager, run_id, Session
 from databricks_terraformer.sdk.utils import normalize
 
 
@@ -38,7 +40,7 @@ class APIGenerator(abc.ABC):
     def _match_patterns(self, key):
         # TODO: determine if this should be any or all (and clause/or clause)
         matched = all([fnmatch.fnmatch(key, pattern) for pattern in self._patterns])
-        log.info(f"Attempt to match {key} to patterns: {self._patterns} yielded in {matched}")
+        log.debug(f"Attempt to match {key} to patterns: {self._patterns} yielded in {matched}")
         return matched
 
     @property
@@ -50,7 +52,13 @@ class APIGenerator(abc.ABC):
     def __add_tf_suffix(file_name: str) -> str:
         return file_name + ".tf.json"
 
-    def get_local_hcl_path(self, file_name):
+    def get_relative_hcl_path(self, file_name) -> str:
+        return str(ExportFileUtils.make_relative_path(
+            self.folder_name,
+            self.__add_tf_suffix(file_name)
+        ))
+
+    def get_local_hcl_path(self, file_name) -> Path:
         return ExportFileUtils.make_local_path(
             self._base_path,
             self.folder_name,
@@ -81,6 +89,16 @@ class APIGenerator(abc.ABC):
 
     async def generate(self):
         async for item in self._generate():
+            item: HCLConvertData
+            log.info(f"Processing: {item.resource_name} with name: {item.human_readable_name} and id: {item.raw_id}")
+            if len(item.for_each_var_id_name_pairs) > 0:
+                for id_name_pairs in item.for_each_var_id_name_pairs:
+                    event_manager.make_start_record(item.workspace_url, id_name_pairs[0],
+                                                    item.resource_name, id_name_pairs[0],
+                                                    id_name_pairs[1])
+            else:
+                event_manager.make_start_record(item.workspace_url, item.hcl_resource_identifier, item.resource_name,
+                                                item.raw_id, item.human_readable_name)
             yield item
 
     @abc.abstractmethod
@@ -94,7 +112,8 @@ class APIGenerator(abc.ABC):
                      identifier_func: Callable[[Dict[str, Any]], str],
                      raw_id_func: Callable[[Dict[str, Any]], str],
                      make_dict_func: Callable[[Dict[str, Any]], Dict[str, Any]],
-                     processors
+                     processors,
+                     human_readable_name_func: Callable[[Dict[str, Any]], str] = None,
                      ):
         if filter_func():
             return None
@@ -104,7 +123,10 @@ class APIGenerator(abc.ABC):
             self.api_client.url,
             identifier,
             make_dict_func(data),
-            self.get_local_hcl_path(identifier))
+            self.get_local_hcl_path(identifier),
+            relative_save_path=self.get_relative_hcl_path(identifier),
+            human_readable_name=human_readable_name_func(data) if human_readable_name_func is not None else None
+        )
         processed_api_data = self.post_process_api_data_hook(data, api_data)
         return HCLConvertData(resource_type, processed_api_data,
                               processors=processors)
@@ -165,15 +187,18 @@ class StreamUtils:
 def write_file(data, path: Path):
     raise ValueError(f"Data should be either a str or bytes like but got: {type(data)}")
 
+
 @write_file.register(str)
 def _(data, path: Path):
     with path.open("w+") as f:
         f.write(data)
 
+
 @write_file.register(bytes)
 def _(data, path: Path):
     with path.open("wb+") as f:
         f.write(data)
+
 
 class ExportFileUtils:
     BASE_DIRECTORY = "exports"
@@ -213,6 +238,11 @@ class ExportFileUtils:
         return dir_path / file_name
 
     @staticmethod
+    def make_relative_path(sub_dir: str, file_name) -> Path:
+        dir_path = Path(ExportFileUtils.BASE_DIRECTORY) / sub_dir
+        return dir_path / file_name
+
+    @staticmethod
     def add_file(local_path: Path, data: Union[str, bytes]):
         log.info(f"Writing to path {str(local_path)}")
         write_file(data, path=local_path)
@@ -249,38 +279,70 @@ class DownloaderAPIGenerator(APIGenerator, ABC):
 
     def post_process_api_data_hook(self, data: Dict[str, Any], api_data: APIData) -> APIData:
         artifacts = self.construct_artifacts(data)
-        new_api_data = APIData(api_data.raw_identifier, api_data.workspace_url, api_data.hcl_resource_identifier,
-                               api_data.data, api_data.local_save_path, artifacts=artifacts)
+        new_api_data = api_data.clone_with(artifacts=artifacts)
         return new_api_data
 
 
 def before_retry(fn, attempt_number):
-    log.info(f"Attempt {attempt_number}: attempting to retry {fn.__name__}")
+    log.debug(f"Attempt {attempt_number}: attempting to retry {fn.__name__}")
+
 
 class PipelineResults:
 
     def __init__(self):
         self.summary = {}
+        try:
+            self._session = Session()
+            self._event_manager = EventManager(run_id=run_id, session=self._session)
+        except Exception:
+            log.warn("Failed to initialize a session for SQLite to store results")
 
     def __str__(self):
         return json.dumps(self.summary, indent=4)
 
-    def add_hcl_data(self, hcl_convert_data: HCLConvertData):
-        get_name = lambda x: " ".join(x.split("_"))
-        r_name = get_name(hcl_convert_data.resource_name)
-        if r_name not in self.summary:
-            self.summary[r_name] = {
-                "count": 0,
-                "success": 0,
-                "failed": 0
-            }
-        if r_name in self.summary:
-            self.summary[r_name]["count"] += 1
-            if len(hcl_convert_data.errors) == 0:
-                self.summary[r_name]["success"] += 1
-            else:
-                self.summary[r_name]["failed"] += 1
+    def __handle_failed_events(self, hcl_convert_data: HCLConvertData):
+        error_list = []
+        for err in hcl_convert_data.errors:
+            error_list.append("\n".join(traceback.format_exception(type(err), err, err.__traceback__)))
+        if len(hcl_convert_data.for_each_var_id_name_pairs) > 0:
+            for id_name_pair in hcl_convert_data.for_each_var_id_name_pairs:
+                self._event_manager.make_end_record(hcl_convert_data.workspace_url,
+                                                    id_name_pair[0],
+                                                    hcl_convert_data.resource_name,
+                                                    "FAILED",
+                                                    error_msg="\n".join([str(err) for err in hcl_convert_data.errors]),
+                                                    error_traceback="\n".join(error_list)
+                                                    )
+        else:
+            self._event_manager.make_end_record(hcl_convert_data.workspace_url,
+                                                hcl_convert_data.hcl_resource_identifier,
+                                                hcl_convert_data.resource_name,
+                                                "FAILED",
+                                                error_msg="\n".join([str(err) for err in hcl_convert_data.errors]),
+                                                error_traceback="\n".join(error_list),
+                                                )
 
+    def __handle_passed_events(self, hcl_convert_data: HCLConvertData):
+        if len(hcl_convert_data.for_each_var_id_name_pairs) > 0:
+            for id_name_pair in hcl_convert_data.for_each_var_id_name_pairs:
+                self._event_manager.make_end_record(hcl_convert_data.workspace_url,
+                                                    id_name_pair[0],
+                                                    hcl_convert_data.resource_name,
+                                                    "SUCCEDED", file_path=hcl_convert_data.relative_save_path)
+        else:
+            self._event_manager.make_end_record(hcl_convert_data.workspace_url,
+                                                hcl_convert_data.hcl_resource_identifier,
+                                                hcl_convert_data.resource_name,
+                                                "SUCCEDED", file_path=hcl_convert_data.relative_save_path)
+
+    def log_events(self, hcl_convert_data: HCLConvertData):
+        if len(hcl_convert_data.errors) > 0:
+            self.__handle_failed_events(hcl_convert_data)
+        else:
+            self.__handle_passed_events(hcl_convert_data)
+
+    def add_hcl_data(self, hcl_convert_data: HCLConvertData):
+        self.log_events(hcl_convert_data)
 
 class Pipeline:
 
@@ -326,7 +388,7 @@ class Pipeline:
             try:
                 tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
             except ValueError as e:
-                log.info(f"Attempting to find unique but found duplicate of {mapped_var} so skipping.")
+                log.debug(f"Attempting to find unique but found duplicate of {mapped_var} so skipping.")
         return tjb.to_json()
         # return "\n".join([mapped_var.to_hcl(False) for mapped_var in hcl_convert_data.mapped_variables])
 
@@ -342,8 +404,6 @@ class Pipeline:
     @staticmethod
     @HCLConvertData.manage_error
     def filter_tfvars(hcl_convert_data: HCLConvertData) -> bool:
-        print(hcl_convert_data.resource_variables)
-        print([var.default for var in hcl_convert_data.resource_variables])
         if hcl_convert_data.resource_variables is not None \
                 and len(hcl_convert_data.resource_variables) > 0 \
                 and any([var.default is None for var in hcl_convert_data.resource_variables]) \
@@ -359,7 +419,7 @@ class Pipeline:
         for r_var in hcl_convert_data.resource_variables:
             if r_var.default is None:
                 tfvars.append(r_var.variable_name)
-        print(f"tfvars-{tfvars}")
+        log.debug(f"tfvars-{tfvars}")
         return tfvars
 
     @staticmethod
@@ -372,7 +432,7 @@ class Pipeline:
                     try:
                         tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
                     except ValueError as e:
-                        log.info(f"Attempting to add another instance of {mapped_var} so skipping.")
+                        log.debug(f"Attempting to add another instance of {mapped_var} so skipping.")
                     # tjb.add_variable(mapped_var.variable_name, mapped_var.to_dict())
             mapped_variables_json = tjb.to_json()
             with ExportFileUtils.make_mapped_vars_path(base_path).open("w+") as f:
@@ -419,7 +479,7 @@ class Pipeline:
             map_vars_collector,
             # Everything will be collected to all in once place we do not need this to be distributed
             is_dask_enabled=False
-        ).sink(print)
+        ).sink(lambda x: x)
 
         tfvars_s = StreamUtils.apply_filter(
             Pipeline.filter_tfvars,
@@ -429,7 +489,7 @@ class Pipeline:
 
         tfvars_collector = tfvars_values_s.flatten().unique().collect()
         self.__collectors.append(tfvars_collector)
-        tfvars_collector.map(Pipeline.make_tfvars_handler(self._base_path)).sink(print)
+        tfvars_collector.map(Pipeline.make_tfvars_handler(self._base_path)).sink(lambda x: x)
 
         resource_s = StreamUtils.apply_map(
             Pipeline.make_resource_files_handler(debug),
@@ -445,6 +505,7 @@ class Pipeline:
             if self.__dask_client.futures[key].status == "pending":
                 # TODO: add log statement here
                 raise ValueError("expecting all futures to be finished")
+        log.info("Waiting for all processes to be finished.")
 
     def __generate_all(self):
         # finish up initial push of events
@@ -463,4 +524,4 @@ class Pipeline:
     def run(self):
         self.__generate_all()
         self.__flush_map_var_collectors()
-        print(self.__pipeline_results)
+        log.info(self.__pipeline_results)

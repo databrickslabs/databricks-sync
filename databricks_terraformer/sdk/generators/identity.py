@@ -139,30 +139,30 @@ class IdentityHCLGenerator(APIGenerator):
         return uipd
 
     def __make_user_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
+        return TerraformDictBuilder(ResourceCatalog.USER_RESOURCE). \
             add_for_each(lambda: skip_me(self.USERS_FOREACH_VAR), get_members(UserSchema), just_local=False). \
             to_dict()
 
     def __make_user_instance_profile_dict(self, user_name: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
-        return lambda x: TerraformDictBuilder(). \
+        return lambda x: TerraformDictBuilder(ResourceCatalog.USER_INSTANCE_PROFILE_RESOURCE). \
             add_for_each(lambda: skip_me(self.USER_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(user_name)),
                          get_members(UserInstanceProfileSchema), just_local=False). \
             to_dict()
 
     def __make_group_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
+        return TerraformDictBuilder(ResourceCatalog.GROUP_RESOURCE). \
             add_for_each(lambda: self.GROUPS_FOREACH_VAR, get_members(GroupSchema)). \
             to_dict()
 
     def __make_group_instance_profile_dict(self, group_instance_profile_id: str) -> Callable[
         [Dict[str, Any]], Dict[str, Any]]:
-        return lambda x: TerraformDictBuilder(). \
+        return lambda x: TerraformDictBuilder(ResourceCatalog.GROUP_INSTANCE_PROFILE_RESOURCE). \
             add_for_each(lambda: self.GROUP_INSTANCE_PROFILE_FOREACH_VAR_TEMPLATE.format(group_instance_profile_id),
                          get_members(GroupInstanceProfileSchema), cloud=CloudConstants.AWS). \
             to_dict()
 
     def __make_member_dict(self, member_id: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
-        return lambda x: TerraformDictBuilder(). \
+        return lambda x: TerraformDictBuilder(ResourceCatalog.GROUP_MEMBER_RESOURCE). \
             add_for_each(lambda: skip_me(self.GROUP_MEMBERS_FOREACH_VAR_TEMPLATE.format(member_id)),
                          get_members(GroupMemberSchema), just_local=False). \
             to_dict()

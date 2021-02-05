@@ -7,7 +7,7 @@ from databricks_cli.workspace.api import WorkspaceFileInfo
 
 from databricks_terraformer import log
 from databricks_terraformer.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
-from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder, Expression
+from databricks_terraformer.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_terraformer.sdk.message import Artifact, APIData
 from databricks_terraformer.sdk.pipeline import DownloaderAPIGenerator
 from databricks_terraformer.sdk.sync.constants import ResourceCatalog
@@ -57,8 +57,18 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def construct_artifacts(self, data: Dict[str, Any]) -> List[Artifact]:
         return [NotebookArtifact(remote_path=data['path'],
-                                 local_path=self.get_local_download_path(self.__notebook_identifier(data)),
+                                 local_path=self.get_local_download_path(self.__notebook_file_name(data)),
                                  service=self.__service)]
+
+    def __notebook_file_name(self, data: Dict[str, Any]) -> str:
+        extmap = {
+            "PYTHON": ".py",
+            "SCALA": ".scala",
+            "R": ".r",
+            "SQL": ".sql"
+        }
+        lang = data["language"]
+        return self.__notebook_identifier(data)+extmap[lang]
 
     def __notebook_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_notebook-{d['path']}")
@@ -67,16 +77,18 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     def __notebook_raw_id(data: Dict[str, Any]) -> str:
         return data['object_id']
 
+    @staticmethod
+    def __notebook_name(data: Dict[str, Any]) -> str:
+        return data.get("path", None)
+
     def __make_notebook_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        tdb = TerraformDictBuilder()
+        tdb = TerraformDictBuilder(ResourceCatalog.NOTEBOOK_RESOURCE,
+                                   data, object_id=NotebookHCLGenerator.__notebook_raw_id,
+                                   object_name=NotebookHCLGenerator.__notebook_name)
         tdb. \
-            add_required("content", lambda: f'filebase64("{self.__notebook_identifier(data)}")',
-                         Expression()). \
+            add_required("source", lambda: self.__notebook_file_name(data)). \
             add_required("path", lambda: data["path"]). \
-            add_required("overwrite", lambda: True). \
-            add_required("mkdirs", lambda: True). \
-            add_required("language", lambda: data['language']). \
-            add_required("format", lambda: "SOURCE")
+            add_required("language", lambda: data['language'])
         return tdb.to_dict()
 
     def __create_notebook_data(self, notebook_data: Dict[str, Any]):
@@ -86,7 +98,8 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                                  self.__notebook_identifier,
                                  self.__notebook_raw_id,
                                  self.__make_notebook_dict,
-                                 self.map_processors(self.__custom_map_vars))
+                                 self.map_processors(self.__custom_map_vars),
+                                 human_readable_name_func=self.__notebook_name)
 
     async def _generate(self) -> Generator[APIData, None, None]:
         service = WorkspaceService(self.api_client)
@@ -95,6 +108,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                 notebook_data = self.__create_notebook_data(notebook)
                 yield notebook_data
                 try:
-                    yield self.__perms.create_permission_data(notebook_data, self.get_local_hcl_path)
+                    yield self.__perms.create_permission_data(notebook_data, self.get_local_hcl_path,
+                                                              self.get_relative_hcl_path)
                 except NoDirectPermissionsError:
                     pass

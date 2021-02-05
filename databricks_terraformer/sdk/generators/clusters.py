@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Generator, Dict, Any
+from typing import Generator, Dict, Any, Optional
 
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import ClusterService, ManagedLibraryService
@@ -37,7 +37,8 @@ class ClusterHCLGenerator(APIGenerator):
             self.__get_cluster_identifier,
             self.__get_cluster_raw_id,
             self.__get_cluster_dict,
-            self.map_processors(self.__custom_map_vars)
+            self.map_processors(self.__custom_map_vars),
+            human_readable_name_func=self.__get_cluster_name,
         )
 
     @staticmethod
@@ -106,7 +107,8 @@ class ClusterHCLGenerator(APIGenerator):
 
             yield cluster_data
             try:
-                yield self.__perms.create_permission_data(cluster_data, self.get_local_hcl_path)
+                yield self.__perms.create_permission_data(cluster_data, self.get_local_hcl_path,
+                                                          self.get_relative_hcl_path)
             except NoDirectPermissionsError:
                 pass
 
@@ -118,8 +120,12 @@ class ClusterHCLGenerator(APIGenerator):
         return self.get_identifier(data, lambda d: f"databricks_cluster-{d['cluster_id']}")
 
     @staticmethod
-    def __get_cluster_raw_id(data: Dict[str, Any]) -> str:
-        return data['cluster_id']
+    def __get_cluster_raw_id(data: Dict[str, Any]) -> Optional[str]:
+        return data.get('cluster_id', None)
+
+    @staticmethod
+    def __get_cluster_name(data: Dict[str, Any]) -> Optional[str]:
+        return data.get('cluster_name', None)
 
     @staticmethod
     def __get_cluster_dict(data: Dict[str, Any]):
@@ -128,7 +134,9 @@ class ClusterHCLGenerator(APIGenerator):
     @staticmethod
     def make_cluster_dict(data: Dict[str, Any], depends_on=False, is_job=False) -> Dict[str, Any]:
         id_field = "id"
-        tdb = TerraformDictBuilder(). \
+        tdb = TerraformDictBuilder(ResourceCatalog.CLUSTER_RESOURCE,
+                                   data, job_mode=f"{is_job}", object_id=ClusterHCLGenerator.__get_cluster_raw_id,
+                                   object_name=ClusterHCLGenerator.__get_cluster_name). \
             add_required("cluster_name", lambda: data.get("cluster_name", "")). \
             add_required("spark_version", lambda: data["spark_version"]). \
             add_optional("driver_node_type_id", lambda: data["driver_node_type_id"]). \

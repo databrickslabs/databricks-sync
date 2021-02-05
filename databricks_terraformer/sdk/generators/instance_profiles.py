@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Generator, Dict, Any, Callable
+from typing import Generator, Dict, Any, Callable, List, Tuple
 
 from databricks_cli.sdk import ApiClient
 
@@ -22,7 +22,8 @@ class InstanceProfileHCLGenerator(APIGenerator):
         self.__service = InstanceProfilesService(self.api_client)
 
     def __create_instance_profile_data(self, instance_profile_data: Dict[str, Any],
-                                       instance_profile_identifier: Callable[[Dict[str, str]], str]):
+                                       instance_profile_identifier: Callable[[Dict[str, str]], str],
+                                       for_each_var_id_name_pairs: List[Tuple[str, str]] = None):
         # TODO fix the lambda below
         ipd = self._create_data(
             ResourceCatalog.INSTANCE_PROFILE_RESOURCE,
@@ -34,19 +35,23 @@ class InstanceProfileHCLGenerator(APIGenerator):
             self.map_processors(self.__custom_map_vars)
         )
         ipd.upsert_local_variable(self.INSTANCE_PROFILE_FOR_EACH, instance_profile_data)
+        ipd.add_for_each_var_name_pairs(for_each_var_id_name_pairs)
         return ipd
 
     async def _generate(self) -> Generator[APIData, None, None]:
         profiles = self.__service.list_instance_profiles()
         instance_profiles_data = {}
+        instance_profiles_id_name_pairs = []
         for profile in profiles.get("instance_profiles", []):
             id_ = profile["instance_profile_arn"]
             this_instance_profile_data = {
                 InstanceProfileSchema.INSTANCE_PROFILE_ARN: id_,
             }
             instance_profiles_data[id_] = this_instance_profile_data
+            instance_profiles_id_name_pairs.append((id_, id_))
         yield self.__create_instance_profile_data(instance_profiles_data, lambda x:
-        ForEachBaseIdentifierCatalog.INSTANCE_PROFILES_BASE_IDENTIFIER)
+                                                  ForEachBaseIdentifierCatalog.INSTANCE_PROFILES_BASE_IDENTIFIER,
+                                                  for_each_var_id_name_pairs=instance_profiles_id_name_pairs)
 
     @property
     def folder_name(self) -> str:
@@ -60,7 +65,7 @@ class InstanceProfileHCLGenerator(APIGenerator):
         return data['instance_profile_arn']
 
     def __make_instance_profile_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        return TerraformDictBuilder(). \
+        return TerraformDictBuilder(ResourceCatalog.INSTANCE_PROFILE_RESOURCE). \
             add_required("skip_validation", lambda: False). \
             add_for_each(lambda: self.INSTANCE_PROFILE_FOR_EACH, get_members(InstanceProfileSchema),
                          cloud=CloudConstants.AWS). \

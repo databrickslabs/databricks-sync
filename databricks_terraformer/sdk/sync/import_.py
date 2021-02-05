@@ -1,5 +1,6 @@
 import functools
 import json
+import shutil
 import tempfile
 from pathlib import Path
 from typing import List
@@ -7,6 +8,7 @@ from typing import List
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.sdk import ApiClient
 
+from databricks_terraformer import log
 from databricks_terraformer.sdk.git_handler import RemoteGitHandler
 from databricks_terraformer.sdk.service.scim import ScimService
 from databricks_terraformer.sdk.sync.constants import ENTRYPOINT_MAIN_TF, MeConstants
@@ -56,11 +58,11 @@ def setup_repo(func):
 
 
 def shutdown_clusters(api_client):
-    print("Shutting down clusters")
+    log.info("Shutting down clusters")
     cluster_api = ClusterApi(api_client)
     cluster_list = cluster_api.list_clusters()
     for cluster in cluster_list.get("clusters", []):
-        print(f"shutting down {cluster['cluster_id']}")
+        log.info(f"shutting down {cluster['cluster_id']}")
         cluster_api.delete_cluster(cluster["cluster_id"])
 
 
@@ -69,12 +71,14 @@ def get_me_username(api_client):
     me = scim_api.me()
     return me["userName"]
 
+
 class TerraformExecution:
     def __init__(self, folders: List[str], refresh: bool = True, revision: str = None, plan: bool = False,
-                 plan_location: Path = None, state_location: Path = None, apply: bool = False, destroy: bool = False,
+                 plan_location: Path = None, local_state_location: Path = None, apply: bool = False, destroy: bool = False,
                  git_ssh_url: str = None, local_git_path=None, api_client: ApiClient = None, branch="master",
-                 post_import_shutdown=False):
+                 post_import_shutdown=False, back_end_json: Path = None):
 
+        self.back_end_json: Path = back_end_json
         self.post_import_shutdown = post_import_shutdown
         self.tmp_stage = tempfile.TemporaryDirectory()
         self.local_git_path = local_git_path
@@ -82,7 +86,7 @@ class TerraformExecution:
         self.branch = branch
         self.folders = folders
         self.git_ssh_url = git_ssh_url
-        self.state_location = state_location
+        self.local_state_location = local_state_location
         self.destroy = destroy
         self.refresh = refresh
         self.apply = apply
@@ -107,7 +111,6 @@ class TerraformExecution:
             istg.stage_files(self.__get_exports_path(repo_path) / folder)
         istg.stage_file(self.__get_exports_path(repo_path) / "mapped_variables.tf.json")
 
-
     @setup_empty_stage
     @setup_repo
     def execute(self, stage_path, repo_path):
@@ -115,8 +118,13 @@ class TerraformExecution:
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            print(json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
+            log.info("Main TF File: " + json.dumps(
+                MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
             w.write(json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF, get_me_username(self.api_client))))
+            if self.back_end_json is not None:
+                log.info("Backend Json TF File: " + str(self.back_end_json))
+                shutil.copy(self.back_end_json, stage_path / "backend.tf.json")
+
         tf = Terraform(working_dir=str(stage_path), is_env_vars_included=True)
         tf.version()
         tf.init()
@@ -131,17 +139,19 @@ class TerraformExecution:
         # We should run validate in either case
         tf.validate()
 
+        state_loc = self.local_state_location if self.back_end_json is None else None
         if self.plan is True:
             tf.plan(
                 refresh=self.refresh,
                 output_file=self.plan_location,
-                state_file_abs_path=self.state_location)
+                state_file_abs_path=state_loc)
 
-        if self.apply is True:
-            tf.apply(
-                refresh=self.refresh,
-                plan_file=self.plan_location,
-                state_file_abs_path=self.state_location)
-
-        if self.post_import_shutdown is True:
-            shutdown_clusters(self.api_client)
+        try:
+            if self.apply is True:
+                tf.apply(
+                    refresh=self.refresh,
+                    plan_file=self.plan_location,
+                    state_file_abs_path=state_loc)
+        finally:
+            if self.post_import_shutdown is True and self.apply is True:
+                shutdown_clusters(self.api_client)

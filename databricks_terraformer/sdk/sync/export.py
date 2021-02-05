@@ -10,8 +10,11 @@ from databricks_terraformer.sdk.config import export_config
 from databricks_terraformer.sdk.generators.factory import GeneratorFactory
 from databricks_terraformer.sdk.git_handler import GitHandler, LocalGitHandler, RemoteGitHandler
 from databricks_terraformer.sdk.pipeline import ExportFileUtils, Pipeline
+from databricks_terraformer.sdk.report.model import event_manager, report_manager
+from databricks_terraformer.sdk.report.parsers import get_error_paths_and_content
 from databricks_terraformer.sdk.sync import validate_dict
 from databricks_terraformer.sdk.sync.import_ import TerraformExecution
+from databricks_terraformer.sdk.terraform import TerraformCommandError
 
 
 class ExportCoordinator:
@@ -33,7 +36,7 @@ class ExportCoordinator:
 
     @staticmethod
     def export(api_client: ApiClient, yaml_file_path: Path, dask_mode: bool = False, dry_run: bool = False,
-               git_ssh_url: str = None, local_git_path=None, branch="master"):
+               git_ssh_url: str = None, local_git_path=None, branch="master", excel_report=False):
         client = None
         if dask_mode is True:
             from distributed import Client
@@ -85,8 +88,18 @@ class ExportCoordinator:
                 api_client=api_client,
                 branch=branch,
             )
-            te.execute()
-
+            try:
+                te.execute()
+            except TerraformCommandError as tce:
+                f_validation_files, f_validation_msgs, f_validation_tbs = get_error_paths_and_content(tce.err)
+                event_manager.make_validation_records(api_client.url, f_validation_files, f_validation_msgs,
+                                                      f_validation_tbs)
 
         finally:
+            event_manager.make_validation_records(api_client.url, [], [],
+                                                  [])
+            report_manager_results = report_manager.fetch_and_gather_results(api_client.url)
+            report_manager_results.print_to_console()
+            if excel_report is True:
+                report_manager_results.print_to_xlsx()
             tmp_dir.cleanup()

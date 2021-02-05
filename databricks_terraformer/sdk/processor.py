@@ -5,6 +5,7 @@ from typing import Text, Dict, Optional, Any
 from dotty_dict import Dotty
 from pygrok import Grok
 
+from databricks_terraformer import log
 from databricks_terraformer.sdk.hcl.json_to_hcl import Interpolate
 from databricks_terraformer.sdk.message import HCLConvertData
 from databricks_terraformer.sdk.utils import normalize_identifier
@@ -67,7 +68,7 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
             except KeyError as ke:
                 # TODO: change to log later
                 # You may set a default map var that does not yet exist
-                print(f"Created key error when search for pattern: {pattern} in dictionary: {dotty_dict.to_dict()}")
+                log.debug(f"Created key error when search for pattern: {pattern} in dictionary: {dotty_dict.to_dict()}")
             finally:
                 return
         else:
@@ -75,7 +76,7 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
             try:
                 dotty_dict[first_part]
             except KeyError as ke:
-                print(f"First part ({first_part}) of the key {pattern} does not exist in dict")
+                log.debug(f"First part ({first_part}) of the key {pattern} does not exist in dict")
                 return
 
         idx = 0

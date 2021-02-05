@@ -60,6 +60,7 @@ def handle_additional_debug(ctx):
     if context_object.debug_mode is True:
         os.environ["TF_LOG"] = "debug"
         os.environ["GIT_PYTHON_TRACE"] = "full"
+        os.environ["DATABRICKS_SYNC_REPORT_DB_TRACE"] = "true"
 
 
 def delete_option(f):
@@ -81,6 +82,15 @@ def dry_run_option(f):
 
     return click.option('--dry-run', is_flag=True, callback=callback,
                         help="This will only log to console the actions but not commit to git remote state.")(f)
+
+def excel_report_option(f):
+    def callback(ctx, param, value):  # NOQA
+        if value is True:
+            log.info("===EXCEL REPORT ENABLED===")
+        return value
+
+    return click.option('--excel-report', is_flag=True, callback=callback,
+                        help="This will allow you to output the export full report into an excel(.xlsx) file.")(f)
 
 
 def tag_option(f):

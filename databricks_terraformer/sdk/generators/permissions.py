@@ -44,8 +44,12 @@ class PermissionsHelper:
 
     @staticmethod
     @normalize
-    def _make_identifier(raw_id: str) -> str:
-        return f"databricks_permissions-{raw_id}"
+    def _make_identifier(src_object_type, raw_id: str) -> str:
+        return f"{src_object_type}-{raw_id}-permissions"
+
+    @staticmethod
+    def __make_name(src_obj_data: HCLConvertData):
+        return f"{src_obj_data.human_readable_name} permissions"
 
     @staticmethod
     def _handle_depends_on(tdb: TerraformDictBuilder):
@@ -72,7 +76,7 @@ class PermissionsHelper:
         if len(permission_list) == 0:
             raise NoDirectPermissionsError("cannot have no acls that are directly attributed")
         perms: TerraformPermissionType = self.perm_mapping[src_obj_data.resource_name]
-        tdb = TerraformDictBuilder()
+        tdb = TerraformDictBuilder(ResourceCatalog.PERMISSIONS_RESOURCE, object_name=self.__make_name(src_obj_data))
 
         # TODO: doc => If cloud dep is not none that means there is a count flag on the parent resource
         # indexed resources get interpolated on value of count
@@ -94,17 +98,22 @@ class PermissionsHelper:
                                   custom_ternary_bool_expr=f'{MeConstants.USERNAME_VAR} != "{permission["user_name"]}"')
         return tdb.to_dict()
 
-    def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path]):
+    def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path],
+                               rel_path_func: Callable[[str], str] = None):
         perm_data = self._permissions_service.get_object_permissions(
             self.perm_mapping[src_obj_data.resource_name].object_type, src_obj_data.raw_id)
-        identifier = self._make_identifier(src_obj_data.raw_id)
+        identifier = self._make_identifier(src_obj_data.resource_name, src_obj_data.raw_id)
+        permissions_name = self.__make_name(src_obj_data)
 
         api_data = APIData(
             identifier,
             self.api_client.url,
             identifier,
             self._create_permission_dictionary(src_obj_data, perm_data["access_control_list"]),
-            path_func(identifier))
+            path_func(identifier),
+            relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
+            human_readable_name=permissions_name
+        )
 
         return HCLConvertData(ResourceCatalog.PERMISSIONS_RESOURCE, api_data,
                               processors=[])
