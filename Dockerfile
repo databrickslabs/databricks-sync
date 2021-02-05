@@ -1,6 +1,6 @@
 FROM python:3.7-stretch
 # Setup wokring directory
-WORKDIR /databricks-terraformer/
+WORKDIR /databricks-sync/
 ENV TF_VERSION 0.14.5
 ENV GIT_PYTHON_TRACE=full
 ENV HOME=/root
@@ -19,4 +19,4 @@ RUN pip install -r dev-requirements.txt
 
 COPY . .
 RUN pip install .
-ENTRYPOINT ["databricks-terraformer"]
+ENTRYPOINT ["databricks-sync"]

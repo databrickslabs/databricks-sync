@@ -3,9 +3,9 @@ from typing import Dict, Any, Generator, Optional, List
 
 import pytest
 
-from databricks_terraformer.sdk.hcl import BLOCK_PREFIX
-from databricks_terraformer.sdk.message import APIData, HCLConvertData
-from databricks_terraformer.sdk.pipeline import APIGenerator
+from databricks_sync.sdk.hcl import BLOCK_PREFIX
+from databricks_sync.sdk.message import APIData, HCLConvertData
+from databricks_sync.sdk.pipeline import APIGenerator
 
 
 class MockApiClient():

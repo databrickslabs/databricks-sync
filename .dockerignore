@@ -9,10 +9,10 @@ dist
 examples
 venv
 tests
-databricks_terraformer.egg-info
+databricks_sync.egg-info
 build
-databricks_terraformer/hcl/json2hcl.h
-databricks_terraformer/hcl/json2hcl.so
+databricks_sync/hcl/json2hcl.h
+databricks_sync/hcl/json2hcl.so
 .tox
 .pytest_cache
 dask-worker-space

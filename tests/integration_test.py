@@ -13,14 +13,14 @@ from databricks_cli.sdk import ApiClient, WorkspaceService, DbfsService
 from databricks_cli.secrets.api import SecretApi
 from deepdiff import DeepDiff
 
-from databricks_terraformer.cmds import apply
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
-from databricks_terraformer.sdk.service.scim import ScimService
+from databricks_sync.cmds import apply
+from databricks_sync.sdk.service.cluster_policies import PolicyService
+from databricks_sync.sdk.service.scim import ScimService
 # TODO explain this in README.md
-from databricks_terraformer.sdk.sync.constants import CloudConstants
+from databricks_sync.sdk.sync.constants import CloudConstants
 # TODO explain this in README.md
-from databricks_terraformer.sdk.sync.export import ExportCoordinator
-from databricks_terraformer.sdk.sync.import_ import TerraformExecution
+from databricks_sync.sdk.sync.export import ExportCoordinator
+from databricks_sync.sdk.sync.import_ import TerraformExecution
 from tests import cleanup_workspace, cleanup_git
 # TODO DOC README - Describe the integration Test in the READNE. Explain .env as well
 # TODO DOC README - Need to document 403 scenario due to token expiration date

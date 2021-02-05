@@ -4,15 +4,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="databricks-terraformer",
+    name="databricks-sync",
     version="1.0.0",
     author="Itai Weiss",
     author_email="itai@databricks.com",
-    description="Databricks Terraformer CLI",
+    description="Databricks Sync CLI",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/databrickslabs/databricks-terraformer",
-    license="https://github.com/databrickslabs/databricks-terraformer/blob/master/LICENSE",
+    url="https://github.com/databrickslabs/databricks-sync",
+    license="https://github.com/databrickslabs/databricks-sync/blob/master/LICENSE",
     packages=setuptools.find_packages(exclude=['tests', 'tests.*', ]),
     install_requires=[
         'PyYAML==5.3.1',
@@ -29,12 +29,9 @@ setuptools.setup(
         'SQLAlchemy==1.3.22',
         'styleframe==3.0.6'
     ],
-    package_data={
-        'databricks_terraformer': ['sdk/hcl/json2hcl.so', 'utils/changelog.md.j2', 'sdk/hcl/hcl.tf.j2'],
-    },
     entry_points='''
         [console_scripts]
-        databricks-terraformer=databricks_terraformer.cmds.cli:cli
+        databricks-sync=databricks_sync.cmds.cli:cli
     ''',
     classifiers=[
         "Programming Language :: Python :: 3",

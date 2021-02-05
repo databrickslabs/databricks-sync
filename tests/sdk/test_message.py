@@ -1,6 +1,4 @@
-import copy
-
-from databricks_terraformer.sdk.message import Variable, ErrorMixin
+from databricks_sync.sdk.message import Variable, ErrorMixin
 from tests.sdk import *
 
 
