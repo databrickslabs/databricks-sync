@@ -1,17 +1,10 @@
-from pathlib import Path
-import tempfile
-from git import Repo
-
-from databricks_terraformer import log
-
-import glob
 import glob
 import tempfile
 from pathlib import Path
 
 from git import Repo
 
-from databricks_terraformer import log
+from databricks_sync import log
 
 
 def destroy_all(git_url, dry_run, branch='master'):

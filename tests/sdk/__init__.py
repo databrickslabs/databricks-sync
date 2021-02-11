@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from databricks_terraformer.sdk.message import Artifact, APIData, HCLConvertData
+from databricks_sync.sdk.message import Artifact, APIData, HCLConvertData
 
 raw_id = "raw_identifier"
 workspace_url = "www.workspace-url.com"
