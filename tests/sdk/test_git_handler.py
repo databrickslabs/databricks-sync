@@ -1,11 +1,8 @@
 import datetime
-import functools
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from databricks_terraformer.sdk.git_handler import GitHandler
-
-import datetime
+from databricks_sync.sdk.git_handler import GitHandler
 
 
 class MockNow(datetime.datetime):

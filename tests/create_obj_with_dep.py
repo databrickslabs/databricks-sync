@@ -7,7 +7,7 @@ from databricks_cli.jobs.api import JobsApi
 from databricks_cli.libraries.api import LibrariesApi
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_sync.sdk.service.cluster_policies import PolicyService
 
 
 def get_id(name_key, name_value, id_name, created_objects):  # policy_id, "it_cluster_with_policy",

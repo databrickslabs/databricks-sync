@@ -1,10 +1,7 @@
 import json
 
-from pygrok import Grok
-
-from databricks_terraformer.sdk.processor import BasicAnnotationProcessor, ResourceVariableBasicAnnotationProcessor, \
+from databricks_sync.sdk.processor import BasicAnnotationProcessor, ResourceVariableBasicAnnotationProcessor, \
     MappedGrokVariableBasicAnnotationProcessor
-from tests.sdk import *
 
 
 class TestBasicAnnotationProcessor:

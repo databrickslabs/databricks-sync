@@ -261,3 +261,5 @@ dask-worker-space/**
 
 *.tfstate
 *.tfstate.*
+
+*.xlsx

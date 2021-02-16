@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 from databricks_cli.sdk import ApiClient
 
-from databricks_terraformer.cmds.config import wrap_with_user_agent
-from databricks_terraformer.sdk.config import ExportConfig
+from databricks_sync.cmds.config import wrap_with_user_agent
+from databricks_sync.sdk.config import ExportConfig
 from tests import fixtures
 
 

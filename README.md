@@ -1,6 +1,6 @@
 # Databricks Sync (dbSync)
 
-![Reference Architecture for Databricks-Sync](https://github.com/R7L208/databricks-sync/blob/master/docs/solution-arch.png?raw=true)
+![Reference Architecture for Databricks-Sync](docs/solution-arch.png?raw=true)
 
 ## Introduction
 
@@ -39,24 +39,24 @@ This package uses credentials from the [Databricks CLI](https://docs.databricks.
 
 See the [Databricks Sync Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs) Markdown files for details.
 
-Instructions to install Databricks Sync can be found [here](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md).
+[Instructions to install Databricks Sync](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md) can be found here.
 
 ## Quickstart
 
 ### Next steps:
-* Configure YAML file
+* Configure [YAML file](https://github.com/databrickslabs/databricks-sync/blob/master/tests/integration_test.yaml).
 * Export object permissions and import them to the target with the object
 * Add examples for different scenarios:
-    * Backup and Restore
-    * CI/CD
-    * Disaster Recovery Sync
-    * Batch modification (will require Terraform Object Import support)
+  * Backup and Restore
+  * CI/CD
+  * Disaster Recovery Sync
+  * Batch modification (will require Terraform Object Import support)
       
 
 ### Common commands
 
 ```bash
-$ databricks-terraformer  export \
+$ databricks-sync  export \
     --profile <db cli profile> \
     --git-ssh-url git@github.com:..../.....git \
     -c ....test.yaml 
@@ -67,7 +67,7 @@ optional flags:
     --dask
     --branch # support new main name convention
 
-$ GIT_PYTHON_TRACE=full databricks-terraformer import \
+$ GIT_PYTHON_TRACE=full databricks-sync import \
     -g git@github.com:.../....git \
     --profile dr_tagert \
     --databricks-object-type cluster_policy \
@@ -105,7 +105,7 @@ install the prior listed tools to get this to work.
 To install this tool please run the following command:
 
 ```bash
-$ docker build -t databricks-terraformer:latest .
+$ docker build -t databricks-sync:latest .
 ```
 
 
@@ -114,13 +114,16 @@ $ docker build -t databricks-terraformer:latest .
 How our alias command works:
 
 This script creates 3 volume mounts with docker of which two are read only.
-1. We mount `$PWD` or present working directory to `/usr/src/databricks-terraformer` as that is the working directory.
+1. We mount `$PWD` or present working directory to `/usr/src/databricks-sync` as that is the working directory.
 This allows you to manipulate files in the local working directory on your host machine.
 2. The second mount is mounting `~/.databrickscfg` to `/root` as that is the home directory of the container. 
 This mount is read only.
 3. The third mount is mounting `~/.ssh` folder to the `/root/.ssh` folder. This is so the script can fetch your 
 private keys in a read only fashion for accessing the git repository. This is also a read only mount.
 
+```bash
+alias dbt='docker run -it --rm --name docker-databricks-sync --env-file <(env | grep ARM) -v "$PWD":/usr/src/databricks-sync -v ~/.databrickscfg:/root/.databrickscfg:ro -v ~/.ssh:/root/.ssh:ro -w /usr/src/databricks-sync databricks-sync'
+```
 
 ### Support Matrix for Import and Export Operations:
 

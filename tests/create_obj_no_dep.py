@@ -9,7 +9,7 @@ from databricks_cli.sdk import ApiClient
 from databricks_cli.secrets.api import SecretApi
 from databricks_cli.workspace.api import WorkspaceApi
 
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_sync.sdk.service.cluster_policies import PolicyService
 
 
 def src_upload_dbfs_file(client_api: ApiClient, tests_path, it_conf):
