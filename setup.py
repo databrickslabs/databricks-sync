@@ -27,7 +27,8 @@ setuptools.setup(
         'pygrok==1.0.0',
         'pandas==1.1.1',
         'SQLAlchemy==1.3.22',
-        'styleframe==3.0.6'
+        'styleframe==3.0.6',
+        'dask==2.23.0'
     ],
     entry_points='''
         [console_scripts]
