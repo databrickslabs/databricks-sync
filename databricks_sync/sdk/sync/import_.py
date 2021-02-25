@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -57,13 +58,11 @@ def setup_repo(func):
     return wrapper
 
 
-def shutdown_clusters(api_client):
-    log.info("Shutting down clusters")
+def shutdown_clusters(api_client, cluster_id):
+    log.info("Shutting down tracked clusters")
     cluster_api = ClusterApi(api_client)
-    cluster_list = cluster_api.list_clusters()
-    for cluster in cluster_list.get("clusters", []):
-        log.info(f"shutting down {cluster['cluster_id']}")
-        cluster_api.delete_cluster(cluster["cluster_id"])
+    log.info(f"shutting down {cluster_id}")
+    cluster_api.delete_cluster(cluster_id)
 
 
 def get_me_username(api_client):
@@ -156,5 +155,22 @@ class TerraformExecution:
                     plan_file=self.plan_location,
                     state_file_abs_path=state_loc)
         finally:
-            if self.post_import_shutdown is True and self.apply is True:
-                shutdown_clusters(self.api_client)
+            if self.post_import_shutdown is True and os.getenv("TF_VAR_PASSIVE_MODE", "false") == "true":
+                _, out, _ = tf.state_pull(state_file_abs_path=state_loc)
+                if out is not None:
+                    for cluster_id in fetch_cluster_ids_from_state(out):
+                        shutdown_clusters(self.api_client, cluster_id)
+
+
+def fetch_cluster_ids_from_state(state_json):
+    try:
+        state_dict = json.loads(state_json)
+    except Exception as e:
+        log.error("Failed to load state json: "+str(e))
+        return
+    resources = state_dict.get("resources", [])
+    for resource in resources:
+        if resource.get("type", None) == "databricks_cluster":
+            for instance in resource.get("instances", []):
+                if instance.get("attributes", None) is not None:
+                    yield instance["attributes"]["id"]
