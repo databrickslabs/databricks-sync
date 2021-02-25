@@ -125,5 +125,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
                 # ID and name are same for files
                 dbfs_files_id_name_pairs.append((id_, id_))
 
-        yield self.__make_dbfs_file_data(dbfs_files, lambda x: ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER,
-                                         for_each_var_id_name_pairs=dbfs_files_id_name_pairs)
+        if dbfs_files != {}:
+            yield self.__make_dbfs_file_data(dbfs_files,
+                                             lambda x: ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER,
+                                             for_each_var_id_name_pairs=dbfs_files_id_name_pairs)

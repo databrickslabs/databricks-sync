@@ -15,7 +15,6 @@ RUN git config --global user.email "you@example.com"
 RUN git config --global user.name "Your Name"
 
 COPY dev-requirements.txt .
-RUN pip install -r dev-requirements.txt
 
 COPY . .
 RUN pip install .

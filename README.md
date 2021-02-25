@@ -122,7 +122,7 @@ This mount is read only.
 private keys in a read only fashion for accessing the git repository. This is also a read only mount.
 
 ```bash
-alias dbt='docker run -it --rm --name docker-databricks-sync --env-file <(env | grep ARM) -v "$PWD":/usr/src/databricks-sync -v ~/.databrickscfg:/root/.databrickscfg:ro -v ~/.ssh:/root/.ssh:ro -w /usr/src/databricks-sync databricks-sync'
+alias dbt='docker run -it --rm --name docker-databricks-sync --env-file <(env | grep -e "[ARM|TF_VAR]") -v "$PWD":/usr/src/databricks-sync -v ~/.databrickscfg:/root/.databrickscfg:ro -v ~/.ssh:/root/.ssh:ro -w /usr/src/databricks-sync databricks-sync'
 ```
 
 ### Support Matrix for Import and Export Operations:
