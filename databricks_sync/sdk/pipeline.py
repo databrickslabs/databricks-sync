@@ -419,10 +419,8 @@ class Pipeline:
         tfvars = []
 
         for m_var in hcl_convert_data.mapped_variables:
-            # if r_var.default is None:
             tfvars.append((m_var.variable_name, m_var.default))
         for r_var in hcl_convert_data.resource_variables:
-            # if r_var.default is None:
             tfvars.append((r_var.variable_name, r_var.default))
         log.debug(f"tfvars-{tfvars}")
         return tfvars
