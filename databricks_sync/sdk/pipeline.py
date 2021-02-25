@@ -7,7 +7,7 @@ import traceback
 from abc import ABC
 from functools import reduce, singledispatch
 from pathlib import Path
-from typing import List, Callable, Generator, Any, Dict, Union
+from typing import List, Callable, Generator, Any, Dict, Union, Tuple
 
 from databricks_cli.sdk import ApiClient
 from streamz import Stream
@@ -144,7 +144,6 @@ class APIGenerator(abc.ABC):
 
     def post_process_api_data_hook(self, data: Dict[str, Any], api_data: APIData) -> APIData:
         return api_data
-
 
 class StreamUtils:
 
@@ -344,6 +343,7 @@ class PipelineResults:
     def add_hcl_data(self, hcl_convert_data: HCLConvertData):
         self.log_events(hcl_convert_data)
 
+
 class Pipeline:
 
     def __init__(self, generators: List[APIGenerator], base_path: str, sinks=None,
@@ -404,21 +404,24 @@ class Pipeline:
     @staticmethod
     @HCLConvertData.manage_error
     def filter_tfvars(hcl_convert_data: HCLConvertData) -> bool:
-        if hcl_convert_data.resource_variables is not None \
-                and len(hcl_convert_data.resource_variables) > 0 \
-                and any([var.default is None for var in hcl_convert_data.resource_variables]) \
-                and len(hcl_convert_data.errors) == 0:
+        contains_tf_vars = \
+            (hcl_convert_data.resource_variables is not None or hcl_convert_data.mapped_variables is not None) \
+            and (len(hcl_convert_data.resource_variables) > 0 or len(hcl_convert_data.mapped_variables) > 0) \
+            and len(hcl_convert_data.errors) == 0
+        log.debug(f"contains tf vars: {contains_tf_vars}")
+        if contains_tf_vars:
             return True
         return False
 
     @staticmethod
     @HCLConvertData.manage_error
-    def map_tfvars(hcl_convert_data: HCLConvertData) -> List[str]:
+    def map_tfvars(hcl_convert_data: HCLConvertData) -> List[Tuple[str, str]]:
         tfvars = []
 
+        for m_var in hcl_convert_data.mapped_variables:
+            tfvars.append((m_var.variable_name, m_var.default))
         for r_var in hcl_convert_data.resource_variables:
-            if r_var.default is None:
-                tfvars.append(r_var.variable_name)
+            tfvars.append((r_var.variable_name, r_var.default))
         log.debug(f"tfvars-{tfvars}")
         return tfvars
 
@@ -444,14 +447,16 @@ class Pipeline:
 
     @staticmethod
     def make_tfvars_handler(base_path):
-        def _save_tfvars(vars: List[str]) -> List[str]:
+        def _save_tfvars(vars: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
             with ExportFileUtils.make_tfvars(base_path).open("w+") as f:
                 for var in vars:
-                    f.write(f'{var}=\n')
+                    val = var[1] if var[1] is not None else ''
+                    f.write(f'{var[0]}="{val}"\n')
                     f.flush()
             with ExportFileUtils.make_tfvars_env_file(base_path).open("w+") as f:
                 for var in vars:
-                    f.write(f'export TF_VAR_{var}=\n')
+                    val = var[1] if var[1] is not None else ''
+                    f.write(f'export TF_VAR_{var[0]}="{val}"\n')
                     f.flush()
             return vars
 

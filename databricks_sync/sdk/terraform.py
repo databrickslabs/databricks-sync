@@ -48,6 +48,7 @@ class Terraform:
 
     def _cmd(self, cmds, *args, **kwargs):
         capture_output = kwargs.pop('capture_output', True)
+        print_output = kwargs.pop("print_output", True)
         # TODO maybe figure out where to set this and how to pass it here
         raise_on_error = True
         if capture_output is True:
@@ -74,12 +75,13 @@ class Terraform:
         for line in p.stdout:
             content = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line.decode("utf-8").rstrip("\n"))
             output.append(content)
-            log.info(line.decode("utf-8").rstrip("\n"))
+            if print_output is True:
+                log.info(line.decode("utf-8").rstrip("\n"))
 
         for line in p.stderr:
             content = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line.decode("utf-8").rstrip("\n"))
             error.append(content)
-            log.info(line.decode("utf-8").rstrip("\n"))
+            log.error(line.decode("utf-8").rstrip("\n"))
 
         p.communicate()
         ret_code = p.returncode
@@ -130,3 +132,10 @@ class Terraform:
         if plan_file is not None:
             apply_cmd += [str(plan_file.absolute())]
         return self._cmd(apply_cmd)
+
+    def state_pull(self,state_file_abs_path: Path = None):
+        apply_cmd = self.BASE_COMMAND + ["state"]
+        if state_file_abs_path is not None:
+            apply_cmd += ["-state", str(state_file_abs_path.absolute())]
+        apply_cmd += ["pull"]
+        return self._cmd(apply_cmd, print_output=False)
