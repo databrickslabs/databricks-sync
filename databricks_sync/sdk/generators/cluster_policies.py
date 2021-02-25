@@ -1,5 +1,6 @@
+import json
 from pathlib import Path
-from typing import Generator, Dict, Any
+from typing import Generator, Dict, Any, Tuple
 
 from databricks_cli.sdk import ApiClient
 
@@ -7,6 +8,7 @@ from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDire
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_sync.sdk.message import APIData, HCLConvertData
 from databricks_sync.sdk.pipeline import APIGenerator
+from databricks_sync.sdk.processor import MappedGrokVariableBasicAnnotationProcessor
 from databricks_sync.sdk.service.cluster_policies import PolicyService
 from databricks_sync.sdk.sync.constants import ResourceCatalog
 
@@ -16,21 +18,40 @@ class ClusterPolicyHCLGenerator(APIGenerator):
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
                  custom_map_vars=None):
         super().__init__(api_client, base_path, patterns=patterns)
-        self.__custom_map_vars = custom_map_vars
+        default_custom_map_vars = {
+            "node_type_id.values.[*]": None,
+            "node_type_id.value": None,
+            "node_type_id.defaultValue": None,
+            "driver_node_type_id.values.[*]": None,
+            "driver_node_type_id.value": None,
+            "driver_node_type_id.defaultValue": None,
+        }
+        self.__custom_map_vars = {**default_custom_map_vars, **(custom_map_vars or {})}
         self.__service = PolicyService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
 
+    def __pre_process_custom_map_vars(self, cluster_policy_data) -> (Dict[str, Any], Tuple[str, str]):
+        return MappedGrokVariableBasicAnnotationProcessor("cluster_policy_definition", self.__custom_map_vars)\
+            .process_json(json.loads(cluster_policy_data["definition"]))
+
     def __create_cluster_policy_data(self, cluster_policy_data: Dict[str, Any]):
-        return self._create_data(
+        new_definition, variables = self.__pre_process_custom_map_vars(cluster_policy_data)
+        cluster_policy_data["definition"] = json.dumps(new_definition)
+        hcl_data = self._create_data(
             ResourceCatalog.CLUSTER_POLICY_RESOURCE,
             cluster_policy_data,
             lambda: any([self._match_patterns(cluster_policy_data["name"])]) is False,
             self.__get_cluster_policy_identifier,
             self.__get_cluster_policy_raw_id,
             self.__make_cluster_policy_dict,
-            self.map_processors(self.__custom_map_vars),
+            # We do not want to run processors on the transformed terraform json but on the raw definition done by the
+            # pre process function. So we will pass empty for mapping
+            self.map_processors({}),
             human_readable_name_func=self.__get_cluster_policy_name
         )
+        for variable_tuple in variables:
+            hcl_data.add_mapped_variable(variable_tuple[0], variable_tuple[1])
+        return hcl_data
 
     def __process(self, policy):
         cluster_policy_data = self.__create_cluster_policy_data(policy)

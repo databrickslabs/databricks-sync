@@ -28,8 +28,10 @@ setuptools.setup(
         'pandas==1.1.1',
         'SQLAlchemy==1.3.22',
         'styleframe==3.0.6',
-        'dask==2.23.0'
+        'dask==2.23.0',
+        'distributed==2.23.0'
     ],
+    package_data={'': ['export.yaml']},
     entry_points='''
         [console_scripts]
         databricks-sync=databricks_sync.cmds.cli:cli

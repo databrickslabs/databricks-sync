@@ -1,6 +1,6 @@
 import abc
 import copy
-from typing import Text, Dict, Optional, Any
+from typing import Text, Dict, Optional, Any, Union, List, Tuple
 
 from dotty_dict import Dotty
 from pygrok import Grok
@@ -32,7 +32,7 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
     may want to map to other values across environments.
     """
 
-    def __init__(self, resource_name: str, dot_path_grok_dict: Dict[Text, Text] = None):
+    def __init__(self, resource_name: str, dot_path_grok_dict: Dict[Text, Optional[Text]] = None):
         self.resource_name = resource_name
         self.__dot_paths = list(dot_path_grok_dict.keys())
         self.__dot_path_grok_dict = dot_path_grok_dict
@@ -72,7 +72,7 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
             finally:
                 return
         else:
-            first_part = parts[0]
+            first_part = parts[0].rstrip(".")
             try:
                 dotty_dict[first_part]
             except KeyError as ke:
@@ -96,9 +96,10 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
 
     def __process_map_var_in_dict(self, data: Dict[str, Any],
                                   map_var_dot_path: str,
-                                  terraform_model: HCLConvertData):
+                                  terraform_model: Union[List[Tuple[str]], HCLConvertData]):
         # Deep copy to avoid mutating the source dictionary
         dotty_data = Dotty(copy.deepcopy(data))
+        print(map_var_dot_path)
         for key, raw_value in self._generate_keys_and_value(map_var_dot_path, dotty_data):
             final_lines = []
             for line in str(raw_value).split("\n"):
@@ -108,7 +109,10 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
                     continue
                 variable_name = f"{normalize_identifier(groked_value)}"
                 final_value = self.__get_resource_value(line, groked_value, variable_name)
-                terraform_model.add_mapped_variable(variable_name, groked_value)
+                if isinstance(terraform_model, HCLConvertData):
+                    terraform_model.add_mapped_variable(variable_name, groked_value)
+                if isinstance(terraform_model, list):
+                    terraform_model.append((variable_name, groked_value))
                 final_lines.append(final_value)
             dotty_data[key] = "\n".join(final_lines)
         return dotty_data.to_dict()
@@ -127,6 +131,15 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
                     processed_dictionary = self.__process_map_var_in_dict(local_data, map_var_dot_path, terraform_model)
                     items[local_var] = processed_dictionary
                 terraform_model.upsert_local_variable(local_vars.variable_name, {**local_vars.data, **items})
+
+    def process_json(self, json_dict: Dict[str, Any]):
+        list_of_vars = []
+        processed_dictionary = copy.deepcopy(json_dict)
+        for map_var_dot_path in self.__dot_paths:
+            processed_dictionary = self.__process_map_var_in_dict(processed_dictionary,
+                                                                  map_var_dot_path,
+                                                                  list_of_vars)
+        return processed_dictionary, list(set(list_of_vars))
 
     def _process(self, terraform_model: HCLConvertData):
         for map_var_dot_path in self.__dot_paths:
