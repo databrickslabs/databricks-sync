@@ -129,6 +129,4 @@ class Terraform:
             apply_cmd += ["-refresh=false"]
         if plan_file is not None:
             apply_cmd += [str(plan_file.absolute())]
-        else:
-            apply_cmd += ["-input=false"]
         return self._cmd(apply_cmd)
