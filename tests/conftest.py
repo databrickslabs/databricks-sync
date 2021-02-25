@@ -17,8 +17,8 @@ from databricks_cli.secrets.api import SecretApi
 from databricks_cli.workspace.api import WorkspaceApi
 from dotenv import load_dotenv
 
-from databricks_terraformer.sdk.config import ExportConfig
-from databricks_terraformer.sdk.service.cluster_policies import PolicyService
+from databricks_sync.sdk.config import ExportConfig
+from databricks_sync.sdk.service.cluster_policies import PolicyService
 
 
 def test_dummy(): pass
