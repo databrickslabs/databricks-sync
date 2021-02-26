@@ -38,13 +38,12 @@ Databricks-Sync has two commands:
 
 ### Arguments for init command
 
-The init command contains no flags and only one argument which is the name of the file.
+The init command contains no flags and only one argument which is the name of the file. Running this command will make 
+a sample yaml configuration file used for the export command.
 
 ```bash
 $ databricks-sync init <filename>
 ```
-
-In the example you can change file name to what ever command you need.
 
 
 ### Arguments for both export and import
