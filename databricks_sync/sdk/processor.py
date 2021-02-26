@@ -99,7 +99,6 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
                                   terraform_model: Union[List[Tuple[str]], HCLConvertData]):
         # Deep copy to avoid mutating the source dictionary
         dotty_data = Dotty(copy.deepcopy(data))
-        print(map_var_dot_path)
         for key, raw_value in self._generate_keys_and_value(map_var_dot_path, dotty_data):
             final_lines = []
             for line in str(raw_value).split("\n"):
@@ -132,7 +131,7 @@ class MappedGrokVariableBasicAnnotationProcessor(Processor):
                     items[local_var] = processed_dictionary
                 terraform_model.upsert_local_variable(local_vars.variable_name, {**local_vars.data, **items})
 
-    def process_json(self, json_dict: Dict[str, Any]):
+    def process_dict(self, json_dict: Dict[str, Any]):
         list_of_vars = []
         processed_dictionary = copy.deepcopy(json_dict)
         for map_var_dot_path in self.__dot_paths:

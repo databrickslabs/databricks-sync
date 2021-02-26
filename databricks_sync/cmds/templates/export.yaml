@@ -5,15 +5,15 @@ objects:
     # Notebook path can be a string, a list or a YAML items collection (multiple subgroups starting with - )
     notebook_path: "/Users"
     # Use Custom map var to setup a new location
-    custom_map_vars:
-      path: "/Users/%{DATA:variable}/%{GREEDYDATA}"
+#    custom_map_vars:
+#      path: "/Users/%{DATA:variable}/%{GREEDYDATA}"
 
   cluster_policy:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
   dbfs_file:
-    #     DBFS path can be a string or a set of YAML items (multiple subgroups starting with - )
+    # DBFS path can be a string or a set of YAML items (multiple subgroups starting with - )
     dbfs_path:
       - "dbfs:/tests"
       - "dbfs:/databricks/init_scripts"

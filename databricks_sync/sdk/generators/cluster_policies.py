@@ -32,7 +32,7 @@ class ClusterPolicyHCLGenerator(APIGenerator):
 
     def __pre_process_custom_map_vars(self, cluster_policy_data) -> (Dict[str, Any], Tuple[str, str]):
         return MappedGrokVariableBasicAnnotationProcessor("cluster_policy_definition", self.__custom_map_vars)\
-            .process_json(json.loads(cluster_policy_data["definition"]))
+            .process_dict(json.loads(cluster_policy_data["definition"]))
 
     def __create_cluster_policy_data(self, cluster_policy_data: Dict[str, Any]):
         new_definition, variables = self.__pre_process_custom_map_vars(cluster_policy_data)
