@@ -30,10 +30,21 @@ This project requires the following environment dependencies:
 
 Databricks-Sync has two commands:
 
+* `init` - Create the export configuration file for running the export command.
 * `import` - Import objects into the databricks workspace.
 * `export`- Export objects from the databricks workspace.
 
 ## Argument Reference
+
+### Arguments for init command
+
+The init command contains no flags and only one argument which is the name of the file. Running this command will make 
+a sample yaml configuration file used for the export command.
+
+```bash
+$ databricks-sync init <filename>
+```
+
 
 ### Arguments for both export and import
 
