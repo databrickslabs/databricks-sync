@@ -8,37 +8,59 @@ description: |-
 
 # Databricks-Sync
 
-Databricks-Sync is for workspace disaster recovery. You can use it to import or export some, or all, objects within a workspace. Databricks-Sync can also be used as a migration utility.
+Databricks-Sync is a synchronization utility for the export and import of Databricks-native objects from one workspace to another. The primary use case for Databricks-Sync is Disaster Recovery (incremental backup and restore); however, it can be used as a one-time migration utility.
 
 ## Prerequisites
 
-Visit the [prerequisites page](prerequisites.md) to check if you are missing any prerequisites before beginning installation.
+Databricks-Sync authenticates to Databricks via the Databricks CLI. The Databricks CLI should be installed and configured to authenticate to the Databricks workspace using Personal Access Tokens. For detailed instructions to install and configure the Databricks CLI, please view the official [Databricks documentation](https://docs.databricks.com/dev-tools/cli/index.html#databricks-cli). It is a best practice to set up a unique profile within the Databricks CLI for each workspace.
+
+Check your Databricks CLI access credentials in the file `~/.databrickscfg` to verify successful authentication set up. The file should contain entries like:
+
+```
+[profile]
+	host = https://<databricks-instance>
+	token =  <personal-access-token>
+```
+
+Any repository management tool that supports git and SSH protocols can be used to store state instead of a local repository. Instructions for connecting with common providers through SSH are linked below.
+
+* [GitHub](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh)
+* [Bitbucket Cloud](https://support.atlassian.com/bitbucket-cloud/docs/set-up-an-ssh-key/)
+* [Bitbucket Server](https://confluence.atlassian.com/bitbucketserver/enabling-ssh-access-to-git-repositories-in-bitbucket-server-776640358.html)
+* [GitLab](https://docs.gitlab.com/ee/ssh/)
+
+Please refer to the appropriate provider documentation for steps to verify SSH authentication.
 
 ## Dependencies
 
-This project requires the following environment dependencies:
+When using no public internet, Databricks-Sync requires the following environment dependencies:
 
 * [terraform 0.13.x](https://www.terraform.io/downloads.html)
 * [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
 
+The use of [tfenv](https://github.com/tfutils/tfenv) is encouraged to install and manage Terraform versions.
+
+Terraform version can be verified using `tfenv list`. The active version will have an `*`. Use `tfenv use -version` to switch the active version to 0.13.x if necessary.
+
 ## Installation
 
-1. Execute: `$ pip install git+https://github.com/databrickslabs/databricks-sync.git`
+Execute: `$ pip install git+https://github.com/databrickslabs/databricks-sync.git`
 
+Running `databricks-sync --version' can confirm successful installation.
 
 ## Command Reference
 
-Databricks-Sync has two commands:
+Databricks-Sync has three commands:
 
 * `init` - Create the export configuration file for running the export command.
-* `import` - Import objects into the databricks workspace.
-* `export`- Export objects from the databricks workspace.
+* `import` - Import objects into the Databricks workspace.
+* `export`- Export objects from the Databricks workspace.
 
 ## Argument Reference
 
 ### Arguments for init command
 
-The init command contains no flags and only one argument which is the name of the file. Running this command will make 
+The init command contains no flags and one argument, which is the name of the file. Running this command will make 
 a sample yaml configuration file used for the export command.
 
 ```bash
@@ -48,7 +70,7 @@ $ databricks-sync init <filename>
 
 ### Arguments for both export and import
 
-* `--git-ssh-url flag | --local-git-path` - (Required) Required and mutually exclusive - i.e. only one is allowed, but you need at least one of the following two:
+* `--git-ssh-url flag | --local-git-path` - (Required) Required and mutually exclusive - i.e. one is allowed, but you need at least one of the following two:
   * `--git-ssh-url` or `-g` - The URL of the git repo should look like `git@github.com:USERNAME/REPOSITORY.git`
   * `--local-git-path` or `-l` - The path of a local git repo `/path/to/local/git/repo`
 * `--branch` (Optional) This is the git repo branch of the repo designated by `--git-ssh-url flag | --local-git-path`. If not given, the default branch is `master`.
