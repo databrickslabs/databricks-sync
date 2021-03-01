@@ -46,7 +46,7 @@ Terraform version can be verified using `tfenv list`. The active version will ha
 
 Execute: `$ pip install git+https://github.com/databrickslabs/databricks-sync.git`
 
-Running `databricks-sync --version' can confirm successful installation.
+Run `databricks-sync --version' to confirm successful installation.
 
 ## Command Reference
 
