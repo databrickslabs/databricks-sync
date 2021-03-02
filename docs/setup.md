@@ -36,7 +36,7 @@ Please refer to the appropriate provider documentation for steps to verify SSH a
 When using no public internet, Databricks-Sync requires the following environment dependencies:
 
 * [terraform 0.13.x](https://www.terraform.io/downloads.html)
-* [terraform-provider-databricks 0.2.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
+* [terraform-provider-databricks 0.3.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
 
 The use of [tfenv](https://github.com/tfutils/tfenv) is encouraged to install and manage Terraform versions.
 
