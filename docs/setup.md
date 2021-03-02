@@ -8,7 +8,7 @@ description: |-
 
 # Databricks-Sync
 
-Databricks-Sync is a synchronization utility for the export and import of Databricks-native objects from one workspace to another. The primary use case for Databricks-Sync is Disaster Recovery (incremental backup and restore); however, it can be used as a one-time migration utility.
+Databricks-Sync is a synchronization utility for the export and import of Databricks-native objects from one workspace to another. The primary use cases for Databricks-Sync are Disaster Recovery, migration, and CI/CD.
 
 ## Prerequisites
 
