@@ -33,7 +33,7 @@ Please refer to the appropriate provider documentation for steps to verify SSH a
 
 ## Dependencies
 
-When using no public internet, Databricks-Sync requires the following environment dependencies:
+Databricks-Sync requires the following environment dependencies:
 
 * [terraform 0.13.x](https://www.terraform.io/downloads.html)
 * [terraform-provider-databricks 0.3.x](https://registry.terraform.io/providers/databrickslabs/databricks/latest)
