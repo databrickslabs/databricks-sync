@@ -1,6 +1,7 @@
 import base64
 import datetime
 import os
+import traceback
 import uuid
 from pathlib import Path
 from typing import List, Optional
@@ -23,7 +24,7 @@ if path is None:
     default_db_path = Path.home() / '.databricks_sync/'
     default_db_path.mkdir(parents=True, exist_ok=True)
     default_db_name = "report.db"
-    path = str(default_db_path/default_db_name)
+    path = str(default_db_path / default_db_name)
 
 db_connection_string = f'{driver}:///{path}'
 
@@ -31,7 +32,6 @@ if echo.upper() == "TRUE":
     engine = create_engine(db_connection_string, echo=True)
 else:
     engine = create_engine(db_connection_string)
-
 
 Base = declarative_base()
 
@@ -90,15 +90,19 @@ class EventManager(DBManager):
         self._session.add(record)
         self._session.commit()
 
-    def make_end_record(self, workspace_url, object_id, object_type, status, error_msg=None, error_traceback=None,
+    def make_end_record(self, workspace_url, object_id, object_type, status, errors: Optional[List[Exception]] = None,
                         file_path=None):
         for record in self._session.query(ReportRecord) \
                 .filter(ReportRecord.id == self.get_record_id(workspace_url, object_id, object_type)).all():
             record: ReportRecord
             record.end_ts = datetime.datetime.utcnow()
             record.status = status
-            record.error_msg = error_msg
-            record.error_traceback = error_traceback
+            if errors is not None and len(errors) > 0:
+                error_list = []
+                for err in errors:
+                    error_list.append("\n".join(traceback.format_exception(type(err), err, err.__traceback__)))
+                record.error_msg = "\n".join([f"{type(err)}: {str(err)}" for err in errors])
+                record.error_traceback = "\n".join(error_list)
             record.file_path = file_path
             self._session.commit()
 
@@ -123,11 +127,17 @@ class EventManager(DBManager):
                         ReportRecord.validation_traceback == None,
                         ReportRecord.error_msg == None,
                         ReportRecord.error_traceback == None,
-                        ReportRecord.status == "SUCCEDED")) \
-            .values(validation_msg="PASSED", validation_traceback="PASSED")
+                        ReportRecord.status == ReportConstants.OBJECT_EXPORT_SUCCEEDED)) \
+            .values(validation_msg=ReportConstants.OBJECT_VALIDATION_PASSED,
+                    validation_traceback=ReportConstants.OBJECT_VALIDATION_PASSED)
         self._session.execute(stmt)
         self._session.commit()
 
+class ReportConstants:
+    OBJECT_EXPORT_SUCCEEDED = "SUCCEEDED"
+    OBJECT_EXPORT_ERROR = "EXPORT ERROR"
+    OBJECT_VALIDATION_ERROR = "VALIDATION ERROR"
+    OBJECT_VALIDATION_PASSED = "PASSED"
 
 class ReportManager(DBManager):
 
@@ -176,20 +186,24 @@ class ReportManager(DBManager):
         log.info(f"Run Id: {self.run_id}")
         log.info("Run Summary:")
         log.info("============")
-        log.info("\n"+tabulate(self.run_summary, headers='keys', tablefmt='fancy_grid'))
+        log.info("\n" + tabulate(self.run_summary, headers='keys', tablefmt='fancy_grid'))
         log.info("")
         log.info("Run Errors Summary:")
         log.info("===================")
-        log.info("\n"+tabulate(self.run_errors_summary, headers='keys', tablefmt='fancy_grid'))
+        log.info("\n" + tabulate(self.run_errors_summary, headers='keys', tablefmt='fancy_grid'))
         return self
 
     def __get_run_summary_df(self, workspace_url):
-        stmt = text("""
+        stmt = text(f"""
                     SELECT object_type,
-                           SUM(CASE WHEN status='SUCCEDED' THEN 1 ELSE 0 END) as export_succeeded,
-                           SUM(CASE WHEN status='SUCCEDED' THEN 0 ELSE 1 END) as export_failed,
-                           SUM(CASE WHEN validation_msg='PASSED' THEN 1 ELSE 0 END) as validate_succeded,
-                           SUM(CASE WHEN validation_msg='PASSED' THEN 0 ELSE 1 END) as validate_failed
+                           SUM(CASE WHEN status='{ReportConstants.OBJECT_EXPORT_SUCCEEDED}' THEN 1 ELSE 0 END) 
+                                as export_succeeded,
+                           SUM(CASE WHEN status='{ReportConstants.OBJECT_EXPORT_SUCCEEDED}' THEN 0 ELSE 1 END) 
+                                as export_failed,
+                           SUM(CASE WHEN validation_msg='{ReportConstants.OBJECT_VALIDATION_PASSED}' THEN 1 ELSE 0 END) 
+                                as validate_succeeded,
+                           SUM(CASE WHEN validation_msg='{ReportConstants.OBJECT_VALIDATION_PASSED}' THEN 0 ELSE 1 END) 
+                                as validate_failed
                     FROM report_records
                     WHERE run_id=:run_id
                     AND workspace_url=:workspace_url
@@ -219,20 +233,24 @@ class ReportManager(DBManager):
                            self._session.bind)
 
     def __get_run_errors_summary_df(self, workspace_url):
-        stmt = text(""" 
-                    SELECT 'EXPORT ERROR' as err_type, error_msg as msg, count(1) as err_count
+        stmt = text(f""" 
+                    SELECT '{ReportConstants.OBJECT_EXPORT_ERROR}' as err_type, error_msg as msg, count(1) as err_count
                     FROM report_records
                     WHERE run_id=:run_id
                         AND workspace_url=:workspace_url
-                        AND (error_msg is not NULL AND error_msg != 'PASSED')
-                    GROUP BY error_msg, 'EXPORT ERROR'
+                        AND (error_msg is not NULL AND error_msg != '{ReportConstants.OBJECT_VALIDATION_PASSED}')
+                    GROUP BY error_msg, '{ReportConstants.OBJECT_EXPORT_ERROR}'
                     UNION
-                    SELECT 'VALIDATION ERROR' as err_type, validation_msg as msg, count(1) as err_count
+                    SELECT '{ReportConstants.OBJECT_EXPORT_ERROR}' as err_type, validation_msg as msg, count(1) 
+                        as err_count
                     FROM report_records
                     WHERE run_id=:run_id
                         AND workspace_url=:workspace_url
-                        AND (validation_msg is not NULL AND validation_msg != 'PASSED')
-                    GROUP BY validation_msg, 'VALIDATION ERROR'
+                        AND (
+                            validation_msg is not NULL 
+                            AND validation_msg != '{ReportConstants.OBJECT_VALIDATION_PASSED}'
+                        )
+                    GROUP BY validation_msg, '{ReportConstants.OBJECT_EXPORT_ERROR}'
                 """)
         return pd.read_sql(self._session.query(ReportRecord)
                            .from_statement(stmt)
@@ -242,13 +260,13 @@ class ReportManager(DBManager):
                            self._session.bind)
 
     def __get_run_errors_df(self, workspace_url, encoded=False):
-        stmt = text("""
+        stmt = text(f"""
                     SELECT workspace_url, run_id, start_ts, end_ts, object_type, object_id, file_path, error_msg, 
                         validation_msg, error_traceback, validation_traceback
                     FROM report_records
                     WHERE run_id=:run_id
                     AND workspace_url=:workspace_url
-                    AND (error_msg is not NULL OR validation_msg != 'PASSED')
+                    AND (error_msg is not NULL OR validation_msg != '{ReportConstants.OBJECT_VALIDATION_PASSED}')
                 """)
         summary = pd.read_sql(self._session.query(ReportRecord)
                               .from_statement(stmt)

@@ -17,7 +17,7 @@ from databricks_sync import log
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformJsonBuilder
 from databricks_sync.sdk.message import HCLConvertData, APIData, Artifact
 from databricks_sync.sdk.processor import Processor, MappedGrokVariableBasicAnnotationProcessor
-from databricks_sync.sdk.report.model import event_manager, EventManager, run_id, Session
+from databricks_sync.sdk.report.model import event_manager, EventManager, run_id, Session, ReportConstants
 from databricks_sync.sdk.utils import normalize
 
 
@@ -118,18 +118,27 @@ class APIGenerator(abc.ABC):
         if filter_func():
             return None
         identifier = identifier_func(data)  # normalizes the identifier
+        err = None
+        try:
+            terraform_dict = make_dict_func(data)
+        except Exception as e:
+            terraform_dict = data
+            err = e
         api_data = APIData(
             self.get_raw_id(data, raw_id_func),
             self.api_client.url,
             identifier,
-            make_dict_func(data),
+            terraform_dict,
             self.get_local_hcl_path(identifier),
             relative_save_path=self.get_relative_hcl_path(identifier),
             human_readable_name=human_readable_name_func(data) if human_readable_name_func is not None else None
         )
         processed_api_data = self.post_process_api_data_hook(data, api_data)
-        return HCLConvertData(resource_type, processed_api_data,
+        data = HCLConvertData(resource_type, processed_api_data,
                               processors=processors)
+        if err is not None:
+            data.add_error(err)
+        return data
 
     @normalize
     def get_identifier(self, data: Dict[str, Any], data_func: Callable[[Dict[str, Any]], str]) -> str:
@@ -303,22 +312,22 @@ class PipelineResults:
         error_list = []
         for err in hcl_convert_data.errors:
             error_list.append("\n".join(traceback.format_exception(type(err), err, err.__traceback__)))
+        # Some terraform files contain multiple resources created using for_each and this forloop and if statement
+        # is to make sure that each of the objects have a entry in the excel sheet.
         if len(hcl_convert_data.for_each_var_id_name_pairs) > 0:
             for id_name_pair in hcl_convert_data.for_each_var_id_name_pairs:
                 self._event_manager.make_end_record(hcl_convert_data.workspace_url,
                                                     id_name_pair[0],
                                                     hcl_convert_data.resource_name,
                                                     "FAILED",
-                                                    error_msg="\n".join([str(err) for err in hcl_convert_data.errors]),
-                                                    error_traceback="\n".join(error_list)
+                                                    errors=hcl_convert_data.errors
                                                     )
         else:
             self._event_manager.make_end_record(hcl_convert_data.workspace_url,
                                                 hcl_convert_data.hcl_resource_identifier,
                                                 hcl_convert_data.resource_name,
                                                 "FAILED",
-                                                error_msg="\n".join([str(err) for err in hcl_convert_data.errors]),
-                                                error_traceback="\n".join(error_list),
+                                                errors=hcl_convert_data.errors
                                                 )
 
     def __handle_passed_events(self, hcl_convert_data: HCLConvertData):
@@ -327,12 +336,14 @@ class PipelineResults:
                 self._event_manager.make_end_record(hcl_convert_data.workspace_url,
                                                     id_name_pair[0],
                                                     hcl_convert_data.resource_name,
-                                                    "SUCCEDED", file_path=hcl_convert_data.relative_save_path)
+                                                    ReportConstants.OBJECT_EXPORT_SUCCEEDED,
+                                                    file_path=hcl_convert_data.relative_save_path)
         else:
             self._event_manager.make_end_record(hcl_convert_data.workspace_url,
                                                 hcl_convert_data.hcl_resource_identifier,
                                                 hcl_convert_data.resource_name,
-                                                "SUCCEDED", file_path=hcl_convert_data.relative_save_path)
+                                                ReportConstants.OBJECT_EXPORT_SUCCEEDED,
+                                                file_path=hcl_convert_data.relative_save_path)
 
     def log_events(self, hcl_convert_data: HCLConvertData):
         if len(hcl_convert_data.errors) > 0:
@@ -408,7 +419,7 @@ class Pipeline:
             (hcl_convert_data.resource_variables is not None or hcl_convert_data.mapped_variables is not None) \
             and (len(hcl_convert_data.resource_variables) > 0 or len(hcl_convert_data.mapped_variables) > 0) \
             and len(hcl_convert_data.errors) == 0
-        log.debug(f"contains tf vars: {contains_tf_vars}")
+        log.debug(f"{hcl_convert_data.hcl_resource_identifier} contains tf vars: {contains_tf_vars}")
         if contains_tf_vars:
             return True
         return False
