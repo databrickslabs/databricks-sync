@@ -1,6 +1,11 @@
+import functools
+import json
 from pathlib import Path
 from typing import Callable, Dict
 
+import requests
+
+from databricks_sync import log
 from databricks_sync.sdk.config import export_config
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData, HCLConvertData
@@ -19,6 +24,18 @@ class TerraformPermissionType:
         self.resource_id_attribute = resource_id_field
         self.object_id_name = object_id_name
         self.object_type = object_type
+
+
+@functools.lru_cache()
+def is_acls_enabled(permissions_service: PermissionService):
+    try:
+        log.debug("Testing permissions if they exist")
+        permissions_service.get_object_permissions("notebooks", "Users")
+    except requests.HTTPError as he:
+        if he.response.status_code == 500 and "FEATURE_DISABLED" in json.loads(he.response.text).get("message", ""):
+            return False
+
+    return True
 
 
 class PermissionsHelper:
@@ -100,6 +117,9 @@ class PermissionsHelper:
 
     def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path],
                                rel_path_func: Callable[[str], str] = None):
+        if is_acls_enabled(self._permissions_service) is False:
+            raise NoDirectPermissionsError("ACLS are disabled no permissions available")
+
         perm_data = self._permissions_service.get_object_permissions(
             self.perm_mapping[src_obj_data.resource_name].object_type, src_obj_data.raw_id)
         identifier = self._make_identifier(src_obj_data.resource_name, src_obj_data.raw_id)
