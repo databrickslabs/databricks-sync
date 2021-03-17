@@ -139,3 +139,6 @@ class Terraform:
             apply_cmd += ["-state", str(state_file_abs_path.absolute())]
         apply_cmd += ["pull"]
         return self._cmd(apply_cmd, print_output=False)
+
+    def raw_cmd(self, command):
+        return self._cmd(command.split(" "))
