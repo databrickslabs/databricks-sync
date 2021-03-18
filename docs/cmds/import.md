@@ -22,6 +22,11 @@ databricks-sync import --profile <profile> ((--git-ssh-url | -g) <url> | (--loca
 
 **Import** retrieves stored state from a git repository then applies this to the target Databricks workspace.
 
+### Environment Variables
+
+* `TF_VAR_PASSIVE` - Determines if Databricks Sync will run in Passive Mode. The default value is set to `False` for DR scenarios; however, it can be set `True` for migrations.
+* `TF_VAR_CLOUD` - Takes a value of `AWS` or `AZURE` to specify the Cloud provider.
+
 ### Arguments
 
 * `--profile` - The Databricks CLI connection profile for the  source workspace. For additional information, please see the Databricks Sync [Setup instructions](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md). If no profile was configured for the Databricks CLI during setup, then `DEFAULT` should be passed as the value.
@@ -36,7 +41,7 @@ databricks-sync import --profile <profile> ((--git-ssh-url | -g) <url> | (--loca
 * `--ssh-key-path` or `-k` - CLI connection profile to use. The default value is `~/.ssh/id_rsa`. This is equivalent to the `-i` switch when using `ssh`.
 * `--verbosity` or `-v` - For logging, takes a value of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
 * `--version` - A version can be attached.
-* `--databricks-object-type` - Identifies the Databricks-native object for which a plan will be created. By default we will plan for all objects.
+* `--databricks-object-type` - Identifies the Databricks-native object for which a plan will be created. By default, Databricks Sync will plan for all objects.
 * `--backend-file` - The location where backend configurations for the Terraform file will be saved.
 * `--destroy` - Indicates whether you wish to destroy all the provisioned infrastructure. Default is False.
 * `--plan` - Generate the Terraform plan to your infrastructure.  If set, the location will be in `<artifact-dir>/plan.out`.
@@ -46,11 +51,10 @@ databricks-sync import --profile <profile> ((--git-ssh-url | -g) <url> | (--loca
 ### Example
 
 ```bash
-# Import the stored state of all Databricks-native objects to the DEFAULT profile from the master branch of a remote GitHub repository
-databricks-sync import --profile DEFAULT export -g git@github.com:USERNAME/REPOSITORY.git
+# Import the stored state of all Databricks-native objects in Passive mode from the master branch of a remote GitHub repository to the DEFAULT profile, which is configured for an Azure Databricks workspace
+TF_VAR_PASSIVE_MODE=False TF_VAR_CLOUD=AZURE databricks-sync import --profile DEFAULT export -g git@github.com:USERNAME/REPOSITORY.git
 
-# Import the stored state of all Databricks-native objects to the with test-workspace profile from a local repository on feature-213 branch
-Databricks-sync import --profile test-workspace -l /path/to/local/git/repo --branch feature-213
+# Import the stored state of all Databricks-native objects in Passive mode from a local repository on feature-213 branch to the with test-workspace profile, which is configured for an AWS Databricks Workspace
+TF_VAR_PASSIVE_MODE=False TF_VAR_CLOUD=AWS Databricks-sync import --profile test-workspace -l /path/to/local/git/repo --branch feature-213
 
 ```
-

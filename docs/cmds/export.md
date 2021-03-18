@@ -36,7 +36,6 @@ databricks-sync export --profile <profile> ((--git-ssh-url | -g) <url> | (--loca
 * `--config-path` or `-c` - This is the relative path (to the root directory of this repo) or the full path of the yaml file which is used to drive which objects are imported/exported.
 * `--dask` - This is a flag to use [dask](https://docs.dask.org/en/latest/) to parallelize the process.
 * `--dry-run` - This flag will log to console the actions but not commit to git remote state.
-* `--tag` - Assigns metadata to the cloud resource with [AWS tags](https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html) or [Azure tags](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support).
 
 ### Example
 
