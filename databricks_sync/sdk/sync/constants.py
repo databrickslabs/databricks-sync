@@ -152,9 +152,7 @@ def get_members(klass):
 
 ENTRYPOINT_MAIN_TF = {
     "provider": {
-        "databricks": {
-            "profile"
-        }
+        "databricks": {}
     },
     "terraform": {
         "required_version": ">= 0.13.0",
