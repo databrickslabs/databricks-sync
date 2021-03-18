@@ -234,6 +234,9 @@ class IdentityHCLGenerator(APIGenerator):
     def get_user_dict(user):
         display_name = f'{user.get("displayName")}' if user.get("displayName", None) is not None and \
                                                        len(user.get("displayName", "").split(" ")) > 1 else f'Use Email'
+        # Modify display if use email, this was done for azure
+        if display_name.lower() == "use email":
+            display_name = user["userName"]
 
         entitlements = user.get("entitlements", [])
         allow_cluster_create = any([valuePair["value"] == 'allow-cluster-create' for valuePair in entitlements])
