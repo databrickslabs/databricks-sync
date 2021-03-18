@@ -133,6 +133,7 @@ def inject_profile_as_env(function):
         if not config or not config.is_valid:
             raise InvalidConfigurationError.for_profile(profile)
         os.environ["DATABRICKS_HOST"] = config.host
+        log.info(f"USING HOST: {config.host}")
         os.environ["DATABRICKS_TOKEN"] = config.token
         return function(*args, **kwargs)
 
