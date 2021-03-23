@@ -110,8 +110,31 @@ class Terraform:
         validate_cmd = self.BASE_COMMAND + ["validate"]
         return self._cmd(validate_cmd)
 
+    @staticmethod
+    def is_import_lock():
+        return os.getenv("DATABRICKS_SYNC_IMPORT_LOCK", "false").lower()
+
+    @staticmethod
+    def get_import_plan_parallelism():
+        val = os.getenv("DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM", -1)
+        if isinstance(val, int):
+            return val
+        else:
+            return int(val)
+
+    @staticmethod
+    def get_import_apply_parallelism():
+        val = os.getenv("DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM", -1)
+        if isinstance(val, int):
+            return val
+        else:
+            return int(val)
+
     def plan(self, output_file: Path = None, targets=None, state_file_abs_path: Path = None, refresh=None):
         plan_cmd = self.BASE_COMMAND + ["plan"]
+        plan_cmd += ["-lock", self.is_import_lock()]
+        if self.get_import_plan_parallelism() > 0:
+            plan_cmd += ["-parallelism", str(self.get_import_plan_parallelism())]
         if output_file is not None:
             plan_cmd += ["-out", str(output_file.absolute())]
         if state_file_abs_path is not None:
@@ -125,6 +148,9 @@ class Terraform:
 
     def apply(self, plan_file: Path = None, state_file_abs_path: Path = None, refresh=None):
         apply_cmd = self.BASE_COMMAND + ["apply"]
+        apply_cmd += ["-lock", self.is_import_lock()]
+        if self.get_import_apply_parallelism() > 0:
+            apply_cmd += ["-parallelism", str(self.get_import_apply_parallelism())]
         if state_file_abs_path is not None:
             apply_cmd += ["-state", str(state_file_abs_path.absolute())]
         if refresh is not None and refresh is False:
@@ -133,7 +159,7 @@ class Terraform:
             apply_cmd += [str(plan_file.absolute())]
         return self._cmd(apply_cmd)
 
-    def state_pull(self,state_file_abs_path: Path = None):
+    def state_pull(self, state_file_abs_path: Path = None):
         apply_cmd = self.BASE_COMMAND + ["state"]
         if state_file_abs_path is not None:
             apply_cmd += ["-state", str(state_file_abs_path.absolute())]
