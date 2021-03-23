@@ -110,10 +110,12 @@ class Terraform:
         validate_cmd = self.BASE_COMMAND + ["validate"]
         return self._cmd(validate_cmd)
 
+    #TODO: doc this
     @staticmethod
     def is_import_lock():
         return os.getenv("DATABRICKS_SYNC_IMPORT_LOCK", "false").lower()
 
+    # TODO: doc this
     @staticmethod
     def get_import_plan_parallelism():
         val = os.getenv("DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM", -1)
@@ -122,6 +124,7 @@ class Terraform:
         else:
             return int(val)
 
+    # TODO: doc this
     @staticmethod
     def get_import_apply_parallelism():
         val = os.getenv("DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM", -1)
@@ -132,9 +135,9 @@ class Terraform:
 
     def plan(self, output_file: Path = None, targets=None, state_file_abs_path: Path = None, refresh=None):
         plan_cmd = self.BASE_COMMAND + ["plan"]
-        plan_cmd += ["-lock", self.is_import_lock()]
+        plan_cmd += [f"-lock={self.is_import_lock()}"]
         if self.get_import_plan_parallelism() > 0:
-            plan_cmd += ["-parallelism", str(self.get_import_plan_parallelism())]
+            plan_cmd += [f"-parallelism={str(self.get_import_plan_parallelism())}"]
         if output_file is not None:
             plan_cmd += ["-out", str(output_file.absolute())]
         if state_file_abs_path is not None:
@@ -148,9 +151,9 @@ class Terraform:
 
     def apply(self, plan_file: Path = None, state_file_abs_path: Path = None, refresh=None):
         apply_cmd = self.BASE_COMMAND + ["apply"]
-        apply_cmd += ["-lock", self.is_import_lock()]
+        apply_cmd += [f"-lock={self.is_import_lock()}"]
         if self.get_import_apply_parallelism() > 0:
-            apply_cmd += ["-parallelism", str(self.get_import_apply_parallelism())]
+            apply_cmd += [f"-parallelism={str(self.get_import_apply_parallelism())}"]
         if state_file_abs_path is not None:
             apply_cmd += ["-state", str(state_file_abs_path.absolute())]
         if refresh is not None and refresh is False:
