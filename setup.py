@@ -15,7 +15,7 @@ setuptools.setup(
     license="https://github.com/databrickslabs/databricks-sync/blob/master/LICENSE",
     packages=setuptools.find_packages(exclude=['tests', 'tests.*', ]),
     install_requires=[
-        'PyYAML==5.3.1',
+        'PyYAML==5.4',
         'requests>=2.17.3',
         'click>=6.7',
         'click-log==0.3.2',
