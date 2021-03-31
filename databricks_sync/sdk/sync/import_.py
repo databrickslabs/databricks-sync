@@ -118,8 +118,12 @@ class TerraformExecution:
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            main_tf_file_content = json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
-                                                                          get_me_username(self.api_client)),
+            resp = MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
+                                               get_me_username(self.api_client))
+            if "provider" in resp and "databricks" in resp.get("provider", {}):
+                resp["provider"]["databricks"]["host"] = os.getenv("DATABRICKS_HOST",
+                                                                   "unable to find host - DB Sync Profile Required")
+            main_tf_file_content = json.dumps(resp,
                                               indent=4, sort_keys=True)
             log.info("Main TF File: " + main_tf_file_content)
             w.write(main_tf_file_content)
@@ -160,6 +164,7 @@ class TerraformExecution:
                 if out is not None:
                     for cluster_id in fetch_cluster_ids_from_state(out):
                         shutdown_clusters(self.api_client, cluster_id)
+
 
 class DebugExecution:
     def __init__(self, folders: List[str], refresh: bool = True, revision: str = None, plan: bool = False,
@@ -208,8 +213,12 @@ class DebugExecution:
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            main_tf_file_content = json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
-                                                                          get_me_username(self.api_client)),
+            resp = MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
+                                               get_me_username(self.api_client))
+            if "provider" in resp and "databricks" in resp.get("provider", {}):
+                resp["provider"]["databricks"]["host"] = os.getenv("DATABRICKS_HOST",
+                                                                   "unable to find host - DB Sync Profile Required")
+            main_tf_file_content = json.dumps(resp,
                                               indent=4, sort_keys=True)
             log.info("Main TF File: " + main_tf_file_content)
             w.write(main_tf_file_content)
@@ -236,7 +245,7 @@ def fetch_cluster_ids_from_state(state_json):
     try:
         state_dict = json.loads(state_json)
     except Exception as e:
-        log.error("Failed to load state json: "+str(e))
+        log.error("Failed to load state json: " + str(e))
         return
     resources = state_dict.get("resources", [])
     for resource in resources:

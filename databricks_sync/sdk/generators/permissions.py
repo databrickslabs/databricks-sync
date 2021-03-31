@@ -120,20 +120,36 @@ class PermissionsHelper:
         if is_acls_enabled(self._permissions_service) is False:
             raise NoDirectPermissionsError("ACLS are disabled no permissions available")
 
-        perm_data = self._permissions_service.get_object_permissions(
-            self.perm_mapping[src_obj_data.resource_name].object_type, src_obj_data.raw_id)
         identifier = self._make_identifier(src_obj_data.resource_name, src_obj_data.raw_id)
         permissions_name = self.__make_name(src_obj_data)
+        err = None
+        try:
+            perm_data = self._permissions_service.get_object_permissions(
+                self.perm_mapping[src_obj_data.resource_name].object_type, src_obj_data.raw_id)
+            api_data = APIData(
+                identifier,
+                self.api_client.url,
+                identifier,
+                self._create_permission_dictionary(src_obj_data, perm_data["access_control_list"]),
+                path_func(identifier),
+                relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
+                human_readable_name=permissions_name
+            )
+        except Exception as e:
 
-        api_data = APIData(
-            identifier,
-            self.api_client.url,
-            identifier,
-            self._create_permission_dictionary(src_obj_data, perm_data["access_control_list"]),
-            path_func(identifier),
-            relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
-            human_readable_name=permissions_name
-        )
+            api_data = APIData(
+                identifier,
+                self.api_client.url,
+                identifier,
+                src_obj_data,
+                path_func(identifier),
+                relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
+                human_readable_name=permissions_name
+            )
+            err = e
 
-        return HCLConvertData(ResourceCatalog.PERMISSIONS_RESOURCE, api_data,
-                              processors=[])
+        hcl_data = HCLConvertData(ResourceCatalog.PERMISSIONS_RESOURCE, api_data,
+                                  processors=[])
+        if err is not None:
+            hcl_data.add_error(err)
+        return hcl_data

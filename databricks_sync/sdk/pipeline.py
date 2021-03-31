@@ -114,7 +114,7 @@ class APIGenerator(abc.ABC):
                      make_dict_func: Callable[[Dict[str, Any]], Dict[str, Any]],
                      processors,
                      human_readable_name_func: Callable[[Dict[str, Any]], str] = None,
-                     ):
+                     ) -> HCLConvertData:
         if filter_func():
             return None
         identifier = identifier_func(data)  # normalizes the identifier

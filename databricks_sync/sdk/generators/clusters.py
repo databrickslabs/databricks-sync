@@ -16,18 +16,27 @@ from databricks_sync.sdk.utils import normalize_identifier, handle_azure_librari
     handle_azure_storage_info, contains_cloud_specific_storage_info, contains_cloud_specific_library_path
 
 
+# TODO: document source constants in the change log
+class ClusterSourceConstants:
+    UI = "UI"
+    JOB = "JOB"
+    API = "API"
+
 class ClusterHCLGenerator(APIGenerator):
 
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
-                 custom_map_vars=None):
+                 custom_map_vars=None, valid_cluster_sources=None):
         super().__init__(api_client, base_path, patterns=patterns)
         default_custom_map_vars = {"node_type_id": None,
                                    "dynamic.[*].library.content.jar": None,
+                                   "dynamic.[*].library.content.whl": None,
+                                   "dynamic.[*].library.content.egg": None,
                                    "driver_node_type_id": None}
         self.__custom_map_vars = {**default_custom_map_vars, **(custom_map_vars or {})}
         self.__service = ClusterService(self.api_client)
         self.__lib_service = ManagedLibraryService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
+        self.__valid_cluster_sources = valid_cluster_sources or [ClusterSourceConstants.UI, ClusterSourceConstants.API]
 
     def __create_cluster_data(self, cluster_data: Dict[str, Any]):
         return self._create_data(
@@ -94,6 +103,8 @@ class ClusterHCLGenerator(APIGenerator):
     async def _generate(self) -> Generator[APIData, None, None]:
         clusters = self.__service.list_clusters().get("clusters", [])
         for cluster in clusters:
+            if "cluster_source" in cluster and cluster["cluster_source"] not in self.__valid_cluster_sources:
+                continue
             cluster_spec = self.get_cluster_spec(cluster)
 
             resp = self.get_dynamic_libraries(
