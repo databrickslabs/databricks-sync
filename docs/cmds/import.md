@@ -11,50 +11,48 @@ description: |-
 ### Synopsis
 
 ```bash
-databricks-sync import --profile <profile> (--git-ssh-url | -g) <url> --artifact-dir <path>
-databricks-sync import --profile <profile> (--local-git-path | -l) <path> --artifact-dir <path>
-databricks-sync import --help
-databricks-sync import --profile <profile> ((--git-ssh-url | -g) <url> | (--local-git-path | -l) <path>) --artifact-dir <path> [--skip-refresh] [--branch <branch name> default: master] [(--ssh-key-path | -k) <path> default: ~/.ssh/id_rsa] [(--verbosity | -v) <level>] [--version <version>] [--databricks-object-type <object-type>] [--backend-file <path>] [--destroy] [--plan] [--apply] [--revision <branch | commit | tag>]
-
+TF_VAR_PASSIVE="text" TF_VAR_CLOUD="text" GIT_PYTHON_TRACE="text" databricks-sync import [--profile DATABRICKS_PROFILE_NAME default="DEFAULT"] {-l, --local-git-path PATH | -g --git-ssh-url REPO_URL} [--branch BRANCH_NAME] [--revision {BRANCH | COMMIT | TAG}] [-k, --ssh-key-path] --artifact-dir PATH [--backend-file PATH] [--databricks-object-type {CLUSTER_POLICY | DBFS_FILE | NOTEBOOK | IDENTITY | INSTANCE_POOL | INSTANCE_PROFILE | SECRETS | CLUSTER | JOB}] [--plan] [--skip-refresh] [--apply] [--destroy] [--debug]
+databricks-sync import -h, --help
 ```
 
 ### Description
 
-**Import** retrieves stored state from a git repository then applies this to the target Databricks workspace.
+`import` retrieves stored state from a git repository then applies this to the target Databricks workspace.
 
 ### Environment Variables
 
-* `TF_VAR_PASSIVE` - Determines if Databricks Sync will run in Passive Mode. The default value is set to `False` for DR scenarios; however, it can be set `True` for migrations.
-* `TF_VAR_CLOUD` - Takes a value of `AWS` or `AZURE` to specify the Cloud provider.
-
-### Arguments
-
-* `--profile` - The Databricks CLI connection profile for the  source workspace. For additional information, please see the Databricks Sync [Setup instructions](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md). If no profile was configured for the Databricks CLI during setup, then `DEFAULT` should be passed as the value.
-* `--git-ssh-url` or `-g` - The URL of the remote git repo.
-* `--local-git-path` or `-l` - The path of a local git repo.
-* `--artifact-dir` - Path to where the plan/state file will be saved. Optional if backend state is specified through `--backend-file`.
+* `TF_VAR_PASSIVE` - Determines if databricks-sync will run in Passive Mode. The default value is set to `False` for DR scenarios; however, it can be set `True` for migrations.
+* `TF_VAR_CLOUD` - Takes a value of `was` or `azure` to specify the Cloud provider.
+* `GIT_PYTHON_TRACE` - Prints all the git commands run by databricks-sync. Valid value is 'full'.
 
 ### Options
 
-* `--skip-refresh` - Will not update the state of the Databricks workspace. This is used in scenarios with large workspaces having many objects.
-* `--branch` - This is the git repo branch of the repo designated by `--git-ssh-url flag | --local-git-path`. If not given, the default branch is `master`.
-* `--ssh-key-path` or `-k` - CLI connection profile to use. The default value is `~/.ssh/id_rsa`. This is equivalent to the `-i` switch when using `ssh`.
-* `--verbosity` or `-v` - For logging, takes a value of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
-* `--version` - A version can be attached.
-* `--databricks-object-type` - Identifies the Databricks-native object for which a plan will be created. By default, Databricks Sync will plan for all objects.
-* `--backend-file` - The location where backend configurations for the Terraform file will be saved.
-* `--destroy` - Indicates whether you wish to destroy all the provisioned infrastructure. Default is False.
-* `--plan` - Generate the Terraform plan to your infrastructure.  If set, the location will be in `<artifact-dir>/plan.out`.
-* `--apply` - Apply the plan and make modifications to the infrastructure.
-* `--revision` - Specify the git repo revision which can be a branch, commit, tag.
+* `--profile` - The Databricks CLI connection profile for the  source workspace. For additional information, please see the Databricks Sync [Setup instructions](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md). If no profile was configured for the Databricks CLI during setup, then `DEFAULT` should be passed as the value.
+* `-l, --local-git-path PATH` - The path of a local git repo to manage export and import. Cannot be supplied in conjunction with `-g, --git-ssh-url`.
+* `-g, --git-ssh-url REPO_URL` - The URL of the remote git repo to manage export and import. Cannot be supplied in conjunction with `-l | --local-git-path`.
+* `--branch` - This is the branch of the git repo designated by `{-g, --git-ssh-url flag | -l, --local-git-path}`. If not given, the default branch is `main`.
+* `--revision {BRANCH | COMMIT | TAG}` - Specify the git repo revision which can be a branch, commit, tag.
+* `-k, --ssh-key-path` - CLI connection profile to use. The default value is `~/.ssh/id_rsa`. This is equivalent to the `-i` switch when using `ssh`.
+* `--artifact-dir PATH` - Path to where the plan/state file will be saved. Optional if backend state is specified through `--backend-file`.
+* `--backend-file PATH` - The location where backend configurations for the Terraform file will be saved.
+* `--databricks-object-type {CLUSTER_POLICY | DBFS_FILE | NOTEBOOK | IDENTITY | INSTANCE_POOL | INSTANCE_PROFILE | SECRETS | CLUSTER | JOB}` - This is the Databricks-native object for which to create a plan. By default, databricks-sync will plan for all objects.
+* `--plan` - Generates a Terraform plan for the infrastructure
+* `--skip-refresh` - Determines whether the remote state will be refreshed or not
+* `--apply` - Apply the plan and make modifications to the infrastructure
+* `--destroy` - Indicates whether you wish to destroy all the provisioned infrastructure
+* `--debug` - Debug Mode. Shows full stack trace on error.
+* `-h, --help` - Shows Usage, Options, and Arguments then exits.
+
 
 ### Example
 
 ```bash
-# Import the stored state of all Databricks-native objects in Passive mode from the master branch of a remote GitHub repository to the DEFAULT profile, which is configured for an Azure Databricks workspace
-TF_VAR_PASSIVE_MODE=False TF_VAR_CLOUD=AZURE databricks-sync import --profile DEFAULT export -g git@github.com:USERNAME/REPOSITORY.git
+# Pre-apply Plan
+TF_VAR_CLOUD=azure GIT_PYTHON_TRACE=full databricks-sync -v debug import --profile DATABRICKS_PROFILE_NAME -l ~/DBFS_LOCAL_REPO_NAME --artifact-dir /dbfs/PATH --backend-file dbfs/PATH/FILES-BACKEND-CONFIG.json --plan --skip-refresh
 
-# Import the stored state of all Databricks-native objects in Passive mode from a local repository on feature-213 branch to the with test-workspace profile, which is configured for an AWS Databricks Workspace
-TF_VAR_PASSIVE_MODE=False TF_VAR_CLOUD=AWS Databricks-sync import --profile test-workspace -l /path/to/local/git/repo --branch feature-213
+# Apply Plan
+TF_VAR_CLOUD=azure GIT_PYTHON_TRACE=full databricks-sync -v debug import --profile DATABRICKS_PROFILE_NAME -l ~/DBFS_LOCAL_REPO_NAME --artifact-dir /dbfs/PATH --backend-file dbfs/PATH/FILES-BACKEND-CONFIG.json --plan --skip-refresh --apply
 
+# Post-apply Plan
+TF_VAR_CLOUD=azure GIT_PYTHON_TRACE=full databricks-sync -v debug import --profile DATABRICKS_PROFILE_NAME -l ~/DBFS_LOCAL_REPO_NAME --artifact-dir /dbfs/PATH --backend-file dbfs/PATH/FILES-BACKEND-CONFIG.json --plan --skip-refresh
 ```

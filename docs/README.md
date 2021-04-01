@@ -8,6 +8,6 @@ description: |-
 
 # Databricks Sync Documentation
 
-   * [Setup](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md)
-   * [Commands Reference](https://github.com/databrickslabs/databricks-sync/blob/master/docs/commands-ref.md)
-   * [Contributing](https://github.com/databrickslabs/databricks-sync/blob/master/docs/contributing.md)
+   ### [Setup](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md)
+   ### [Usage](https://github.com/databrickslabs/databricks-sync/blob/master/docs/usage.md)
+   ### [Contributing](https://github.com/databrickslabs/databricks-sync/blob/master/docs/contributing.md)
