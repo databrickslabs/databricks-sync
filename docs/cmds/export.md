@@ -1,11 +1,3 @@
----
-layout: "databricks"
-page_title: "Provider: Databricks"
-sidebar_current: "docs-databricks-command-ref-export"
-description: |-
-  Databricks sync databricks commands export.
----
-
 ## Export
 
 ### Synopsis
