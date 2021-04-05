@@ -1,11 +1,3 @@
----
-layout: "databricks"
-page_title: "Provider: Databricks"
-sidebar_current: "docs-databricks-command-ref-init"
-description: |-
-  Databricks sync databricks commands init.
----
-
 ## Init
 
 ### Synopsis
