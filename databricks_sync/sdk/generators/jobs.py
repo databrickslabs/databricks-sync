@@ -46,36 +46,7 @@ class JobHCLGenerator(APIGenerator):
         jobs = self.__service.list_jobs().get("jobs", [])
         # TODO: This shouldnt be aws jobs, there is no gurantee that all jobs are aws.
         for databricks_job in jobs:
-
-            if "revision_timestamp" in databricks_job.get("settings", []).get("notebook_task", []):
-                del databricks_job["settings"]["notebook_task"]["revision_timestamp"]
-                # del azure_job["settings"]["notebook_task"]["revision_timestamp"]
-
-            # Existing cluster - there's no need to generate per cloud object
-            # New cluster - modify the object, add var.CLOUD and generate an object per cloud
-            if "new_cluster" in databricks_job.get("settings", []):
-                # TODO: remove this once the provider support it
-                if "azure_attributes" in databricks_job.get("settings", []).get("new_cluster", []):
-                    del databricks_job["settings"]["new_cluster"]["azure_attributes"]
-
-                transformed_cluster_spec = ClusterHCLGenerator. \
-                    get_cluster_spec(databricks_job["settings"]["new_cluster"])
-                databricks_job["settings"]["new_cluster"] = \
-                    ClusterHCLGenerator.make_cluster_dict(transformed_cluster_spec, is_job=True)
-
-            else:
-                databricks_job['settings']['existing_cluster_id'] = Interpolate.resource(
-                    ResourceCatalog.CLUSTER_RESOURCE,
-                    f"databricks_cluster{normalize_identifier(databricks_job['settings']['existing_cluster_id'])}",
-                    "id",
-                )
-            library_resp = ClusterHCLGenerator.get_dynamic_libraries(databricks_job["settings"].get("libraries", []))
-            databricks_job["aws_libraries"] = library_resp["aws_libraries"]
-            databricks_job["azure_libraries"] = library_resp["azure_libraries"]
-            databricks_job["cloud_agnostic_libraries"] = library_resp["cloud_agnostic_libraries"]
-
             job_data = self.__create_job_data(databricks_job)
-
             yield job_data
             try:
                 yield self.__perms.create_permission_data(job_data, self.get_local_hcl_path, self.get_relative_hcl_path)
@@ -98,32 +69,63 @@ class JobHCLGenerator(APIGenerator):
         return data["settings"].get("name", None)
 
     @staticmethod
+    def __pre_cleanse_job_data(data: Dict[str, any]) -> Dict[str, Any]:
+        if "revision_timestamp" in data.get("settings", []).get("notebook_task", []):
+            del data["settings"]["notebook_task"]["revision_timestamp"]
+            # del azure_job["settings"]["notebook_task"]["revision_timestamp"]
+
+        # Existing cluster - there's no need to generate per cloud object
+        # New cluster - modify the object, add var.CLOUD and generate an object per cloud
+        if "new_cluster" in data.get("settings", []):
+            # TODO: remove this once the provider support it
+            if "azure_attributes" in data.get("settings", []).get("new_cluster", []):
+                del data["settings"]["new_cluster"]["azure_attributes"]
+
+            transformed_cluster_spec = ClusterHCLGenerator. \
+                get_cluster_spec(data["settings"]["new_cluster"])
+            data["settings"]["new_cluster"] = \
+                ClusterHCLGenerator.make_cluster_dict(transformed_cluster_spec, is_job=True)
+
+        else:
+            data['settings']['existing_cluster_id'] = Interpolate.resource(
+                ResourceCatalog.CLUSTER_RESOURCE,
+                f"databricks_cluster{normalize_identifier(data['settings']['existing_cluster_id'])}",
+                "id",
+            )
+        library_resp = ClusterHCLGenerator.get_dynamic_libraries(data["settings"].get("libraries", []))
+        data["aws_libraries"] = library_resp["aws_libraries"]
+        data["azure_libraries"] = library_resp["azure_libraries"]
+        data["cloud_agnostic_libraries"] = library_resp["cloud_agnostic_libraries"]
+        return data
+
+    @staticmethod
     def __make_job_dict(data: Dict[str, Any]) -> Dict[str, Any]:
         name = data["settings"].get("name", "noname")
-        return TerraformDictBuilder(ResourceCatalog.JOB_RESOURCE, data,
+        modified_data = JobHCLGenerator.__pre_cleanse_job_data(data)
+        return TerraformDictBuilder(ResourceCatalog.JOB_RESOURCE, modified_data,
                                     object_id=JobHCLGenerator.__get_job_raw_id,
                                     object_name=JobHCLGenerator.__get_job_name). \
-            add_optional("new_cluster", lambda: data["settings"]["new_cluster"]). \
-            add_optional("name", lambda: data["settings"]["name"]). \
-            add_optional("existing_cluster_id", lambda: data['settings']['existing_cluster_id']). \
-            add_optional("retry_on_timeout", lambda: data["settings"]["retry_on_timeout"]). \
-            add_optional("max_retries", lambda: data["settings"]["max_retries"]). \
-            add_optional("timeout_seconds", lambda: data["settings"]["timeout_seconds"]). \
-            add_optional("min_retry_interval_millis", lambda: data["settings"]["min_retry_interval_millis"]). \
-            add_optional("max_concurrent_runs", lambda: data["settings"]["max_concurrent_runs"]). \
-            add_optional("email_notifications", lambda: drop_all_but(data["settings"]["email_notifications"],
+            add_optional("new_cluster", lambda: modified_data["settings"]["new_cluster"]). \
+            add_optional("name", lambda: modified_data["settings"]["name"]). \
+            add_optional("existing_cluster_id", lambda: modified_data['settings']['existing_cluster_id']). \
+            add_optional("retry_on_timeout", lambda: modified_data["settings"]["retry_on_timeout"]). \
+            add_optional("max_retries", lambda: modified_data["settings"]["max_retries"]). \
+            add_optional("timeout_seconds", lambda: modified_data["settings"]["timeout_seconds"]). \
+            add_optional("min_retry_interval_millis", lambda: modified_data["settings"]["min_retry_interval_millis"]). \
+            add_optional("max_concurrent_runs", lambda: modified_data["settings"]["max_concurrent_runs"]). \
+            add_optional("email_notifications", lambda: drop_all_but(modified_data["settings"]["email_notifications"],
                                                                      "on_start", "on_success", "on_failure",
                                                                      "no_alert_for_skipped_runs",
                                                                      dictionary_name=f"{name}-email_notifications")). \
-            add_dynamic_block("schedule", lambda: data["settings"]["schedule"],
+            add_dynamic_block("schedule", lambda: modified_data["settings"]["schedule"],
                               custom_ternary_bool_expr=f"{DrConstants.PASSIVE_MODE_VARIABLE} == false"). \
-            add_optional("spark_jar_task", lambda: drop_all_but(data["settings"]["spark_jar_task"],
+            add_optional("spark_jar_task", lambda: drop_all_but(modified_data["settings"]["spark_jar_task"],
                                                                 "jar_uri", "main_class_name", "parameters",
                                                                 dictionary_name=f"{name}-spark_jar_task")). \
-            add_optional("spark_submit_task", lambda: data["settings"]["spark_submit_task"]). \
-            add_optional("spark_python_task", lambda: data["settings"]["spark_python_task"]). \
-            add_optional("notebook_task", lambda: data["settings"]["notebook_task"]). \
-            add_dynamic_blocks("library", lambda: data["aws_libraries"], CloudConstants.AWS). \
-            add_dynamic_blocks("library", lambda: data["azure_libraries"], CloudConstants.AZURE). \
-            add_dynamic_blocks("library", lambda: data["cloud_agnostic_libraries"]). \
+            add_optional("spark_submit_task", lambda: modified_data["settings"]["spark_submit_task"]). \
+            add_optional("spark_python_task", lambda: modified_data["settings"]["spark_python_task"]). \
+            add_optional("notebook_task", lambda: modified_data["settings"]["notebook_task"]). \
+            add_dynamic_blocks("library", lambda: modified_data["aws_libraries"], CloudConstants.AWS). \
+            add_dynamic_blocks("library", lambda: modified_data["azure_libraries"], CloudConstants.AZURE). \
+            add_dynamic_blocks("library", lambda: modified_data["cloud_agnostic_libraries"]). \
             to_dict()
