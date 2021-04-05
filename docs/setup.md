@@ -1,11 +1,3 @@
----
-layout: "databricks"
-page_title: "Provider: Databricks"
-sidebar_current: "docs-databricks-setup"
-description: |-
-  Databricks sync databricks setup.
----
-
 ## Prerequisites
 
 ### Databricks CLI
