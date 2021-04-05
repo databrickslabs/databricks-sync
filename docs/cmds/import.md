@@ -22,7 +22,7 @@ databricks-sync import -h, --help
 ### Environment Variables
 
 * `TF_VAR_CLOUD` - Takes a value of `aws`, `azure` or `gcp` to specify the Cloud provider. Required variable.
-* `TF_VAR_PASSIVE` - Determines if databricks-sync will run in Passive Mode. The default value is set to `False` for DR scenarios; however, it can be set `True` for migrations.
+* `TF_VAR_PASSIVE` - Determines if databricks-sync will run in Passive Mode. The default value is set to `False` for Active-Active migrations and DR scenarios; however, it can be set `True` for Active-Passive migrations and DR scenarios.
 * `GIT_PYTHON_TRACE` - Prints all the git commands run by databricks-sync. Valid value is 'full'.
 
 ### Options
