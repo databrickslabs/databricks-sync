@@ -18,7 +18,7 @@ This package uses credentials from the [Databricks CLI](https://docs.databricks.
 1. [Introduction](https://github.com/databrickslabs/databricks-sync#Introduction)
 2. [Documentation](https://github.com/databrickslabs/databricks-sync/blob/master/docs)
    * [Setup](https://github.com/databrickslabs/databricks-sync/blob/master/docs/setup.md)
-   * [Commands Reference](https://github.com/databrickslabs/databricks-sync/blob/master/docs/commands-ref.md)
+   * [Usage](https://github.com/databrickslabs/databricks-sync/blob/master/docs/usage.md)
    * [Contributing](https://github.com/databrickslabs/databricks-sync/blob/master/docs/contributing.md)
 3. [Quickstart](https://github.com/databrickslabs/databricks-sync#Quickstart)
    * [Next Steps](https://github.com/databrickslabs/databricks-sync#next-steps)
