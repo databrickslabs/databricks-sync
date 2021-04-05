@@ -11,7 +11,7 @@ description: |-
 ### Synopsis
 
 ```bash
-TF_VAR_PASSIVE="text" TF_VAR_CLOUD="text" GIT_PYTHON_TRACE="text" databricks-sync import [--profile DATABRICKS_PROFILE_NAME default="DEFAULT"] {-l, --local-git-path PATH | -g --git-ssh-url REPO_URL} [--branch BRANCH_NAME] [--revision {BRANCH | COMMIT | TAG}] [-k, --ssh-key-path] --artifact-dir PATH [--backend-file PATH] [--databricks-object-type {CLUSTER_POLICY | DBFS_FILE | NOTEBOOK | IDENTITY | INSTANCE_POOL | INSTANCE_PROFILE | SECRETS | CLUSTER | JOB}] [--plan] [--skip-refresh] [--apply] [--destroy] [--debug]
+TF_VAR_CLOUD="text" [TF_VAR_PASSIVE="text"] [GIT_PYTHON_TRACE="text"] databricks-sync import [--profile DATABRICKS_PROFILE_NAME default="DEFAULT"] {-l, --local-git-path PATH | -g --git-ssh-url REPO_URL} [--branch BRANCH_NAME] [--revision {BRANCH | COMMIT | TAG}] [-k, --ssh-key-path] --artifact-dir PATH [--backend-file PATH] [--databricks-object-type {CLUSTER_POLICY | DBFS_FILE | NOTEBOOK | IDENTITY | INSTANCE_POOL | INSTANCE_PROFILE | SECRETS | CLUSTER | JOB}] [--plan] [--skip-refresh] [--apply] [--destroy] [--debug]
 databricks-sync import -h, --help
 ```
 
@@ -21,8 +21,8 @@ databricks-sync import -h, --help
 
 ### Environment Variables
 
+* `TF_VAR_CLOUD` - Takes a value of `aws`, `azure` or `gcp` to specify the Cloud provider. Required variable.
 * `TF_VAR_PASSIVE` - Determines if databricks-sync will run in Passive Mode. The default value is set to `False` for DR scenarios; however, it can be set `True` for migrations.
-* `TF_VAR_CLOUD` - Takes a value of `was` or `azure` to specify the Cloud provider.
 * `GIT_PYTHON_TRACE` - Prints all the git commands run by databricks-sync. Valid value is 'full'.
 
 ### Options
