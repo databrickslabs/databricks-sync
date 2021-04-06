@@ -10,7 +10,7 @@ from databricks_sync.cmds.config import git_url_option, ssh_key_option, inject_p
     local_git_option, validate_git_params, handle_additional_debug, \
     wrap_with_user_agent
 from databricks_sync.sdk.sync.constants import GeneratorCatalog
-from databricks_sync.sdk.sync.import_ import DebugExecution
+from databricks_sync.sdk.sync.import_ import TerraformExecution
 
 SUPPORTED_IMPORTS = [
     GeneratorCatalog.CLUSTER_POLICY,
@@ -53,9 +53,9 @@ def triage_cli(ctx, git_ssh_url, local_git_path, databricks_object_type, backend
     handle_additional_debug(ctx)
     validate_git_params(git_ssh_url, local_git_path)
     back_end_json = Path(backend_file) if backend_file is not None else None
-    te = DebugExecution(folders=databricks_object_type, refresh=False, revision=revision, plan=False,
-                        plan_location=Path("/tmp/test") / "plan.out",
-                        local_state_location=Path("/tmp/test") / "state.tfstate", apply=False, destroy=False,
-                        git_ssh_url=git_ssh_url, local_git_path=local_git_path, api_client=api_client,
-                        branch=branch, post_import_shutdown=True, back_end_json=back_end_json)
-    te.execute(commands=command)
+    te = TerraformExecution(folders=databricks_object_type, refresh=False, revision=revision, plan=False,
+                            plan_location=Path("/tmp/test") / "plan.out",
+                            local_state_location=Path("/tmp/test") / "state.tfstate", apply=False, destroy=False,
+                            git_ssh_url=git_ssh_url, local_git_path=local_git_path, api_client=api_client,
+                            branch=branch, post_import_shutdown=True, back_end_json=back_end_json)
+    te.execute(debug_commands=command)
