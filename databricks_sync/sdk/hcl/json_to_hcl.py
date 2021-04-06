@@ -155,12 +155,12 @@ class TerraformDictBuilder:
             if not isinstance(val, list):
                 raise ValueError(f"expected value in field {field} to be a list but got {type(val)}")
             for item in val:
-                self.add_dynamic_block(field, lambda: item, cloud_name, custom_ternary_bool_expr)
+                self.add_dynamic_block(field, item, cloud_name, custom_ternary_bool_expr)
         except Exception as e:
             log.debug(self.__base_msg + "permitting error: " + str(e))
         return self
 
-    def add_dynamic_block(self, field, value_func: Callable[[], Any], cloud_name=None, custom_ternary_bool_expr=None):
+    def add_dynamic_block(self, field, value_func: Union[Callable[[], Any], Any], cloud_name=None, custom_ternary_bool_expr=None):
         dynamic_block = {
             field: {
             }
@@ -176,7 +176,10 @@ class TerraformDictBuilder:
             dynamic_block[field]["for_each"] = Expression.wrap("[1]")
 
         try:
-            val = value_func()
+            if callable(value_func):
+                val = value_func()
+            else:
+                val = value_func
             if not isinstance(val, dict):
                 raise ValueError(f"expected value in field {field} to be a dictionary but got {val}")
             dynamic_block[field]["content"] = val

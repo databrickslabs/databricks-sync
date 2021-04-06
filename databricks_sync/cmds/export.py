@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import click
-from click import pass_context
 from databricks_cli.configure.config import profile_option, debug_option, provide_api_client
 from databricks_cli.sdk import ApiClient
 
@@ -26,7 +25,7 @@ from databricks_sync.sdk.sync.export import ExportCoordinator
 @dry_run_option
 @inject_profile_as_env
 @dask_option
-@pass_context
+@click.pass_context
 def export_cli(ctx, dry_run, git_ssh_url, local_git_path, dask, config_path, api_client: ApiClient, branch, excel_report):
     # TODO: log the api client config and etc
     handle_additional_debug(ctx)

@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import click
-from click import pass_context
 from databricks_cli.configure.config import debug_option, provide_api_client
 from databricks_cli.configure.config import profile_option
 from databricks_cli.sdk import ApiClient
@@ -55,7 +54,7 @@ SUPPORTED_IMPORTS = [
 @git_url_option
 @ssh_key_option
 @inject_profile_as_env
-@pass_context
+@click.pass_context
 def import_cli(ctx, git_ssh_url, local_git_path, databricks_object_type, plan, apply, backend_file, skip_refresh,
                destroy,
                revision,
