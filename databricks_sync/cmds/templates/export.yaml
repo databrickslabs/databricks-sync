@@ -34,6 +34,11 @@ objects:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+    ## The following options will allow you to set static variables which need to be provided at runtime for
+    ## clusters, instance pools and policies
+    # convert_existing_cluster_to_var: true
+    # convert_new_cluster_instance_pool_to_var: true
+    # convert_new_cluster_cluster_policy_to_var: true
   identity:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:

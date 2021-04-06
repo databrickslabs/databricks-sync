@@ -110,12 +110,10 @@ class Terraform:
         validate_cmd = self.BASE_COMMAND + ["validate"]
         return self._cmd(validate_cmd)
 
-    #TODO: doc this
     @staticmethod
     def is_import_lock():
         return os.getenv("DATABRICKS_SYNC_IMPORT_LOCK", "false").lower()
 
-    # TODO: doc this
     @staticmethod
     def get_import_plan_parallelism():
         val = os.getenv("DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM", -1)
@@ -124,7 +122,6 @@ class Terraform:
         else:
             return int(val)
 
-    # TODO: doc this
     @staticmethod
     def get_import_apply_parallelism():
         val = os.getenv("DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM", -1)

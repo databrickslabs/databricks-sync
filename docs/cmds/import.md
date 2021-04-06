@@ -13,9 +13,12 @@ databricks-sync import -h, --help
 
 ### Environment Variables
 
-* `TF_VAR_CLOUD` - Takes a value of `aws`, `azure` or `gcp` to specify the Cloud provider. Required variable.
+* `TF_VAR_CLOUD` - Takes a value of `aws`, `azure` or `gcp` to specify the Cloud provider. **Required variable.**
 * `TF_VAR_PASSIVE` - Determines if databricks-sync will run in Passive Mode. The default value is set to `False` for Active-Active migrations and DR scenarios; however, it can be set `True` for Active-Passive migrations and DR scenarios.
 * `GIT_PYTHON_TRACE` - Prints all the git commands run by databricks-sync. Valid value is 'full'.
+* `DATABRICKS_SYNC_IMPORT_LOCK` - Boolean flag to lock the state file during import. This environment variable is option and default is false.
+* `DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM` - This is a numeric field to control the parallelism for the plan. You can set this to 1-1024.
+* `DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM` - This is a numeric field to control the parallelism for the apply. You can set this to 1-1024. You can use this to reduce parallelism when creating clusters and compute.
 
 ### Options
 
