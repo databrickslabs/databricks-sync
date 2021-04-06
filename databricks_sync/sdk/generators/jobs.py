@@ -188,9 +188,19 @@ class JobHCLGenerator(APIGenerator):
         data["cloud_agnostic_libraries"] = library_resp["cloud_agnostic_libraries"]
         return data
 
+    def __handle_schedule(self, data):
+        if "schedule" in data["settings"]:
+            schedule = data["settings"]["schedule"]
+            # wrap results in quotes because they are a string
+            schedule["pause_status"] = Interpolate.ternary(f"{DrConstants.PASSIVE_MODE_VARIABLE} == true",
+                                                           '"PAUSED"',
+                                                           f'"{schedule["pause_status"]}"')
+        return data
+
     def __make_job_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         name = data["settings"].get("name", "noname")
         modified_data = self.__pre_cleanse_job_data(data)
+        modified_data = self.__handle_schedule(modified_data)
         return TerraformDictBuilder(ResourceCatalog.JOB_RESOURCE, modified_data,
                                     object_id=JobHCLGenerator.__get_job_raw_id,
                                     object_name=JobHCLGenerator.__get_job_name). \
@@ -206,8 +216,7 @@ class JobHCLGenerator(APIGenerator):
                                                                      "on_start", "on_success", "on_failure",
                                                                      "no_alert_for_skipped_runs",
                                                                      dictionary_name=f"{name}-email_notifications")). \
-            add_dynamic_block("schedule", lambda: modified_data["settings"]["schedule"],
-                              custom_ternary_bool_expr=f"{DrConstants.PASSIVE_MODE_VARIABLE} == false"). \
+            add_optional("schedule", lambda: modified_data["settings"]["schedule"]). \
             add_optional("spark_jar_task", lambda: drop_all_but(modified_data["settings"]["spark_jar_task"],
                                                                 "jar_uri", "main_class_name", "parameters",
                                                                 dictionary_name=f"{name}-spark_jar_task")). \
