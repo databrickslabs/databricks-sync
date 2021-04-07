@@ -36,9 +36,6 @@ class JobHCLGenerator(APIGenerator):
         self.__convert_new_cluster_cluster_policy_to_var = convert_new_cluster_cluster_policy_to_var
 
     def __create_job_data(self, job_data: Dict[str, Any]):
-
-        # var_name = f"{self.__get_job_identifier(job_data)}_var"
-        # job_data["var"] = f"${{var.{var_name}}}"
         resource_vars = []
 
         # Handle normal existing cluster id to var
