@@ -152,7 +152,8 @@ def get_members(klass):
 
 ENTRYPOINT_MAIN_TF = {
     "provider": {
-        "databricks": {}
+        "databricks": {
+        }
     },
     "terraform": {
         "required_version": ">= 0.13.0",
@@ -161,7 +162,7 @@ ENTRYPOINT_MAIN_TF = {
                 "source": "databrickslabs/databricks",
                 # This should be fixed to not impact this tools behavior when downstream changes are made to the
                 # RP. This should be consciously upgraded. Maybe in the future can be passed in as optional
-                "version": os.getenv("DATABRICKS_TERRAFORM_PROVIDER_VERSION", "0.3.0")
+                "version": os.getenv("DATABRICKS_TERRAFORM_PROVIDER_VERSION", "0.3.2")
             }
         }
     },

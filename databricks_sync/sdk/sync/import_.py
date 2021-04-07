@@ -4,7 +4,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from databricks_cli.clusters.api import ClusterApi
 from databricks_cli.sdk import ApiClient
@@ -80,7 +80,7 @@ class TerraformExecution:
 
         self.back_end_json: Path = back_end_json
         self.post_import_shutdown = post_import_shutdown
-        self.tmp_stage = tempfile.TemporaryDirectory()
+        self.tmp_stage = tempfile.TemporaryDirectory(prefix="databricks_sync")
         self.local_git_path = local_git_path
         self.revision = revision
         self.branch = branch
@@ -113,13 +113,17 @@ class TerraformExecution:
 
     @setup_empty_stage
     @setup_repo
-    def execute(self, stage_path, repo_path):
+    def execute(self, stage_path, repo_path, debug_commands: Optional[List[str]] = None):
         # TODO test for each action, stop and retrun failure as needed
         # setup provider and init
         stage_path.mkdir(parents=True)
         with (stage_path / "main.tf.json").open("w+") as w:
-            main_tf_file_content = json.dumps(MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
-                                                                          get_me_username(self.api_client)),
+            resp = MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
+                                               get_me_username(self.api_client))
+            if "provider" in resp and "databricks" in resp.get("provider", {}):
+                resp["provider"]["databricks"]["host"] = os.getenv("DATABRICKS_HOST",
+                                                                   "unable to find host - DB Sync Profile Required")
+            main_tf_file_content = json.dumps(resp,
                                               indent=4, sort_keys=True)
             log.info("Main TF File: " + main_tf_file_content)
             w.write(main_tf_file_content)
@@ -137,6 +141,13 @@ class TerraformExecution:
             # TODO: Edge case incase the user switches to another admin user, there is a chance the prior user will be scimmed
             # in and managed. So if the current user is in state and we run destroy we should run terraform state rm curr_user
             pass
+
+        # Debug mode
+        if debug_commands is not None and len(debug_commands) > 0:
+            for command in debug_commands:
+                tf.raw_cmd(command)
+            # Exit when debug commands are finished running
+            return
 
         # We should run validate in either case
         tf.validate()
@@ -161,12 +172,11 @@ class TerraformExecution:
                     for cluster_id in fetch_cluster_ids_from_state(out):
                         shutdown_clusters(self.api_client, cluster_id)
 
-
 def fetch_cluster_ids_from_state(state_json):
     try:
         state_dict = json.loads(state_json)
     except Exception as e:
-        log.error("Failed to load state json: "+str(e))
+        log.error("Failed to load state json: " + str(e))
         return
     resources = state_dict.get("resources", [])
     for resource in resources:

@@ -3,7 +3,6 @@ import os
 import uuid
 
 import click
-from click import ClickException
 from databricks_cli.click_types import ContextObject
 from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
@@ -23,10 +22,10 @@ def absolute_path_callback(ctx, param, value):  # NOQA
 def validate_git_params(git_ssh_url, local_git_path):
     inputs = [git_ssh_url, local_git_path]
     if any(inputs) is False:
-        raise ClickException("--git-ssh-url flag or --local-git-path should be provided")
+        raise click.ClickException("--git-ssh-url flag or --local-git-path should be provided")
 
     if all(inputs) is True:
-        raise ClickException("Only one of --git-ssh-url or --local-git-path can be provided but not both")
+        raise click.ClickException("Only one of --git-ssh-url or --local-git-path can be provided but not both")
 
 
 def git_url_option(f):
@@ -133,6 +132,7 @@ def inject_profile_as_env(function):
         if not config or not config.is_valid:
             raise InvalidConfigurationError.for_profile(profile)
         os.environ["DATABRICKS_HOST"] = config.host
+        log.info(f"USING HOST: {config.host}")
         os.environ["DATABRICKS_TOKEN"] = config.token
         return function(*args, **kwargs)
 

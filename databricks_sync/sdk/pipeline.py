@@ -4,7 +4,6 @@ import copy
 import fnmatch
 import json
 import traceback
-from abc import ABC
 from functools import reduce, singledispatch
 from pathlib import Path
 from typing import List, Callable, Generator, Any, Dict, Union, Tuple
@@ -114,7 +113,7 @@ class APIGenerator(abc.ABC):
                      make_dict_func: Callable[[Dict[str, Any]], Dict[str, Any]],
                      processors,
                      human_readable_name_func: Callable[[Dict[str, Any]], str] = None,
-                     ):
+                     ) -> HCLConvertData:
         if filter_func():
             return None
         identifier = identifier_func(data)  # normalizes the identifier
@@ -146,10 +145,6 @@ class APIGenerator(abc.ABC):
 
     def get_raw_id(self, data: Dict[str, Any], data_func: Callable[[Dict[str, Any]], str]) -> str:
         return data_func(data)
-
-    def get_pattern_dot_paths(self, data: Dict[str, Any]) -> List[str]:
-        # Default is raw_id, else it should be overridden
-        return [self.get_raw_id(data)]
 
     def post_process_api_data_hook(self, data: Dict[str, Any], api_data: APIData) -> APIData:
         return api_data
@@ -256,7 +251,7 @@ class ExportFileUtils:
         write_file(data, path=local_path)
 
 
-class DownloaderAPIGenerator(APIGenerator, ABC):
+class DownloaderAPIGenerator(APIGenerator, abc.ABC):
 
     @staticmethod
     @HCLConvertData.manage_error

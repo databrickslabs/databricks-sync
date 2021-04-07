@@ -232,16 +232,13 @@ class IdentityHCLGenerator(APIGenerator):
 
     @staticmethod
     def get_user_dict(user):
-        display_name = f'{user.get("displayName")}' if user.get("displayName", None) is not None and \
-                                                       len(user.get("displayName", "").split(" ")) > 1 else f'Use Email'
-
         entitlements = user.get("entitlements", [])
         allow_cluster_create = any([valuePair["value"] == 'allow-cluster-create' for valuePair in entitlements])
         allow_instance_pool_create = any([valuePair["value"] == 'allow-instance-pool-create'
                                           for valuePair in entitlements])
         return {
             UserSchema.USER_NAME: user["userName"],
-            UserSchema.DISPLAY_NAME: display_name,
+            UserSchema.DISPLAY_NAME: user["displayName"],
             UserSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
             UserSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
             UserSchema.ACTIVE: user["active"]

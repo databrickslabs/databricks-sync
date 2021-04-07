@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import click
-from click import pass_context
 from databricks_cli.configure.config import debug_option
 
 from databricks_sync import CONTEXT_SETTINGS
@@ -11,7 +10,7 @@ from databricks_sync.cmds import templates
 @click.command(context_settings=CONTEXT_SETTINGS, help="Initialize export configuration.")
 @click.argument("filename", nargs=1)
 @debug_option
-@pass_context
+@click.pass_context
 def init_cli(ctx, filename):
     with (Path.cwd() / f"{filename}.yaml").open("w+") as f:
         try:

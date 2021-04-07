@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 
 import git
-from git import Repo
 
 from databricks_sync import log
 
@@ -124,7 +123,7 @@ class RemoteGitHandler(GitHandler):
         super().__init__(base_path, delete_directory, branch, revision)
 
     def _get_repo(self, branch, revision=None) -> git.Repo:
-        repo = Repo.clone_from(self.git_ssh_url, self.base_path.absolute(),
+        repo = git.Repo.clone_from(self.git_ssh_url, self.base_path.absolute(),
                                branch=branch)
         if revision is not None:
             repo.git.checkout(revision)
