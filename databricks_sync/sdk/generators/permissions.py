@@ -135,6 +135,8 @@ class PermissionsHelper:
                 relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
                 human_readable_name=permissions_name
             )
+        except NoDirectPermissionsError as ndpe:
+            raise ndpe
         except Exception as e:
 
             api_data = APIData(
