@@ -32,7 +32,7 @@ The use of [tfenv](https://github.com/tfutils/tfenv) is encouraged to install an
 1. [Install tfenv](https://github.com/tfutils/tfenv#installation)
 2. Run `tfenv install <version>`
 
-Terraform version can be verified using `tfenv list`. The active version will have an `*` if set. Use `tfenv use <version>` to set the active version to 0.13.x if necessary.
+Terraform version can be verified using `tfenv list`. The active version will have an `*` if set. Use `tfenv use <version>` to set the active version to one that is 0.13.x or above if necessary.
 
 For manual installations, refer to these instructions provided by HashiCorp Learn for [AWS](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/aws-get-started#install-terraform) and [Azure](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/azure-get-started#install-terraform).
 
