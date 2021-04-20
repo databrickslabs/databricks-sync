@@ -7,7 +7,8 @@ from databricks_cli.sdk import SecretService
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData
 from databricks_sync.sdk.pipeline import APIGenerator
-from databricks_sync.sdk.sync.constants import ResourceCatalog, SecretSchema, SecretScopeAclSchema, get_members
+from databricks_sync.sdk.sync.constants import ResourceCatalog, SecretSchema, SecretScopeAclSchema, get_members, \
+    SparkEnvConstants
 from databricks_sync.sdk.utils import normalize_identifier
 
 
@@ -88,7 +89,9 @@ class SecretHCLGenerator(APIGenerator):
             secret_data[id_] = {
                 SecretSchema.KEY: id_,
                 SecretSchema.SCOPE: self.__interpolate_secret_scope(scope),
-                SecretSchema.STRING_VALUE: Interpolate.variable(var_name)
+                SecretSchema.STRING_VALUE: Interpolate.variable(var_name),
+                SparkEnvConstants.SPARK_ENV_INTERNAL_KEY: f"TF_VAR_{var_name}",
+                SparkEnvConstants.SPARK_ENV_INTERNAL_VALUE: f"{{{{secrets/{scope_name}/{secret['key']}}}}}"
             }
             variables.append(var_name)
             secrets_id_name_pairs.append((f"{scope_name}/{id_}", id_))
