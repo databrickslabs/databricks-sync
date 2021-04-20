@@ -1,7 +1,8 @@
+import fnmatch
 import io
 from base64 import b64decode
 from pathlib import Path
-from typing import Generator, List, Dict, Any, Callable, Union, Tuple
+from typing import Generator, List, Dict, Any, Callable, Union, Tuple, Optional
 
 from databricks_cli.dbfs.api import FileInfo, BUFFER_SIZE_BYTES
 from databricks_cli.sdk import DbfsService, ApiClient
@@ -44,12 +45,19 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
     DBFS_FOREACH_VAR = "databricks_dbfs_file_for_each_var"
 
     def __init__(self, api_client: ApiClient, base_path: Path, dbfs_path: Union[str, List], patterns=None,
-                 custom_map_vars=None):
+                 custom_map_vars=None, exclude_path: Optional[Union[str, List]] = None):
         super().__init__(api_client, base_path, patterns=patterns)
         if isinstance(dbfs_path, str):
             self.__dbfs_path = [dbfs_path]
         else:
             self.__dbfs_path = dbfs_path
+        # Properly store exclude paths
+        if exclude_path is None:
+            self.__exclude_paths = None
+        elif isinstance(exclude_path, str):
+            self.__exclude_paths = [exclude_path]
+        else:
+            self.__exclude_paths = exclude_path
         self.__service = DbfsService(self.api_client)
         self.__custom_map_vars = custom_map_vars
 
@@ -57,16 +65,29 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
     def folder_name(self) -> str:
         return "dbfs_file"
 
-    @staticmethod
-    def __get_dbfs_file_data_recrusive(service: DbfsService, path):
+    def __is_exclude_path(self, path):
+        # If no exclude paths are not defined then skip this step
+        if self.__exclude_paths is None:
+            return False
+        resp = any([fnmatch.fnmatch(path, ex_path) for ex_path in self.__exclude_paths])
+        if resp is True:
+            log.debug(f"{path} is part of atleast one of the exclude paths: {self.__exclude_paths}")
+        return resp
+
+    def __get_dbfs_file_data_recrusive(self, service: DbfsService, path):
+        # is the base path allowed
+        if self.__is_exclude_path(path):
+            return []
         resp = service.list(path)
         if "files" not in resp:
             return []
         files = resp["files"]
         for file in files:
+            if self.__is_exclude_path(file['path']):
+                continue
             if file["is_dir"] is True:
                 log.info(f"Export DBFS folder:{file['path']}")
-                yield from DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, file["path"])
+                yield from self.__get_dbfs_file_data_recrusive(service, file["path"])
             else:
                 log.debug(f"Fetching data for file: {file['path']}")
                 yield file
@@ -119,7 +140,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
         dbfs_files = {}
         dbfs_files_id_name_pairs = []
         for p in self.__dbfs_path:
-            for file in DbfsFileHCLGenerator.__get_dbfs_file_data_recrusive(service, p):
+            for file in self.__get_dbfs_file_data_recrusive(service, p):
                 id_ = file['path']
                 dbfs_files[id_] = self.__get_dbfs_file_dict(file, self.__get_dbfs_identifier(file))
                 # ID and name are same for files
