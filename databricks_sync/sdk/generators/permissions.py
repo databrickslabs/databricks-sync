@@ -76,6 +76,8 @@ class PermissionsHelper:
                                        ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER),
                 Interpolate.depends_on(ResourceCatalog.GROUP_RESOURCE,
                                        ForEachBaseIdentifierCatalog.GROUPS_BASE_IDENTIFIER),
+                Interpolate.depends_on(ResourceCatalog.SERVICE_PRINCIPAL_RESOURCE,
+                                       ForEachBaseIdentifierCatalog.SERVICE_PRINCIPALS_BASE_IDENTIFIER),
             ]
             tdb.add_optional("depends_on", lambda: depends_on_users_and_groups)
 

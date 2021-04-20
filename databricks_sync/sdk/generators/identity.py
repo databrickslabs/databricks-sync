@@ -143,8 +143,7 @@ class IdentityHCLGenerator(APIGenerator):
 
     def __make_service_principal_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(ResourceCatalog.USER_RESOURCE). \
-            add_for_each(lambda: skip_me(self.USERS_FOREACH_VAR), get_members(ServicePrincipalSchema),
-                         just_local=False). \
+            add_for_each(lambda: self.SERVICE_PRINCIPALS_FOREACH_VAR, get_members(ServicePrincipalSchema)). \
             to_dict()
 
     def __create_user_data(self, user_data: Dict[str, Any],
