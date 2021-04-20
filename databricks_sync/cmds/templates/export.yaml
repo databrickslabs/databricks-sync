@@ -17,6 +17,12 @@ objects:
     dbfs_path:
       - "dbfs:/tests"
       - "dbfs:/databricks/init_scripts"
+    # Certain patterns can be excluded from being exported via exclude_path field. Make sure to use
+    # the glob syntax to specify all paths. Make sure all paths start with / and not dbfs:/.
+#    exclude_path:
+#      - "**.whl" # Ignore all wheel files
+#      - "**.jar" # Ignore all jar files
+#      - "/tmp/**" # Ignore all files in the tmp directory
 
   instance_pool:
     # pattern will be implemented in the future - make sure you have "*" in here
