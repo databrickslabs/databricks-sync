@@ -69,10 +69,13 @@ class ExportCoordinator:
 
             if dry_run is False:
                 geh.stage_changes()
-                changes = geh.get_changes("exports")
-                tf_var_changes = geh.get_changes("terraform.tfvars")
-                shell_env_changes = geh.get_changes("variables_env.sh")
-                if any([changes is not None for changes in [changes, tf_var_changes, shell_env_changes]]):
+                changes = [
+                    geh.get_changes("exports"),
+                    geh.get_changes("terraform.tfvars"),
+                    geh.get_changes("variables_env.sh"),
+                    geh.get_changes("databricks_spark_env.sh"),
+                ]
+                if any([change is not None for change in changes]):
                     geh.commit_and_push()
                 else:
                     log.info("No changes found.")

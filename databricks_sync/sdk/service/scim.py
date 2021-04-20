@@ -26,3 +26,13 @@ class ScimService(object):
         _data = {}
         return self.client.perform_query('GET', f"/preview/scim/v2/Groups/{id}", data=_data,
                                          headers=headers)
+
+    def list_service_principals(self, headers=None):
+        _data = {}
+        return self.client.perform_query('GET', f"/preview/scim/v2/ServicePrincipals", data=_data,
+                                         headers=headers)
+
+    def get_service_principal_by_id(self, id_, headers=None):
+        _data = {}
+        return self.client.perform_query('GET', f"/preview/scim/v2/ServicePrincipals/{id_}", data=_data,
+                                         headers=headers)

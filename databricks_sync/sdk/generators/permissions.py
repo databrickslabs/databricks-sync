@@ -76,6 +76,8 @@ class PermissionsHelper:
                                        ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER),
                 Interpolate.depends_on(ResourceCatalog.GROUP_RESOURCE,
                                        ForEachBaseIdentifierCatalog.GROUPS_BASE_IDENTIFIER),
+                Interpolate.depends_on(ResourceCatalog.SERVICE_PRINCIPAL_RESOURCE,
+                                       ForEachBaseIdentifierCatalog.SERVICE_PRINCIPALS_BASE_IDENTIFIER),
             ]
             tdb.add_optional("depends_on", lambda: depends_on_users_and_groups)
 
@@ -85,10 +87,12 @@ class PermissionsHelper:
             for perm in item["all_permissions"]:
                 if perm["inherited"] is True:
                     continue
-                data = {"group_name": item.get("group_name", None),
-                        "user_name": item.get("user_name", None),
-                        "permission_level": perm["permission_level"]
-                        }
+                data = {
+                    "group_name": item.get("group_name", None),
+                    "user_name": item.get("user_name", None),
+                    "service_principal_name": item.get("service_principal_name", None),
+                    "permission_level": perm["permission_level"]
+                }
                 permission_list.append(data)
         if len(permission_list) == 0:
             raise NoDirectPermissionsError("cannot have no acls that are directly attributed")
