@@ -103,14 +103,6 @@ class IdentityHCLGenerator(APIGenerator):
         return Interpolate.ternary(f'"{user_name}" == {MeConstants.USERNAME_VAR}', '"something temp will be skipped"',
                                    member_interpolation)
 
-    def __interpolate_service_principal_id(self, user_name):
-        # Short circuit interpolation if it is "Me" as we are skipping this use
-        member_interpolation = Interpolate.resource(ResourceCatalog.USER_RESOURCE,
-                                                    f'{ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER}["{user_name}"]',
-                                                    'id', wrap_json_syntax=False)
-        return Interpolate.ternary(f'"{user_name}" == {MeConstants.USERNAME_VAR}', '"something temp will be skipped"',
-                                   member_interpolation)
-
     def __interpolate_scim_group_id(self, group_name):
         if group_name == self.ADMIN_GROUP:
             return Interpolate.data_source(ResourceCatalog.GROUP_RESOURCE,
