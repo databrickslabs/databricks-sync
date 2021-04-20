@@ -18,6 +18,7 @@ class ResourceCatalog:
     GROUP_RESOURCE = "databricks_group"
     GROUP_INSTANCE_PROFILE_RESOURCE = "databricks_group_instance_profile"
     GROUP_MEMBER_RESOURCE = "databricks_group_member"
+    SERVICE_PRINCIPAL_RESOURCE = "databricks_service_principal"
 
     CLUSTER_RESOURCE = "databricks_cluster"
     JOB_RESOURCE = "databricks_job"
@@ -37,6 +38,7 @@ class GeneratorCatalog:
 
 class ForEachBaseIdentifierCatalog:
     USERS_BASE_IDENTIFIER = "databricks_scim_users"
+    SERVICE_PRINCIPALS_BASE_IDENTIFIER = "databricks_scim_service_principals"
     GROUPS_BASE_IDENTIFIER = "databricks_scim_groups"
     DBFS_FILES_BASE_IDENTIFIER = "databricks_dbfs_files"
     INSTANCE_PROFILES_BASE_IDENTIFIER = "databricks_instance_profiles"
@@ -79,6 +81,13 @@ class GroupSchema(TfJsonSchema):
     DISPLAY_NAME = "display_name"
     ALLOW_CLUSTER_CREATE = "allow_cluster_create"
     ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
+
+class ServicePrincipalSchema(TfJsonSchema):
+    APPLICATION_ID = "application_id"
+    DISPLAY_NAME = "display_name"
+    ALLOW_CLUSTER_CREATE = "allow_cluster_create"
+    ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
+    ACTIVE = "active"
 
 
 class UserInstanceProfileSchema(TfJsonSchema):
@@ -131,6 +140,9 @@ class MeConstants:
         }
         return output
 
+class SparkEnvConstants:
+    SPARK_ENV_INTERNAL_KEY = "@internal:env_var"
+    SPARK_ENV_INTERNAL_VALUE = "@internal:env_val"
 
 class CloudConstants:
     AWS = "AWS"

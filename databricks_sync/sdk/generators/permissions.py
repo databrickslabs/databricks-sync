@@ -85,10 +85,12 @@ class PermissionsHelper:
             for perm in item["all_permissions"]:
                 if perm["inherited"] is True:
                     continue
-                data = {"group_name": item.get("group_name", None),
-                        "user_name": item.get("user_name", None),
-                        "permission_level": perm["permission_level"]
-                        }
+                data = {
+                    "group_name": item.get("group_name", None),
+                    "user_name": item.get("user_name", None),
+                    "service_principal_name": item.get("service_principal_name", None),
+                    "permission_level": perm["permission_level"]
+                }
                 permission_list.append(data)
         if len(permission_list) == 0:
             raise NoDirectPermissionsError("cannot have no acls that are directly attributed")
@@ -135,6 +137,8 @@ class PermissionsHelper:
                 relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
                 human_readable_name=permissions_name
             )
+        except NoDirectPermissionsError as ndpe:
+            raise ndpe
         except Exception as e:
 
             api_data = APIData(
