@@ -17,6 +17,7 @@ from databricks_sync.sdk.hcl.json_to_hcl import TerraformJsonBuilder
 from databricks_sync.sdk.message import HCLConvertData, APIData, Artifact
 from databricks_sync.sdk.processor import Processor, MappedGrokVariableBasicAnnotationProcessor
 from databricks_sync.sdk.report.model import event_manager, EventManager, run_id, Session, ReportConstants
+from databricks_sync.sdk.sync.constants import ResourceCatalog, SparkEnvConstants
 from databricks_sync.sdk.utils import normalize
 
 
@@ -152,6 +153,7 @@ class APIGenerator(abc.ABC):
     def post_process_api_data_hook(self, data: Dict[str, Any], api_data: APIData) -> APIData:
         return api_data
 
+
 class StreamUtils:
 
     @staticmethod
@@ -230,6 +232,12 @@ class ExportFileUtils:
         dir_path = Path(base_path)
         ExportFileUtils.__ensure_parent_dirs(dir_path)
         return dir_path / "variables_env.sh"
+
+    @staticmethod
+    def make_databricks_spark_env(base_path: str) -> Path:
+        dir_path = Path(base_path)
+        ExportFileUtils.__ensure_parent_dirs(dir_path)
+        return dir_path / "databricks_spark_env.sh"
 
     @staticmethod
     def make_local_data_path(base_path: Path, sub_dir: str, file_name) -> Path:
@@ -435,6 +443,21 @@ class Pipeline:
         return tfvars
 
     @staticmethod
+    @HCLConvertData.manage_error
+    def map_databricks_secrets_spark_env(hcl_convert_data: HCLConvertData) -> List[Tuple[str, str]]:
+        spark_envs = []
+        if hcl_convert_data.resource_name == ResourceCatalog.SECRET_RESOURCE:
+            for l_var in hcl_convert_data.local_variables:
+                log.debug("data:" + str(l_var.data))
+                for data in l_var.data.values():
+                    if SparkEnvConstants.SPARK_ENV_INTERNAL_KEY in data and \
+                            SparkEnvConstants.SPARK_ENV_INTERNAL_VALUE in data:
+                        spark_envs.append((data[SparkEnvConstants.SPARK_ENV_INTERNAL_KEY],
+                                           data[SparkEnvConstants.SPARK_ENV_INTERNAL_VALUE]))
+            log.debug(f"spark_envs-{spark_envs}")
+        return spark_envs
+
+    @staticmethod
     def make_mapped_variables_handler(base_path):
         @HCLConvertData.manage_error
         def _save_mapped_variables(hcl_convert_data_list: List[HCLConvertData]):
@@ -453,6 +476,21 @@ class Pipeline:
             return hcl_convert_data_list
 
         return _save_mapped_variables
+
+    @staticmethod
+    def make_spark_env_handler(base_path):
+        def _save_spark_env_conf(vars: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+            with ExportFileUtils.make_databricks_spark_env(base_path).open("w+") as f:
+                for var in vars:
+                    key = var[0]
+                    val = var[1]
+                    env_var = f'{key}={val}'
+                    f.write(env_var+"\n")
+                    log.debug(f"Writing env var: {env_var}")
+                    f.flush()
+            return vars
+
+        return _save_spark_env_conf
 
     @staticmethod
     def make_tfvars_handler(base_path):
@@ -504,6 +542,13 @@ class Pipeline:
         tfvars_collector = tfvars_values_s.flatten().unique().collect()
         self.__collectors.append(tfvars_collector)
         tfvars_collector.map(Pipeline.make_tfvars_handler(self._base_path)).sink(lambda x: x)
+
+        secrets_filter = lambda data: len(data.errors) == 0 and data.resource_name == ResourceCatalog.SECRET_RESOURCE
+        secrets_db_values_s = processed_stream.filter(secrets_filter). \
+            map(Pipeline.map_databricks_secrets_spark_env)
+        secrets_db_values_collector = secrets_db_values_s.flatten().unique().collect()
+        self.__collectors.append(secrets_db_values_collector)
+        secrets_db_values_collector.map(Pipeline.make_spark_env_handler(self._base_path)).sink(lambda x: x)
 
         resource_s = StreamUtils.apply_map(
             Pipeline.make_resource_files_handler(debug),
