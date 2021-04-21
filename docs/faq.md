@@ -1,5 +1,6 @@
 ## Frequently Asked Questions
 * [Troubleshooting](https://github.com/databrickslabs/databricks-sync/blob/master/docs/faq.md#troubleshooting)
+* [Usage](https://github.com/databrickslabs/databricks-sync/blob/master/docs/faq.md#usage)
 
 ### Troubleshooting
 
