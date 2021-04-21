@@ -7,7 +7,7 @@ from databricks_cli.workspace.api import WorkspaceFileInfo
 
 from databricks_sync import log
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
-from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder
+from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import Artifact, APIData
 from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
 from databricks_sync.sdk.sync.constants import ResourceCatalog
@@ -35,14 +35,28 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         self.__service = WorkspaceService(self.api_client)
         self.__custom_map_vars = custom_map_vars or {}
         self.__perms = PermissionsHelper(self.api_client)
+        self.__folder_set = {}
 
     @property
     def folder_name(self) -> str:
         return "notebook"
 
-    @staticmethod
-    def _get_notebooks_recursive(service: WorkspaceService, path: str):
-        resp = service.list(path)
+    def __get_parent_folder(self, path):
+        path = Path(path)
+        return str(path.parent.absolute())
+
+    def __is_duplicate_folder(self, path):
+        # Function should only be called once, calling it more than once will yield that path as a duplicate
+        if path not in self.__folder_set:
+            self.__folder_set[path] = 1
+            log.debug(f"Processing folder: {path} due to seeing for the first time")
+            return False
+        else:
+            log.debug(f"Not processing folder: {path} due to being processed already")
+            return True
+
+    def _get_notebooks_recursive(self, path: str):
+        resp = self.__service.list(path)
         log.info(f"Fetched all files & folders from path: {path}")
         if "objects" not in resp:
             return []
@@ -53,7 +67,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                 # we need object id for permissions so we cant use workspace file info object
                 yield obj
             if workspace_obj.is_dir is True:
-                yield from NotebookHCLGenerator._get_notebooks_recursive(service, workspace_obj.path)
+                yield from self._get_notebooks_recursive(workspace_obj.path)
 
     def construct_artifacts(self, data: Dict[str, Any]) -> List[Artifact]:
         return [NotebookArtifact(remote_path=data['path'],
@@ -67,8 +81,11 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
             "R": ".r",
             "SQL": ".sql"
         }
-        lang = data["language"]
-        return self.__notebook_identifier(data)+extmap[lang]
+        lang = data.get("language", None)
+        if lang is not None:
+            return self.__notebook_identifier(data) + extmap[lang]
+        else:
+            return self.__notebook_identifier(data)
 
     def __notebook_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_notebook-{d['path']}")
@@ -101,14 +118,48 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                                  self.map_processors(self.__custom_map_vars),
                                  human_readable_name_func=self.__notebook_name)
 
+    def __create_folder_data(self, dir_data: Dict[str, Any]):
+        # This is a temporary stub just for permissions
+        # The terraform provider does not support folders
+        return self._create_data(ResourceCatalog.DIRECTORY_RESOURCE,
+                                 dir_data,
+                                 lambda: any([self._match_patterns(dir_data["path"])]) is False,
+                                 self.__notebook_identifier,
+                                 self.__notebook_raw_id,
+                                 self.__make_notebook_dict,
+                                 self.map_processors(self.__custom_map_vars),
+                                 human_readable_name_func=self.__notebook_name)
+
+    def __handle_folder_permissions(self, notebook_obj):
+        # Handle Folder permissions
+        notebook_path = notebook_obj["path"]
+        folder_path = self.__get_parent_folder(notebook_path)
+        if self.__is_duplicate_folder(folder_path):
+            return None
+        else:
+            folder_obj = self.__service.get_status(folder_path)
+            folder_data = self.__create_folder_data(folder_obj)
+            depends_on = [Interpolate.depends_on(ResourceCatalog.NOTEBOOK_RESOURCE,
+                                                 self.__notebook_identifier(notebook_obj))]
+            try:
+                return self.__perms.create_permission_data(folder_data, self.get_local_hcl_path,
+                                                           self.get_relative_hcl_path, depends_on=depends_on)
+            except NoDirectPermissionsError:
+                return None
+
     async def _generate(self) -> Generator[APIData, None, None]:
-        service = WorkspaceService(self.api_client)
         for p in self.__notebook_path:
-            for notebook in NotebookHCLGenerator._get_notebooks_recursive(service, p):
-                notebook_data = self.__create_notebook_data(notebook)
-                yield notebook_data
+            for notebook in self._get_notebooks_recursive(p):
+                # Only create hcl files for notebooks
+                object_data = self.__create_notebook_data(notebook)
+                yield object_data
+
                 try:
-                    yield self.__perms.create_permission_data(notebook_data, self.get_local_hcl_path,
+                    yield self.__perms.create_permission_data(object_data, self.get_local_hcl_path,
                                                               self.get_relative_hcl_path)
                 except NoDirectPermissionsError:
                     pass
+
+                folder_perms = self.__handle_folder_permissions(notebook)
+                if folder_perms is not None:
+                    yield folder_perms
