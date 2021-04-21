@@ -6,7 +6,7 @@ from databricks_cli.sdk import WorkspaceService, ApiClient
 from databricks_cli.workspace.api import WorkspaceFileInfo
 
 from databricks_sync import log
-from databricks_sync.sdk.generators import PathExclusion
+from databricks_sync.sdk.generators import PathExclusionParser, PathInclusionParser
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import Artifact, APIData
@@ -29,15 +29,19 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     def __init__(self, api_client: ApiClient, base_path: Path, notebook_path: Union[str, List], patterns=None,
                  custom_map_vars=None, exclude_path: Optional[Union[str, List]] = None):
         super().__init__(api_client, base_path, patterns=patterns)
+
         if isinstance(notebook_path, str):
-            self.__notebook_path = [notebook_path]
+            self.__notebook_path_patterns = [notebook_path]
         else:
-            self.__notebook_path = notebook_path
+            self.__notebook_path_patterns = notebook_path
+        self.__path_inclusion = PathInclusionParser(self.__notebook_path_patterns,
+                                                    ResourceCatalog.NOTEBOOK_RESOURCE)
+        self.__notebook_path = self.__path_inclusion.base_paths
         self.__service = WorkspaceService(self.api_client)
         self.__custom_map_vars = custom_map_vars or {}
         self.__perms = PermissionsHelper(self.api_client)
         self.__folder_set = {}
-        self.__path_exclusion = PathExclusion(exclude_path, ResourceCatalog.NOTEBOOK_RESOURCE)
+        self.__path_exclusion = PathExclusionParser(exclude_path, ResourceCatalog.NOTEBOOK_RESOURCE)
 
     @property
     def folder_name(self) -> str:
@@ -59,17 +63,17 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def _get_notebooks_recursive(self, path: str):
         resp = self.__service.list(path)
-        if self.__path_exclusion.is_path_excluded(path):
+        if self.__path_exclusion.is_path_excluded(path) or not self.__path_inclusion.is_path_included(path):
             return []
         log.info(f"Fetched all files & folders from path: {path}")
         if "objects" not in resp:
             return []
         objects = resp["objects"]
         for obj in objects:
-            if self.__path_exclusion.is_path_excluded(obj['path']):
-                continue
             workspace_obj = WorkspaceFileInfo.from_json(obj)
-            if workspace_obj.is_notebook is True:
+            if self.__path_exclusion.is_path_excluded(workspace_obj.path):
+                continue
+            if workspace_obj.is_notebook is True and self.__path_inclusion.is_path_included(workspace_obj.path):
                 # we need object id for permissions so we cant use workspace file info object
                 yield obj
             if workspace_obj.is_dir is True:
@@ -117,7 +121,8 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     def __create_notebook_data(self, notebook_data: Dict[str, Any]):
         return self._create_data(ResourceCatalog.NOTEBOOK_RESOURCE,
                                  notebook_data,
-                                 lambda: any([self._match_patterns(notebook_data["path"])]) is False,
+                                 # Pattern matching not implemented using patterns field in yaml
+                                 lambda: False,
                                  self.__notebook_identifier,
                                  self.__notebook_raw_id,
                                  self.__make_notebook_dict,
@@ -129,7 +134,8 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         # The terraform provider does not support folders
         return self._create_data(ResourceCatalog.DIRECTORY_RESOURCE,
                                  dir_data,
-                                 lambda: any([self._match_patterns(dir_data["path"])]) is False,
+                                 # Pattern matching not implemented using patterns field in yaml
+                                 lambda: False,
                                  self.__notebook_identifier,
                                  self.__notebook_raw_id,
                                  self.__make_notebook_dict,
