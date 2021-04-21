@@ -7,6 +7,12 @@ objects:
     # Use Custom map var to setup a new location
 #    custom_map_vars:
 #      path: "/Users/%{DATA:variable}/%{GREEDYDATA}"
+    # Certain patterns can be excluded from being exported via exclude_path field. Make sure to use
+    # the glob syntax to specify all paths. Make sure all paths start with / and not dbfs:/.
+#    exclude_path:
+#      - "/Users/**" # Ignore all wheel files
+#      - "/a/*test/**" # Ignore all jar files
+#      - "/tmp/**" # Ignore all files in the tmp directory
 
   cluster_policy:
     # pattern will be implemented in the future - make sure you have "*" in here

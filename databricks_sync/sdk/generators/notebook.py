@@ -1,11 +1,12 @@
 from base64 import b64decode
 from pathlib import Path
-from typing import List, Generator, Dict, Any, Union
+from typing import List, Generator, Dict, Any, Union, Optional
 
 from databricks_cli.sdk import WorkspaceService, ApiClient
 from databricks_cli.workspace.api import WorkspaceFileInfo
 
 from databricks_sync import log
+from databricks_sync.sdk.generators import PathExclusion
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import Artifact, APIData
@@ -26,7 +27,7 @@ class NotebookArtifact(Artifact):
 class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def __init__(self, api_client: ApiClient, base_path: Path, notebook_path: Union[str, List], patterns=None,
-                 custom_map_vars=None):
+                 custom_map_vars=None, exclude_path: Optional[Union[str, List]] = None):
         super().__init__(api_client, base_path, patterns=patterns)
         if isinstance(notebook_path, str):
             self.__notebook_path = [notebook_path]
@@ -36,6 +37,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         self.__custom_map_vars = custom_map_vars or {}
         self.__perms = PermissionsHelper(self.api_client)
         self.__folder_set = {}
+        self.__path_exclusion = PathExclusion(exclude_path, ResourceCatalog.NOTEBOOK_RESOURCE)
 
     @property
     def folder_name(self) -> str:
@@ -45,7 +47,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         path = Path(path)
         return str(path.parent.absolute())
 
-    def __is_duplicate_folder(self, path):
+    def __is_processed_folder(self, path):
         # Function should only be called once, calling it more than once will yield that path as a duplicate
         if path not in self.__folder_set:
             self.__folder_set[path] = 1
@@ -57,11 +59,15 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def _get_notebooks_recursive(self, path: str):
         resp = self.__service.list(path)
+        if self.__path_exclusion.is_path_excluded(path):
+            return []
         log.info(f"Fetched all files & folders from path: {path}")
         if "objects" not in resp:
             return []
         objects = resp["objects"]
         for obj in objects:
+            if self.__path_exclusion.is_path_excluded(obj['path']):
+                continue
             workspace_obj = WorkspaceFileInfo.from_json(obj)
             if workspace_obj.is_notebook is True:
                 # we need object id for permissions so we cant use workspace file info object
@@ -134,7 +140,10 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         # Handle Folder permissions
         notebook_path = notebook_obj["path"]
         folder_path = self.__get_parent_folder(notebook_path)
-        if self.__is_duplicate_folder(folder_path):
+        if folder_path == "/":
+            log.debug("Cannot copy permissions for '/' folder path!")
+            return None
+        if self.__is_processed_folder(folder_path):
             return None
         else:
             folder_obj = self.__service.get_status(folder_path)
