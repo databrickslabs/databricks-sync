@@ -14,11 +14,12 @@ from styleframe import StyleFrame, utils, Styler
 from tabulate import tabulate
 
 from databricks_sync import log
+from databricks_sync.sdk.sync.constants import EnvVarConstants
 
-driver = os.environ.get("DATABRICKS_SYNC_REPORT_DB_DRIVER", "sqlite")
-path = os.environ.get("DATABRICKS_SYNC_REPORT_DB_URL",
+driver = os.environ.get(EnvVarConstants.DATABRICKS_SYNC_REPORT_DB_DRIVER, "sqlite")
+path = os.environ.get(EnvVarConstants.DATABRICKS_SYNC_REPORT_DB_URL,
                       None)
-echo = os.environ.get("DATABRICKS_SYNC_REPORT_DB_TRACE",
+echo = os.environ.get(EnvVarConstants.DATABRICKS_SYNC_REPORT_DB_TRACE,
                       "false")
 if path is None:
     default_db_path = Path.home() / '.databricks_sync/'

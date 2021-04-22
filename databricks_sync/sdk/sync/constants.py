@@ -2,6 +2,34 @@ import copy
 import os
 
 
+class EnvVarConstants:
+    # Debug env vars
+    DATABRICKS_SYNC_REPORT_DB_TRACE = "DATABRICKS_SYNC_REPORT_DB_TRACE"
+    TF_LOG = "TF_LOG"
+    GIT_PYTHON_TRACE = "GIT_PYTHON_TRACE"
+    GIT_SSH_COMMAND = "GIT_SSH_COMMAND"
+
+    # SQL Lite info
+    DATABRICKS_SYNC_REPORT_DB_DRIVER = "DATABRICKS_SYNC_REPORT_DB_DRIVER"
+    DATABRICKS_SYNC_REPORT_DB_URL = "DATABRICKS_SYNC_REPORT_DB_URL"
+
+    # Auth
+    AZURE_DATABRICKS_WORKSPACE_ID = "AZURE_DATABRICKS_WORKSPACE_ID"
+    DATABRICKS_HOST = "DATABRICKS_HOST"
+    DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
+
+    # Passive DR Mode
+    TF_VAR_PASSIVE_MODE = "TF_VAR_PASSIVE_MODE"
+
+    # Provider Version Changes
+    DATABRICKS_TERRAFORM_PROVIDER_VERSION = "DATABRICKS_TERRAFORM_PROVIDER_VERSION"
+
+    # Import options
+    DATABRICKS_SYNC_IMPORT_LOCK = "DATABRICKS_SYNC_IMPORT_LOCK"
+    DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM = "DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM"
+    DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM = "DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM"
+
+
 class ResourceCatalog:
     NOTEBOOK_RESOURCE = "databricks_notebook"
     CLUSTER_POLICY_RESOURCE = "databricks_cluster_policy"
@@ -82,6 +110,7 @@ class GroupSchema(TfJsonSchema):
     ALLOW_CLUSTER_CREATE = "allow_cluster_create"
     ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
 
+
 class ServicePrincipalSchema(TfJsonSchema):
     APPLICATION_ID = "application_id"
     DISPLAY_NAME = "display_name"
@@ -140,15 +169,18 @@ class MeConstants:
         }
         return output
 
+
 class SparkEnvConstants:
     SPARK_ENV_INTERNAL_KEY = "@internal:env_var"
     SPARK_ENV_INTERNAL_VALUE = "@internal:env_val"
+
 
 class CloudConstants:
     AWS = "AWS"
     AZURE = "AZURE"
     CLOUD = "CLOUD"
     CLOUD_VARIABLE = f"upper(var.{CLOUD})"
+
 
 class DrConstants:
     PASSIVE_MODE = "PASSIVE_MODE"
@@ -174,7 +206,7 @@ ENTRYPOINT_MAIN_TF = {
                 "source": "databrickslabs/databricks",
                 # This should be fixed to not impact this tools behavior when downstream changes are made to the
                 # RP. This should be consciously upgraded. Maybe in the future can be passed in as optional
-                "version": os.getenv("DATABRICKS_TERRAFORM_PROVIDER_VERSION", "0.3.2")
+                "version": os.getenv(EnvVarConstants.DATABRICKS_TERRAFORM_PROVIDER_VERSION, "0.3.2")
             }
         }
     },

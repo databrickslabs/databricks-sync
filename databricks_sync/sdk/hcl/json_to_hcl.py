@@ -128,7 +128,7 @@ class TerraformDictBuilder:
 
     # the data should map exactly all the fields you want to interpolate directly
     def add_for_each(self, for_each_field_content: Callable[[], Any], schema_key_list: List[str], cloud=None,
-                     just_local=True):
+                     skip_cloud: bool = False, just_local=True):
         for_each_field_raw: str = for_each_field_content()
         for_each_field_val = f"local.{for_each_field_raw}" if just_local is True else for_each_field_raw
 
@@ -136,8 +136,9 @@ class TerraformDictBuilder:
             var_name = for_each_field_val if for_each_field_val.startswith("local.") else for_each_field_val
             self.__add_field("for_each", var_name, Expression())
         else:
+            equality = "==" if skip_cloud is False else "!="
             self.__add_field("for_each",
-                             f'{CloudConstants.CLOUD_VARIABLE} == "{cloud}" ? {for_each_field_val} : {{}}',
+                             f'{CloudConstants.CLOUD_VARIABLE} {equality} "{cloud}" ? {for_each_field_val} : {{}}',
                              Expression())
         for key in schema_key_list:
             self.__add_field(key, f"each.value.{key}", Expression())
@@ -160,7 +161,8 @@ class TerraformDictBuilder:
             log.debug(self.__base_msg + "permitting error: " + str(e))
         return self
 
-    def add_dynamic_block(self, field, value_func: Union[Callable[[], Any], Any], cloud_name=None, custom_ternary_bool_expr=None):
+    def add_dynamic_block(self, field, value_func: Union[Callable[[], Any], Any], cloud_name=None,
+                          custom_ternary_bool_expr=None):
         dynamic_block = {
             field: {
             }

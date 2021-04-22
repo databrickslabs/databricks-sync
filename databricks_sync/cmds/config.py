@@ -11,6 +11,7 @@ from databricks_cli.utils import InvalidConfigurationError
 
 from databricks_sync import log
 from databricks_sync.cmds.version import version
+from databricks_sync.sdk.sync.constants import EnvVarConstants
 
 
 def absolute_path_callback(ctx, param, value):  # NOQA
@@ -57,9 +58,9 @@ def handle_additional_debug(ctx):
     log.info("Setting debug flags on.")
     context_object: ContextObject = ctx.ensure_object(ContextObject)
     if context_object.debug_mode is True:
-        os.environ["TF_LOG"] = "debug"
-        os.environ["GIT_PYTHON_TRACE"] = "full"
-        os.environ["DATABRICKS_SYNC_REPORT_DB_TRACE"] = "true"
+        os.environ[EnvVarConstants.TF_LOG] = "debug"
+        os.environ[EnvVarConstants.GIT_PYTHON_TRACE] = "full"
+        os.environ[EnvVarConstants.DATABRICKS_SYNC_REPORT_DB_TRACE] = "true"
 
 
 def delete_option(f):
@@ -105,7 +106,7 @@ def tag_option(f):
 def ssh_key_option(f):
     def callback(ctx, param, value):  # NOQA
         git_ssh_cmd = f"ssh -i {value}"
-        os.environ["GIT_SSH_COMMAND"] = git_ssh_cmd
+        os.environ[EnvVarConstants.GIT_SSH_COMMAND] = git_ssh_cmd
 
     return click.option('--ssh-key-path', '-k', required=False, default="~/.ssh/id_rsa", callback=callback,
                         expose_value=False,
@@ -120,20 +121,21 @@ def inject_profile_as_env(function):
 
     @functools.wraps(function)
     def decorator(*args, **kwargs):
-        ctx = click.get_current_context()
-        command_name = "-".join(ctx.command_path.split(" ")[1:])
-        command_name += "-" + str(uuid.uuid1())
-        profile = get_profile_from_context()
-        if profile:
-            # If we request a specific profile, only get credentials from tere.
-            config = ProfileConfigProvider(profile).get_config()
-        else:
-            raise ValueError("Please provide profile field")
-        if not config or not config.is_valid:
-            raise InvalidConfigurationError.for_profile(profile)
-        os.environ["DATABRICKS_HOST"] = config.host
-        log.info(f"USING HOST: {config.host}")
-        os.environ["DATABRICKS_TOKEN"] = config.token
+        if os.getenv(EnvVarConstants.AZURE_DATABRICKS_WORKSPACE_ID, None) is None:
+            ctx = click.get_current_context()
+            command_name = "-".join(ctx.command_path.split(" ")[1:])
+            command_name += "-" + str(uuid.uuid1())
+            profile = get_profile_from_context()
+            if profile:
+                # If we request a specific profile, only get credentials from there.
+                config = ProfileConfigProvider(profile).get_config()
+            else:
+                raise ValueError("Please provide profile field")
+            if not config or not config.is_valid:
+                raise InvalidConfigurationError.for_profile(profile)
+            os.environ[EnvVarConstants.DATABRICKS_HOST] = config.host
+            log.info(f"USING HOST: {config.host}")
+            os.environ[EnvVarConstants.DATABRICKS_TOKEN] = config.token
         return function(*args, **kwargs)
 
     decorator.__doc__ = function.__doc__

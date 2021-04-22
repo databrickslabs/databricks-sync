@@ -32,6 +32,12 @@ objects:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+    # You can use include_scope and exclude_scope to include select set of scopes and then also exclude certain scopes
+    # This will also exclude all the appropriate secrets and ACLs for that scope.
+#    include_scope:
+#      - "keyvault*"
+#    exclude_scope:
+#      - "scope-to-exclude*"
   cluster:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:

@@ -12,7 +12,7 @@ from databricks_cli.sdk import ApiClient
 from databricks_sync import log
 from databricks_sync.sdk.git_handler import RemoteGitHandler
 from databricks_sync.sdk.service.scim import ScimService
-from databricks_sync.sdk.sync.constants import ENTRYPOINT_MAIN_TF, MeConstants
+from databricks_sync.sdk.sync.constants import ENTRYPOINT_MAIN_TF, MeConstants, EnvVarConstants
 from databricks_sync.sdk.terraform import ImportStage, Terraform
 
 
@@ -121,8 +121,16 @@ class TerraformExecution:
             resp = MeConstants.set_me_variable(ENTRYPOINT_MAIN_TF,
                                                get_me_username(self.api_client))
             if "provider" in resp and "databricks" in resp.get("provider", {}):
-                resp["provider"]["databricks"]["host"] = os.getenv("DATABRICKS_HOST",
-                                                                   "unable to find host - DB Sync Profile Required")
+                azure_workspace_id = os.getenv(EnvVarConstants.AZURE_DATABRICKS_WORKSPACE_ID, None)
+                host = os.getenv(EnvVarConstants.DATABRICKS_HOST,
+                                 "unable to find host - DB Sync Profile Required")
+                # This logic decides that if a azure_workspace_resource_id is provided we will attempt to use
+                # azure cli login auth
+                if azure_workspace_id is None:
+                    resp["provider"]["databricks"]["host"] = host
+                else:
+                    resp["provider"]["databricks"]["azure_workspace_resource_id"] = azure_workspace_id
+
             main_tf_file_content = json.dumps(resp,
                                               indent=4, sort_keys=True)
             log.info("Main TF File: " + main_tf_file_content)
@@ -166,11 +174,12 @@ class TerraformExecution:
                     plan_file=self.plan_location,
                     state_file_abs_path=state_loc)
         finally:
-            if self.post_import_shutdown is True and os.getenv("TF_VAR_PASSIVE_MODE", "false") == "true":
+            if self.post_import_shutdown is True and os.getenv(EnvVarConstants.TF_VAR_PASSIVE_MODE, "false") == "true":
                 _, out, _ = tf.state_pull(state_file_abs_path=state_loc)
                 if out is not None:
                     for cluster_id in fetch_cluster_ids_from_state(out):
                         shutdown_clusters(self.api_client, cluster_id)
+
 
 def fetch_cluster_ids_from_state(state_json):
     try:
