@@ -13,10 +13,16 @@ objects:
 #      - "/Users/**" # Ignore all paths within the users folder
 #      - "/tmp/**" # Ignore all files in the tmp directory
 
+  global_init_script:
+    # pattern will be implemented in the future - make sure you have "*" in here
+    patterns:
+      - "*"
+
   cluster_policy:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+
   dbfs_file:
     # DBFS path can be a string or a set of YAML items (multiple subgroups starting with - )
     dbfs_path:
@@ -33,14 +39,17 @@ objects:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+
   secret:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+
   cluster:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+
   job:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
@@ -50,6 +59,7 @@ objects:
     # convert_existing_cluster_to_var: true
     # convert_new_cluster_instance_pool_to_var: true
     # convert_new_cluster_cluster_policy_to_var: true
+
   identity:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
