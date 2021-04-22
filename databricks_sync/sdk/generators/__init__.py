@@ -34,10 +34,8 @@ class PathInclusionParser(object):
         self.__resource_type = resource_type
         self.__path_patterns = [self.__add_implicit_recursive_glob(path) for path in path_patterns]
         self.__base_paths = self.get_base_paths()
-        # Normalize for dbfs and remove any file system
+        # Normalize for dbfs and remove any file system for processing pattern matching
         self.__all_path_patterns = [pat.lstrip("dbfs:") for pat in list(set(self.__path_patterns + self.__base_paths))]
-        # if no glob factor is added to any of the patterns then add a ** for implicit recursion
-        # self.__all_path_patterns = [ pat+"**" if "*" not in pat else pat for pat in self.__all_path_patterns]
         self.__processed_paths = set()
 
     def __add_implicit_recursive_glob(self, path: str):
