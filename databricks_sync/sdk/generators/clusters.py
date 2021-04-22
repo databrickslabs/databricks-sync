@@ -52,12 +52,17 @@ class ClusterHCLGenerator(APIGenerator):
 
     @staticmethod
     def _handle_depends_on(tdb: TerraformDictBuilder):
+        depends_on = []
+        # If user configures dbfs files wait for that with regards to init scripts
         if export_config.contains(GeneratorCatalog.DBFS_FILE) is True:
-            depends_on_dbfs_files = [
-                Interpolate.depends_on(ResourceCatalog.DBFS_FILE_RESOURCE,
-                                       ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER),
-            ]
-            tdb.add_optional("depends_on", lambda: depends_on_dbfs_files)
+            depends_on.append(Interpolate.depends_on(ResourceCatalog.DBFS_FILE_RESOURCE,
+                                                     ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER))
+        # Wait for all global init scripts to be created before starting clusters
+        if export_config.contains(GeneratorCatalog.GLOBAL_INIT_SCRIPT) is True:
+            depends_on.append(Interpolate.depends_on(ResourceCatalog.GLOBAL_INIT_SCRIPTS_RESOURCE,
+                                                     ForEachBaseIdentifierCatalog.GLOBAL_INIT_SCRIPTS_BASE_IDENTIFIER))
+        if len(depends_on) > 0:
+            tdb.add_optional("depends_on", lambda: depends_on)
 
     @staticmethod
     def get_cluster_spec(cluster):

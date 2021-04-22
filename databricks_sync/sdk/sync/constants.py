@@ -4,6 +4,7 @@ import os
 
 class ResourceCatalog:
     NOTEBOOK_RESOURCE = "databricks_notebook"
+    GLOBAL_INIT_SCRIPTS_RESOURCE = "databricks_global_init_script"
     CLUSTER_POLICY_RESOURCE = "databricks_cluster_policy"
     PERMISSIONS_RESOURCE = "databricks_permissions"
     DBFS_FILE_RESOURCE = "databricks_dbfs_file"
@@ -34,6 +35,7 @@ class GeneratorCatalog:
     SECRETS = "secrets"
     CLUSTER = "cluster"
     JOB = "job"
+    GLOBAL_INIT_SCRIPT = "global_init_script"
 
 
 class ForEachBaseIdentifierCatalog:
@@ -42,6 +44,7 @@ class ForEachBaseIdentifierCatalog:
     GROUPS_BASE_IDENTIFIER = "databricks_scim_groups"
     DBFS_FILES_BASE_IDENTIFIER = "databricks_dbfs_files"
     INSTANCE_PROFILES_BASE_IDENTIFIER = "databricks_instance_profiles"
+    GLOBAL_INIT_SCRIPTS_BASE_IDENTIFIER = "databricks_global_init_scripts"
 
 
 class DefaultDatabricksGroups:
@@ -67,6 +70,13 @@ class TfJsonSchema:
 class DbfsFileSchema(TfJsonSchema):
     PATH = "path"
     SOURCE = "source"
+
+
+class GlobalInitScriptSchema(TfJsonSchema):
+    NAME = "name"
+    SOURCE = "source"
+    POSITION = "position"
+    ENABLED = "enabled"
 
 
 class UserSchema(TfJsonSchema):
