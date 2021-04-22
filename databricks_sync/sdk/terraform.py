@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from databricks_sync import log
+from databricks_sync.sdk.sync.constants import EnvVarConstants
 
 
 class ImportStage:
@@ -112,11 +113,11 @@ class Terraform:
 
     @staticmethod
     def is_import_lock():
-        return os.getenv("DATABRICKS_SYNC_IMPORT_LOCK", "false").lower()
+        return os.getenv(EnvVarConstants.DATABRICKS_SYNC_IMPORT_LOCK, "false").lower()
 
     @staticmethod
     def get_import_plan_parallelism():
-        val = os.getenv("DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM", -1)
+        val = os.getenv(EnvVarConstants.DATABRICKS_SYNC_IMPORT_PLAN_PARALLELISM, -1)
         if isinstance(val, int):
             return val
         else:
@@ -124,7 +125,7 @@ class Terraform:
 
     @staticmethod
     def get_import_apply_parallelism():
-        val = os.getenv("DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM", -1)
+        val = os.getenv(EnvVarConstants.DATABRICKS_SYNC_IMPORT_APPLY_PARALLELISM, -1)
         if isinstance(val, int):
             return val
         else:
