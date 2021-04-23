@@ -7,6 +7,7 @@ from databricks_cli.secrets.api import SecretApi
 
 from databricks_sync import log
 from databricks_sync.sdk.config import export_config
+from databricks_sync.sdk.generators import PathInclusionParser
 from databricks_sync.sdk.service.cluster_policies import PolicyService
 from databricks_sync.sdk.service.scim import ScimService
 from databricks_sync.sdk.sync.constants import DefaultDatabricksGroups, GeneratorCatalog
@@ -54,7 +55,7 @@ def validate_dict(api_client: ApiClient):
                 log.warning(f"There are no jobs to export")
             if object_name == GeneratorCatalog.NOTEBOOK:
                 path = object_data['notebook_path']
-                for p in path if not isinstance(path, str) else [path]:
+                for p in PathInclusionParser(path, "config_parser").base_paths if not isinstance(path, str) else [path]:
                     try:
                         if WorkspaceService(api_client).list(p).get("objects", []) == []:
                             log.warning(f"There are no notebooks to export in {p}")
@@ -64,7 +65,7 @@ def validate_dict(api_client: ApiClient):
                         log.debug(f"Error stack:{str(e)}")
             if object_name == GeneratorCatalog.DBFS_FILE:
                 path = object_data['dbfs_path']
-                for p in path if not isinstance(path, str) else [path]:
+                for p in PathInclusionParser(path, "config_parser").base_paths if not isinstance(path, str) else [path]:
                     try:
                         if DbfsService(api_client).list(p).get("files", []) == []:
                             log.warning(f"There are no files to export from {p}")

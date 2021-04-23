@@ -1,4 +1,3 @@
-import fnmatch
 import io
 from base64 import b64decode
 from pathlib import Path
@@ -9,6 +8,7 @@ from databricks_cli.sdk import DbfsService, ApiClient
 from databricks_cli.utils import error_and_quit
 
 from databricks_sync import log
+from databricks_sync.sdk.generators import PathExclusionParser, PathInclusionParser
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_sync.sdk.message import APIData, Artifact
 from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
@@ -48,16 +48,13 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
                  custom_map_vars=None, exclude_path: Optional[Union[str, List]] = None):
         super().__init__(api_client, base_path, patterns=patterns)
         if isinstance(dbfs_path, str):
-            self.__dbfs_path = [dbfs_path]
+            self.__dbfs_path_patterns = [dbfs_path]
         else:
-            self.__dbfs_path = dbfs_path
-        # Properly store exclude paths
-        if exclude_path is None:
-            self.__exclude_paths = None
-        elif isinstance(exclude_path, str):
-            self.__exclude_paths = [exclude_path]
-        else:
-            self.__exclude_paths = exclude_path
+            self.__dbfs_path_patterns = dbfs_path
+        self.__path_inclusion = PathInclusionParser(self.__dbfs_path_patterns,
+                                                    ResourceCatalog.DBFS_FILE_RESOURCE)
+        self.__dbfs_path = self.__path_inclusion.base_paths
+        self.__path_exclusion = PathExclusionParser(exclude_path, ResourceCatalog.DBFS_FILE_RESOURCE)
         self.__service = DbfsService(self.api_client)
         self.__custom_map_vars = custom_map_vars
 
@@ -65,30 +62,21 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
     def folder_name(self) -> str:
         return "dbfs_file"
 
-    def __is_exclude_path(self, path):
-        # If no exclude paths are not defined then skip this step
-        if self.__exclude_paths is None:
-            return False
-        resp = any([fnmatch.fnmatch(path, ex_path) for ex_path in self.__exclude_paths])
-        if resp is True:
-            log.debug(f"{path} is part of atleast one of the exclude paths: {self.__exclude_paths}")
-        return resp
-
     def __get_dbfs_file_data_recrusive(self, service: DbfsService, path):
         # is the base path allowed
-        if self.__is_exclude_path(path):
+        if self.__path_exclusion.is_path_excluded(path) or not self.__path_inclusion.is_path_included(path):
             return []
         resp = service.list(path)
         if "files" not in resp:
             return []
         files = resp["files"]
         for file in files:
-            if self.__is_exclude_path(file['path']):
+            if self.__path_exclusion.is_path_excluded(file['path']):
                 continue
             if file["is_dir"] is True:
                 log.info(f"Export DBFS folder:{file['path']}")
                 yield from self.__get_dbfs_file_data_recrusive(service, file["path"])
-            else:
+            elif self.__path_inclusion.is_path_included(file['path']):
                 log.debug(f"Fetching data for file: {file['path']}")
                 yield file
 

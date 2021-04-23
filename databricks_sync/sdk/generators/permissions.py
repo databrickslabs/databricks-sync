@@ -20,10 +20,11 @@ class NoDirectPermissionsError(ValueError):
 
 
 class TerraformPermissionType:
-    def __init__(self, object_type, object_id_name, resource_id_field):
+    def __init__(self, object_type, object_id_name, resource_id_field, fetch_actual_value: bool = False):
         self.resource_id_attribute = resource_id_field
         self.object_id_name = object_id_name
         self.object_type = object_type
+        self.fetch_actual_value = fetch_actual_value
 
 
 @functools.lru_cache()
@@ -46,6 +47,8 @@ class PermissionsHelper:
 
         self.perm_mapping: Dict[str, 'TerraformPermissionType'] = {
             ResourceCatalog.NOTEBOOK_RESOURCE: TerraformPermissionType("notebooks", "notebook_id", "object_id"),
+            ResourceCatalog.DIRECTORY_RESOURCE: TerraformPermissionType("directories", "directory_path", "path",
+                                                                        fetch_actual_value=True),
             ResourceCatalog.CLUSTER_POLICY_RESOURCE: TerraformPermissionType("cluster-policies",
                                                                              "cluster_policy_id", "id"),
             ResourceCatalog.INSTANCE_POOL_RESOURCE: TerraformPermissionType("instance-pools",
@@ -69,9 +72,11 @@ class PermissionsHelper:
         return f"{src_obj_data.human_readable_name} permissions"
 
     @staticmethod
-    def _handle_depends_on(tdb: TerraformDictBuilder):
+    def _handle_depends_on(tdb: TerraformDictBuilder, additional_depends_on=None):
+
+        depends_on = additional_depends_on or []
         if export_config.contains(GeneratorCatalog.IDENTITY) is True:
-            depends_on_users_and_groups = [
+            depends_on = depends_on + [
                 Interpolate.depends_on(ResourceCatalog.USER_RESOURCE,
                                        ForEachBaseIdentifierCatalog.USERS_BASE_IDENTIFIER),
                 Interpolate.depends_on(ResourceCatalog.GROUP_RESOURCE,
@@ -79,9 +84,10 @@ class PermissionsHelper:
                 Interpolate.depends_on(ResourceCatalog.SERVICE_PRINCIPAL_RESOURCE,
                                        ForEachBaseIdentifierCatalog.SERVICE_PRINCIPALS_BASE_IDENTIFIER),
             ]
-            tdb.add_optional("depends_on", lambda: depends_on_users_and_groups)
+        if len(depends_on) > 0:
+            tdb.add_optional("depends_on", lambda: depends_on)
 
-    def _create_permission_dictionary(self, src_obj_data: HCLConvertData, permission_acls):
+    def _create_permission_dictionary(self, src_obj_data: HCLConvertData, permission_acls, depends_on=None):
         permission_list = []
         for item in permission_acls:
             for perm in item["all_permissions"]:
@@ -101,10 +107,15 @@ class PermissionsHelper:
 
         # TODO: doc => If cloud dep is not none that means there is a count flag on the parent resource
         # indexed resources get interpolated on value of count
-        resource_id_attribute = Interpolate.resource(src_obj_data.resource_name,
-                                                     src_obj_data.hcl_resource_identifier,
-                                                     perms.resource_id_attribute)
-        self._handle_depends_on(tdb)
+        if perms.fetch_actual_value is False:
+            resource_id_attribute = Interpolate.resource(src_obj_data.resource_name,
+                                                         src_obj_data.hcl_resource_identifier,
+                                                         perms.resource_id_attribute)
+        else:
+            resource_id_attribute = src_obj_data.latest_version[perms.resource_id_attribute]
+
+        self._handle_depends_on(tdb, additional_depends_on=depends_on)
+
         tdb. \
             add_required(perms.object_id_name,
                          lambda: resource_id_attribute)
@@ -120,7 +131,7 @@ class PermissionsHelper:
         return tdb.to_dict()
 
     def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path],
-                               rel_path_func: Callable[[str], str] = None):
+                               rel_path_func: Callable[[str], str] = None, depends_on=None):
         if is_acls_enabled(self._permissions_service) is False:
             raise NoDirectPermissionsError("ACLS are disabled no permissions available")
 
@@ -134,7 +145,7 @@ class PermissionsHelper:
                 identifier,
                 self.api_client.url,
                 identifier,
-                self._create_permission_dictionary(src_obj_data, perm_data["access_control_list"]),
+                self._create_permission_dictionary(src_obj_data, perm_data["access_control_list"], depends_on),
                 path_func(identifier),
                 relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
                 human_readable_name=permissions_name

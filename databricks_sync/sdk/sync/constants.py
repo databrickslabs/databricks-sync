@@ -4,6 +4,7 @@ import os
 
 class ResourceCatalog:
     NOTEBOOK_RESOURCE = "databricks_notebook"
+    DIRECTORY_RESOURCE = "databricks_folder"
     GLOBAL_INIT_SCRIPTS_RESOURCE = "databricks_global_init_script"
     CLUSTER_POLICY_RESOURCE = "databricks_cluster_policy"
     PERMISSIONS_RESOURCE = "databricks_permissions"
