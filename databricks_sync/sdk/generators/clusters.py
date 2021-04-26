@@ -182,6 +182,8 @@ class ClusterHCLGenerator(APIGenerator):
                 data["enable_elastic_disk"]
             )). \
             add_dynamic_block("aws_attributes", lambda: data["aws_attributes"], CloudConstants.AWS). \
+            add_dynamic_block("azure_attributes", lambda: data["azure_attributes"], CloudConstants.AZURE). \
+            add_dynamic_block("gcp_attributes", lambda: data["gcp_attributes"], CloudConstants.GCP). \
             add_dynamic_blocks("init_scripts", lambda: data["aws_init_scripts"], CloudConstants.AWS). \
             add_dynamic_blocks("init_scripts", lambda: data["azure_init_scripts"], CloudConstants.AZURE). \
             add_dynamic_blocks("init_scripts", lambda: data["cloud_agnostic_init_scripts"]). \

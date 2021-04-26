@@ -95,6 +95,8 @@ class InstancePoolHCLGenerator(APIGenerator):
             add_optional("custom_tags", lambda: data["custom_tags"]). \
             add_optional("preloaded_spark_versions", lambda: data["preloaded_spark_versions"]). \
             add_dynamic_block("aws_attributes", lambda: data["aws_attributes"], CloudConstants.AWS). \
+            add_dynamic_block("azure_attributes", lambda: data["azure_attributes"], CloudConstants.AZURE). \
+            add_dynamic_block("gcp_attributes", lambda: data["gcp_attributes"], CloudConstants.GCP). \
             add_dynamic_block("disk_spec", lambda: {
                 "disk_size": data["disk_spec"]["disk_size"],
                 "disk_count": data["disk_spec"]["disk_count"],

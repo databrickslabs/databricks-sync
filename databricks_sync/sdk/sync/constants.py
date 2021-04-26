@@ -158,6 +158,7 @@ class SparkEnvConstants:
 class CloudConstants:
     AWS = "AWS"
     AZURE = "AZURE"
+    GCP = "GCP"
     CLOUD = "CLOUD"
     CLOUD_VARIABLE = f"upper(var.{CLOUD})"
 
