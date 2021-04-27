@@ -30,11 +30,11 @@ exporting permissions on notebooks and folders and then applied to target worksp
 
 ## Known Limitations
 
+TODO: Edit the language
 {{< bootstrap-alert icon="💡" text=`<strong>Currently there is only one limitation based on the behavior of the
 <a href="https://github.com/databrickslabs/terraform-provider-databricks" target="_blank">databricks terraform provider</a>.
-The difference is determined by changes in the source workspace. So everytime you export if it determines a difference in the checksum of
-the source file it will determine that as a change. Any changes made or caused in the target workspace will not be tracked
-unless the file itself is removed.</strong>` >}}
+The source workspace notebook changes are tracked by the checksum. Any changes made in the target workspace
+are not tracked.</strong>` >}}
 
 
 ## Permissions Support
@@ -49,7 +49,7 @@ Currently the following permissions are exported:
 
 ## Cloud Specific Behavior
 
-N/A. Behavior for notebooks in all clouds are the same.
+N/A. Behavior for notebooks in all clouds is the same.
 
 ## Export Details
 
@@ -57,7 +57,7 @@ This section will describe the details of the export process as well as the layo
 
 ### Example Config
 
-Here is an example config for exporting notebooks:
+Here is an example config for exporting `notebooks`:
 
 ```yaml
 name: sample-yaml
@@ -161,11 +161,11 @@ instance profiles and instance profile relationships to be created first.
 
 ### Exported content + layout
 
-Here is the folder lay out you should see when you run the export. Under the `exports` directory you should see a notebook folder
-which houses all of the notebook exports. You should see up to 3 types of files and one folder in the `notebooks` directory.
+Here is the folder layout you should see when you run the export. Under the `exports` directory you should see a notebook folder
+which houses all the `notebook` exports. You should see up to 3 types of files and one folder in the `notebooks` directory.
 
-1. You should see a `databricks_notebook_*` file that ends with `.tf.json` which contains your notebook information.
-2. You may see a `databricks_notebook_*_permissions.tf.json` file which contains your notebook permission information.
+1. You should see a `databricks_notebook_*` file that ends with `.tf.json` which contains your `notebook` information.
+2. You may see a `databricks_notebook_*_permissions.tf.json` file which contains your `notebook` permission information.
 **Not every notebook will have permissions if they are inherited from the parent folders.**
 3. You may see a `databricks_folder_*_permissions.tf.json` file which contains parent folder permission information.
 **Only explicit permissions are migrated and any inherited permissions from the folder will be exported separately for that specific folder..**
@@ -202,7 +202,8 @@ Specific import details for importing `notebook` data into a target workspace.
 
 ### Environment Variables
 
-There are no specific environment variables that need to be specified for imports.
+There are no specific environment variables that need to be specified for imports. Refer to the imports environment variables
+for custom mapping variables. TODO!!!
 
 ### How are increments determined
 

@@ -1,2 +1,5 @@
 baseurl = "https://databrickslabs.github.io/databricks-sync/"
 canonifyURLs = true
+
+[Params]
+  baseUrlPrefix = "/databricks-sync"

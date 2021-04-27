@@ -68,7 +68,6 @@ Source:
 
     profile: 'score',
     tokenize: "full",
-    encode: "advanced",
     cache: true,
     doc: {
         id: 'id',
@@ -91,7 +90,7 @@ Source:
     {{ range $index, $page := (where .Site.Pages "Section" "docs") -}}
       {
         id: global_counter + {{ $index }},
-        href: "{{ .RelPermalink | relURL }}",
+        href: "{{ .Site.Params.baseUrlPrefix }}{{ .RelPermalink | relURL }}",
         title: {{ .Title | jsonify }},
         description: {{ .Params.description | jsonify }},
         content: {{ .Content | jsonify }}
@@ -106,7 +105,7 @@ Source:
     {{ range $index, $page := (where .Site.Pages "Section" "changelog") -}}
       {
         id: global_counter + {{ $index }},
-        href: "{{ .RelPermalink | relURL }}",
+        href: "{{ .Site.Params.baseUrlPrefix }}{{ .RelPermalink | relURL }}",
         title: {{ .Title | jsonify }},
         description: {{ .Params.description | jsonify }},
         content: {{ .Content | jsonify }}
