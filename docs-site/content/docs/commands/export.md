@@ -28,7 +28,7 @@ databricks-sync export -h, --help
 
 ### Options
 
-* `--profile DATABRICKS_PROFILE_NAME` - The Databricks CLI connection profile for the  source workspace. For additional information, please see the Databricks Sync [Setup instructions]({{< relref "setup.md" >}}). If no profile was configured for the Databricks CLI during setup, then `DEFAULT` should be passed as the value.
+* `--profile DATABRICKS_PROFILE_NAME` - The Databricks CLI connection profile for the  source workspace. For additional information, please see the Databricks Sync [Setup instructions]({{< relref "base_command.md" >}}). If no profile was configured for the Databricks CLI during setup, then `DEFAULT` should be passed as the value.
 * `-l, --local-git-path PATH` - The path of a local git repo. Cannot be supplied in conjunction with `-g, --git-ssh-url REPO_URL`.
 * `-g, --git-ssh-url REPO_URL` - The URL of the remote git repo. Cannot be supplied in conjunction with `-l | --local-git-path`.
 * `--branch BRANCH_NAME` - This is the git repo branch of the repo designated by `--git-ssh-url flag | --local-git-path`. If not given, the default branch is `master`.

@@ -29,6 +29,8 @@ toc: true
 
 ### Config Options
 
+### Handled Dependencies
+
 ### Exported content + layout
 
 ## Import Details

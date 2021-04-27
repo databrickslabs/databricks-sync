@@ -4,12 +4,15 @@ install:
 	@pip install -r dev-requirements.txt
 	@pip install . --upgrade
 
+docs-deps:
+	@cd docs-site && npm install
+
 docs:
 	@rm -rf docs
-	@cd docs-site && npm install && npm run build && cp -R public/ ../docs
+	@cd docs-site && npm run build && cp -R public/ ../docs
 
 docs-serve:
-	@cd docs-site && npm install && npm run start
+	@cd docs-site && npm run start
 
 azure-create:
 	@echo "✓ Creating Azure Src and Tgt workspaces..."

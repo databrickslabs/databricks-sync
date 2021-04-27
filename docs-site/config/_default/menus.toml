@@ -17,13 +17,13 @@
   url = "/docs/databricks-objects/"
 
 [[docs]]
-  name = "Azure Migration"
+  name = "Migrate from Azure Workspace"
   weight = 50
   identifier = "azure-migration"
   url = "/docs/azure-migration/"
 
 [[docs]]
-  name = "Aws Migration"
+  name = "Migrate from Aws Workspace"
   weight = 51
   identifier = "aws-migration"
   url = "/docs/aws-migration/"

@@ -1,5 +1,5 @@
 ---
-title: "Usage"
+title: "Base Command"
 description: "Basic outline of the different commands."
 lead: "Basic outline of the different commands."
 date: 2020-10-13T15:21:01+02:00
@@ -13,7 +13,7 @@ weight: 200
 toc: true
 ---
 
-## Usage
+## Base Command
 
 Databricks-sync is used by providing a command. Each command follows the same syntax but may have distinct arguments.
 
