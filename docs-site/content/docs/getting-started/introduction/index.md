@@ -77,6 +77,11 @@ regards to policies and permissions. If you want to make the region dynamic you 
 
 ### Docker instructions
 
+{{< bootstrap-alert icon="💡" text=`<strong>Please be aware that the docker implementation will require you to have prior background in
+using docker. The issues for this repository are only for reporting build failures; there wont be any direct support for docker issues.
+If you need a stable environment to run this tool as a job please use Databricks Notebooks on a single node cluster.</strong>` >}}
+
+
 These set of instructions are to use docker to build and use the CLI. It avoids the need to have golang,
 Terraform, the databricks-terraform-provider to get this to run. If you do want to work on this tool please
 install the prior listed tools to get this to work.
@@ -106,32 +111,34 @@ alias dbt='docker run -it --rm --name docker-databricks-sync --env-file <(env | 
 
 ### Support Matrix for Import and Export Operations:
 
-| Component                    | Export to HCL | Import to Workspace |
-| -----------------------------|---------------|---------------------|
-| **User Objects** |
-| cluster policy               | ✅           |  ✅              |
-| cluster                      |  ✅            | ✅               |
-| dbfs file                    |  ✅           |  ✅              |
-| instance pool                |  ✅           |  ✅              |
-| instance profile             |  ✅           |  ✅              |
-| job                          |  ✅           |  ✅               |
-| notebook                     |  ✅           |  ✅              |
-| global init scripts                     |  ✅           |  ✅              |
-| **Administrator Setup** |
-| aws s3 mount                 | ⬜️            | ⬜️               |
-| azure adls gen1 mount        | ⬜️            | ⬜️               |
-| azure adls gen2 mount        | ⬜️            | ⬜️               |
-| azure blob mount             | ⬜️            | ⬜️               |
-| secret                       |  ✅           |  ✅               |
-| secret acl                   |  ✅           |  ✅              |
-| secret scope                 |  ✅           |  ✅              |
-| metastore tables             | ⬜️            | ⬜️               |
-| metastore table ACLs         | ⬜️            | ⬜️               |
-| **Users Management** |
-| group                        |  ✅            |  ✅               |
-| group instance profile       |  ✅            |  ✅               |
-| group member                 |  ✅            |  ✅               |
-| scim user                    |  ✅            |  ✅               |
+| Component                                                                | Export | Import |
+|--------------------------------------------------------------------------|--------|--------|
+| **User Objects**                                                         |        |        |
+| [Cluster Policies]({{< relref "workspace-cluster-policies.md" >}})       | ✅      | ✅      |
+| [Clusters]({{< relref "workspace-clusters.md" >}})                       | ✅      | ✅      |
+| [DBFS Files]({{< relref "workspace-dbfs-files.md" >}})                   | ✅      | ✅      |
+| [Instance Pools]({{< relref "workspace-instance-pools.md" >}})           | ✅      | ✅      |
+| [AWS Instance Profiles]({{< relref "workspace-identities.md" >}})        | ✅      | ✅      |
+| [Jobs]({{< relref "workspace-jobs.md" >}})                               | ✅      | ✅      |
+| [Notebooks]({{< relref "workspace-notebooks.md" >}})                     | ✅      | ✅      |
+| [Global Init Scripts]({{< relref "workspace-global-init-scripts.md" >}}) | ✅      | ✅      |
+| **Administrator Setup**                                                  |        |        |
+| AWS S3 Mounts                                                            | ⬜️     | ⬜️     |
+| Azure ADLS Gen1 Mounts                                                   | ⬜️     | ⬜️     |
+| Azure ADLS Gen2 Mounts                                                   | ⬜️     | ⬜️     |
+| Azure Blob Mount                                                         | ⬜️     | ⬜️     |
+| [Secret]({{< relref "workspace-secrets.md" >}})                          | ✅      | ✅      |
+| [Secret ACLs]({{< relref "workspace-secrets.md" >}})                     | ✅      | ✅      |
+| [Secret Scopes]({{< relref "workspace-secrets.md" >}})                   | ✅      | ✅      |
+| Metastore Tables                                                         | ⬜️     | ⬜️     |
+| Metastore Table ACLs                                                     | ⬜️     | ⬜️     |
+| **Users Management**                                                     |        |        |
+| [Groups]({{< relref "workspace-identities.md" >}})                       | ✅      | ✅      |
+| [Group AWS Instance Profiles]({{< relref "workspace-identities.md" >}})  | ✅      | ✅      |
+| [Group Members]({{< relref "workspace-identities.md" >}})                | ✅      | ✅      |
+| [Users]({{< relref "workspace-identities.md" >}})                        | ✅      | ✅      |
+| [User AWS Instance Profiles]({{< relref "workspace-identities.md" >}})   | ✅      | ✅      |
+| [Azure Service Principals]({{< relref "workspace-identities.md" >}})     | ✅      | ✅      |
 
 ## Project Support
 Please note that all projects in the /databrickslabs github account are provided for your exploration only, and are not formally supported by Databricks with Service Level Agreements (SLAs).  They are provided AS-IS and we do not make any guarantees of any kind.  Please do not submit a support ticket relating to any issues arising from the use of these projects.
