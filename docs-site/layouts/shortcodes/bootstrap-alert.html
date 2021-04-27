@@ -1,0 +1,10 @@
+<div class="alert alert-warning">
+  <div class="flex-shrink-1 alert-icon">{{ with .Get "icon" }}{{.}} {{ end }}
+    <i class="fas fa-exclamation-triangle"></i>
+
+  {{ with .Get "text"}}
+    {{ . | safeHTML }}
+  {{ end}}
+  </div>
+</div>
+

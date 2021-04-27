@@ -175,7 +175,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs-bck/_build/
 
 # PyBuilder
 target/
@@ -263,3 +263,7 @@ dask-worker-space/**
 *.tfstate.*
 
 *.xlsx
+
+node_modules
+docs-site/resources
+docs-site/public
