@@ -30,10 +30,11 @@ exporting permissions on notebooks and folders and then applied to target worksp
 
 ## Known Limitations
 
-{{< bootstrap-alert icon="💡" text=`Currently there is only one limitation based on the behavior of the provider. The difference is determined by changes in
-the source workspace. So everytime you export if it determines a difference in the checksum of the source file it will determine
-that as a change. Any changes made or caused in the target workspace will not be tracked unless the file itself is removed.
-` >}}
+{{< bootstrap-alert icon="💡" text=`<strong>Currently there is only one limitation based on the behavior of the
+<a href="https://github.com/databrickslabs/terraform-provider-databricks" target="_blank">databricks terraform provider</a>.
+The difference is determined by changes in the source workspace. So everytime you export if it determines a difference in the checksum of
+the source file it will determine that as a change. Any changes made or caused in the target workspace will not be tracked
+unless the file itself is removed.</strong>` >}}
 
 
 ## Permissions Support
