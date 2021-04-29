@@ -9,7 +9,7 @@ from databricks_sync.sdk.pipeline import APIGenerator
 from databricks_sync.sdk.service.scim import ScimService
 from databricks_sync.sdk.sync.constants import ResourceCatalog, CloudConstants, DefaultDatabricksGroups, \
     ForEachBaseIdentifierCatalog, UserSchema, get_members, GroupSchema, GroupInstanceProfileSchema, \
-    UserInstanceProfileSchema, GroupMemberSchema, MeConstants, ServicePrincipalSchema
+    UserInstanceProfileSchema, GroupMemberSchema, MeConstants, ServicePrincipalSchema, GeneratorCatalog
 from databricks_sync.sdk.utils import normalize_identifier
 
 
@@ -38,7 +38,7 @@ class IdentityHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "identity"
+        return GeneratorCatalog.IDENTITY
 
     def __create_group_data(self, group_data: Dict[str, Any],
                             groups_identifier: Callable[[Dict[str, str]], str],

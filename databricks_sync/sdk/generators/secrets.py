@@ -8,7 +8,7 @@ from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolat
 from databricks_sync.sdk.message import APIData
 from databricks_sync.sdk.pipeline import APIGenerator
 from databricks_sync.sdk.sync.constants import ResourceCatalog, SecretSchema, SecretScopeAclSchema, get_members, \
-    SparkEnvConstants
+    SparkEnvConstants, GeneratorCatalog
 from databricks_sync.sdk.utils import normalize_identifier
 
 
@@ -147,7 +147,7 @@ class SecretHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "secrets"
+        return GeneratorCatalog.SECRETS
 
     def __get_secret_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_secret-{d['name']}-{d['key']}")

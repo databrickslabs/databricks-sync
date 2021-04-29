@@ -10,7 +10,7 @@ from databricks_sync.sdk.message import APIData, HCLConvertData
 from databricks_sync.sdk.pipeline import APIGenerator
 from databricks_sync.sdk.processor import MappedGrokVariableBasicAnnotationProcessor
 from databricks_sync.sdk.service.cluster_policies import PolicyService
-from databricks_sync.sdk.sync.constants import ResourceCatalog
+from databricks_sync.sdk.sync.constants import ResourceCatalog, GeneratorCatalog
 
 
 class ClusterPolicyHCLGenerator(APIGenerator):
@@ -71,7 +71,7 @@ class ClusterPolicyHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "cluster_policy"
+        return GeneratorCatalog.CLUSTER_POLICY
 
     def __get_cluster_policy_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_cluster_policy-{d['policy_id']}")

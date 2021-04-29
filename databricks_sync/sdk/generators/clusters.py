@@ -133,7 +133,7 @@ class ClusterHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "cluster"
+        return GeneratorCatalog.CLUSTER
 
     def __get_cluster_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_cluster-{d['cluster_id']}")

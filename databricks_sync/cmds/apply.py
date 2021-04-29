@@ -12,19 +12,7 @@ from databricks_sync.cmds.config import git_url_option, ssh_key_option, inject_p
 from databricks_sync.sdk.sync.constants import GeneratorCatalog
 from databricks_sync.sdk.sync.import_ import TerraformExecution
 
-SUPPORTED_IMPORTS = [
-    GeneratorCatalog.CLUSTER_POLICY,
-    GeneratorCatalog.DBFS_FILE,
-    GeneratorCatalog.NOTEBOOK,
-    GeneratorCatalog.IDENTITY,
-    GeneratorCatalog.INSTANCE_POOL,
-    GeneratorCatalog.INSTANCE_PROFILE,
-    GeneratorCatalog.SECRETS,
-    GeneratorCatalog.CLUSTER,
-    GeneratorCatalog.JOB,
-    GeneratorCatalog.GLOBAL_INIT_SCRIPT
-]
-
+SUPPORTED_IMPORTS = GeneratorCatalog.list_catalog()
 
 # TODO: Custom state back ends using aws environment variables
 @click.command(context_settings=CONTEXT_SETTINGS, help="Import selected resources.")

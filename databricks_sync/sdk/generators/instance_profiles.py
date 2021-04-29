@@ -8,7 +8,7 @@ from databricks_sync.sdk.message import APIData
 from databricks_sync.sdk.pipeline import APIGenerator
 from databricks_sync.sdk.service.instace_profiles import InstanceProfilesService
 from databricks_sync.sdk.sync.constants import CloudConstants, ForEachBaseIdentifierCatalog, \
-    InstanceProfileSchema, get_members
+    InstanceProfileSchema, get_members, GeneratorCatalog
 from databricks_sync.sdk.sync.constants import ResourceCatalog
 
 
@@ -55,7 +55,7 @@ class InstanceProfileHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "instance_profile"
+        return GeneratorCatalog.INSTANCE_PROFILE
 
     def __get_instance_profile_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_instance_profile-{d['instance_profile_arn']}")
