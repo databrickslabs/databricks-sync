@@ -49,6 +49,9 @@ objects:
     # pattern will be implemented in the future - make sure you have "*" in here
     patterns:
       - "*"
+    # Use this to choose to pin the first twenty clusters. (This is a limit set by the databricks platform.)
+    # This can help prevent your clusters from disappearing after 30 days if they are in terminated state.
+#    pin_first_20: false
 
   job:
     # pattern will be implemented in the future - make sure you have "*" in here
