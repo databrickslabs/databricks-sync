@@ -122,12 +122,16 @@ class PermissionsHelper:
         # If there is only one permission we also need to add a count to skip this (you cannot create a permissions
         # resource that does not have a single access_control block which dynamic makes it empty)
         if len(permission_list) == 1:
+            this_principal_owner = permission_list[0].get("user_name") or \
+                                   permission_list[0].get("service_principal_name")
             tdb.add_required("count", lambda: Interpolate.count_ternary(
-                f'{MeConstants.USERNAME_VAR} != "{permission_list[0]["user_name"]}"'
+                f'{MeConstants.USERNAME_VAR} != "{this_principal_owner}"'
             ))
         for permission in permission_list:
+            this_principal_owner = permission.get("user_name") or permission.get("service_principal_name")
             tdb.add_dynamic_block("access_control", lambda: permission,
-                                  custom_ternary_bool_expr=f'{MeConstants.USERNAME_VAR} != "{permission["user_name"]}"')
+                                  custom_ternary_bool_expr=f'{MeConstants.USERNAME_VAR} != '
+                                                           f'"{this_principal_owner}"')
         return tdb.to_dict()
 
     def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path],
@@ -170,3 +174,4 @@ class PermissionsHelper:
         if err is not None:
             hcl_data.add_error(err)
         return hcl_data
+

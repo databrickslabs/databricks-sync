@@ -11,7 +11,7 @@ from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDire
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import Artifact, APIData
 from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
-from databricks_sync.sdk.sync.constants import ResourceCatalog
+from databricks_sync.sdk.sync.constants import ResourceCatalog, GeneratorCatalog
 
 
 class NotebookArtifact(Artifact):
@@ -45,7 +45,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "notebook"
+        return GeneratorCatalog.NOTEBOOK
 
     def __get_parent_folder(self, path):
         path = Path(path)

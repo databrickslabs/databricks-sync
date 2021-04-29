@@ -13,7 +13,7 @@ from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder
 from databricks_sync.sdk.message import APIData, Artifact
 from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
 from databricks_sync.sdk.sync.constants import ResourceCatalog, ForEachBaseIdentifierCatalog, DbfsFileSchema, \
-    get_members
+    get_members, GeneratorCatalog
 
 
 class DbfsFile(Artifact):
@@ -60,7 +60,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "dbfs_file"
+        return GeneratorCatalog.DBFS_FILE
 
     def __get_dbfs_file_data_recrusive(self, service: DbfsService, path):
         # is the base path allowed

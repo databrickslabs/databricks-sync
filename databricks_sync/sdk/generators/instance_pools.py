@@ -8,7 +8,7 @@ from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDire
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData
 from databricks_sync.sdk.pipeline import APIGenerator
-from databricks_sync.sdk.sync.constants import ResourceCatalog, CloudConstants, DrConstants
+from databricks_sync.sdk.sync.constants import ResourceCatalog, CloudConstants, DrConstants, GeneratorCatalog
 
 
 class InstancePoolHCLGenerator(APIGenerator):
@@ -64,7 +64,7 @@ class InstancePoolHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "instance_pool"
+        return GeneratorCatalog.INSTANCE_POOL
 
     def __get_instance_pool_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_instance_pool-{d['instance_pool_id']}")

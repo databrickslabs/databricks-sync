@@ -38,6 +38,10 @@ class GeneratorCatalog:
     JOB = "job"
     GLOBAL_INIT_SCRIPT = "global_init_script"
 
+    @staticmethod
+    def list_catalog():
+        return [getattr(GeneratorCatalog, attr) for attr in dir(GeneratorCatalog)
+                if not callable(getattr(GeneratorCatalog, attr)) and not attr.startswith("__")]
 
 class ForEachBaseIdentifierCatalog:
     USERS_BASE_IDENTIFIER = "databricks_scim_users"

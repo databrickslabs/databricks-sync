@@ -25,7 +25,7 @@ class ClusterSourceConstants:
 class ClusterHCLGenerator(APIGenerator):
 
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
-                 custom_map_vars=None, valid_cluster_sources=None):
+                 custom_map_vars=None, valid_cluster_sources=None, pin_first_20=False):
         super().__init__(api_client, base_path, patterns=patterns)
         default_custom_map_vars = {"node_type_id": None,
                                    "dynamic.[*].library.content.jar": None,
@@ -36,6 +36,8 @@ class ClusterHCLGenerator(APIGenerator):
         self.__service = ClusterService(self.api_client)
         self.__lib_service = ManagedLibraryService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
+        self.__pin_first_20 = pin_first_20
+        self.__max_pin_count = 20
         self.__valid_cluster_sources = valid_cluster_sources or [ClusterSourceConstants.UI, ClusterSourceConstants.API]
 
     def __create_cluster_data(self, cluster_data: Dict[str, Any]):
@@ -107,11 +109,12 @@ class ClusterHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         clusters = self.__service.list_clusters().get("clusters", [])
-        for cluster in clusters:
+        for idx, cluster in enumerate(clusters):
             if "cluster_source" in cluster and cluster["cluster_source"] not in self.__valid_cluster_sources:
                 continue
             cluster_spec = self.get_cluster_spec(cluster)
-
+            if self.__pin_first_20 is True and idx < self.__max_pin_count:
+                cluster_spec["is_pinned"] = True
             resp = self.get_dynamic_libraries(
                 self.__lib_service.cluster_status(cluster_spec["cluster_id"]).get("library_statuses", []))
 
@@ -130,7 +133,7 @@ class ClusterHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "cluster"
+        return GeneratorCatalog.CLUSTER
 
     def __get_cluster_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_cluster-{d['cluster_id']}")
@@ -166,6 +169,7 @@ class ClusterHCLGenerator(APIGenerator):
                                                       f"databricks_cluster_policy_{data['policy_id']}",
                                                       id_field)). \
             add_optional("num_workers", lambda: data["num_workers"]). \
+            add_optional("is_pinned", lambda: data["is_pinned"]). \
             add_optional("autotermination_minutes", lambda: data["autotermination_minutes"]). \
             add_optional("enable_local_disk_encryption", lambda: data["enable_local_disk_encryption"]). \
             add_optional("single_user_name", lambda: data["single_user_name"]). \
