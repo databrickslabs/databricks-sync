@@ -21,7 +21,8 @@ SUPPORTED_IMPORTS = [
     GeneratorCatalog.INSTANCE_PROFILE,
     GeneratorCatalog.SECRETS,
     GeneratorCatalog.CLUSTER,
-    GeneratorCatalog.JOB
+    GeneratorCatalog.JOB,
+    GeneratorCatalog.GLOBAL_INIT_SCRIPT
 ]
 
 
