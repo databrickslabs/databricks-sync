@@ -10,7 +10,7 @@ from databricks_sync.sdk.message import Artifact, APIData
 from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
 from databricks_sync.sdk.service.global_init_scripts import GlobalInitScriptsService
 from databricks_sync.sdk.sync.constants import ResourceCatalog, get_members, GlobalInitScriptSchema, \
-    ForEachBaseIdentifierCatalog
+    ForEachBaseIdentifierCatalog, GeneratorCatalog
 
 
 class GlobalInitScriptArtifact(Artifact):
@@ -30,7 +30,7 @@ class GlobalInitScriptHCLGenerator(DownloaderAPIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return "global_init_scripts"
+        return GeneratorCatalog.GLOBAL_INIT_SCRIPT
 
     def _get_global_init_scripts(self):
         resp = self.__service.list_global_init_scripts()
