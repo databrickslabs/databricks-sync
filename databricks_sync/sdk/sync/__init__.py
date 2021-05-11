@@ -9,6 +9,7 @@ from databricks_sync import log
 from databricks_sync.sdk.config import export_config
 from databricks_sync.sdk.generators import PathInclusionParser
 from databricks_sync.sdk.service.cluster_policies import PolicyService
+from databricks_sync.sdk.service.global_init_scripts import GlobalInitScriptsService
 from databricks_sync.sdk.service.scim import ScimService
 from databricks_sync.sdk.sync.constants import DefaultDatabricksGroups, GeneratorCatalog
 
@@ -49,7 +50,10 @@ def validate_dict(api_client: ApiClient):
             if object_name == GeneratorCatalog.INSTANCE_POOL and InstancePoolsApi(api_client).list_instance_pools().get(
                     "instance_pools", []) == []:
                 log.warning(f"There are no pools to export")
-            if object_name == GeneratorCatalog.SECRETS and SecretApi(api_client).list_scopes().get("scopes", []) == []:
+            if object_name == GeneratorCatalog.GLOBAL_INIT_SCRIPT and \
+                    GlobalInitScriptsService(api_client).list_global_init_scripts().get("scripts", []) == []:
+                log.warning(f"There are no pools to export")
+            if object_name == GeneratorCatalog.SECRET and SecretApi(api_client).list_scopes().get("scopes", []) == []:
                 log.warning(f"There are no secrets to export")
             if object_name == GeneratorCatalog.JOB and JobsApi(api_client).list_jobs().get("jobs", []) == []:
                 log.warning(f"There are no jobs to export")

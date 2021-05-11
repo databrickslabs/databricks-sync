@@ -147,7 +147,7 @@ class SecretHCLGenerator(APIGenerator):
 
     @property
     def folder_name(self) -> str:
-        return GeneratorCatalog.SECRETS
+        return GeneratorCatalog.SECRET
 
     def __get_secret_identifier(self, data: Dict[str, Any]) -> str:
         return self.get_identifier(data, lambda d: f"databricks_secret-{d['name']}-{d['key']}")
