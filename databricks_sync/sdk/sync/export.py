@@ -37,6 +37,7 @@ class ExportCoordinator:
     @staticmethod
     def export(api_client: ApiClient, yaml_file_path: Path, dask_mode: bool = False, dry_run: bool = False,
                git_ssh_url: str = None, local_git_path=None, branch="master", excel_report=False):
+        err = None
         client = None
         if dask_mode is True:
             from distributed import Client
@@ -94,10 +95,13 @@ class ExportCoordinator:
             try:
                 te.execute()
             except TerraformCommandError as tce:
+                err = tce
                 f_validation_files, f_validation_msgs, f_validation_tbs = get_error_paths_and_content(tce.err)
                 event_manager.make_validation_records(api_client.url, f_validation_files, f_validation_msgs,
                                                       f_validation_tbs)
-
+        except Exception as e:
+            err = e
+            pass
         finally:
             event_manager.make_validation_records(api_client.url, [], [],
                                                   [])
@@ -106,3 +110,5 @@ class ExportCoordinator:
             if excel_report is True:
                 report_manager_results.print_to_xlsx()
             tmp_dir.cleanup()
+
+        return err

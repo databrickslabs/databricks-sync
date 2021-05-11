@@ -9,6 +9,7 @@ from databricks_sync import log
 from databricks_sync.sdk.config import export_config
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData, HCLConvertData
+from databricks_sync.sdk.processor import MappedGrokVariableBasicAnnotationProcessor
 from databricks_sync.sdk.service.permissions import PermissionService
 from databricks_sync.sdk.sync.constants import ResourceCatalog, GeneratorCatalog, ForEachBaseIdentifierCatalog, \
     MeConstants
@@ -134,6 +135,21 @@ class PermissionsHelper:
                                                            f'"{this_principal_owner}"')
         return tdb.to_dict()
 
+    def __filter_inherited_users_dir(self, acl, src_obj_data: HCLConvertData):
+        u_name = acl.get("user_name", "None")
+        path = src_obj_data.latest_version.get("path", "None")
+        is_inherited_user_dir = (Path("/Users") / u_name) == Path(path)
+        if is_inherited_user_dir:
+            log.debug(f"Filtering inherited user directory: {path} for user: {u_name}")
+        return not is_inherited_user_dir
+
+    def __get_perm_acls(self, src_obj_data: HCLConvertData, perm_data):
+        if src_obj_data.resource_name == ResourceCatalog.DIRECTORY_RESOURCE:
+            return list(filter(lambda x: self.__filter_inherited_users_dir(x, src_obj_data),
+                               perm_data["access_control_list"]))
+        else:
+            return perm_data["access_control_list"]
+
     def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path],
                                rel_path_func: Callable[[str], str] = None, depends_on=None):
         if is_acls_enabled(self._permissions_service) is False:
@@ -145,11 +161,12 @@ class PermissionsHelper:
         try:
             perm_data = self._permissions_service.get_object_permissions(
                 self.perm_mapping[src_obj_data.resource_name].object_type, src_obj_data.raw_id)
+            permission_acls = self.__get_perm_acls(src_obj_data, perm_data)
             api_data = APIData(
                 identifier,
                 self.api_client.url,
                 identifier,
-                self._create_permission_dictionary(src_obj_data, perm_data["access_control_list"], depends_on),
+                self._create_permission_dictionary(src_obj_data, permission_acls, depends_on),
                 path_func(identifier),
                 relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
                 human_readable_name=permissions_name
@@ -168,10 +185,17 @@ class PermissionsHelper:
                 human_readable_name=permissions_name
             )
             err = e
-
+        default_custom_map_vars = {"dynamic.[*].access_control.content.group_name": None,
+                                   "dynamic.[*].access_control.content.user_name": None,
+                                   "dynamic.[*].access_control.content.service_principal_name": None,
+                                   "dynamic.[*].access_control.for_each":
+                                       '%{GREEDYDATA} != \\"%{DATA:variable}\\" ? %{GREEDYDATA}',
+                                   "count": '%{GREEDYDATA} != \\"%{DATA:variable}\\" ? %{GREEDYDATA}'}
+        processors = [] if not export_config.parameterize_permissions else \
+            [MappedGrokVariableBasicAnnotationProcessor(ResourceCatalog.PERMISSIONS_RESOURCE,
+                                                        dot_path_grok_dict=default_custom_map_vars)]
         hcl_data = HCLConvertData(ResourceCatalog.PERMISSIONS_RESOURCE, api_data,
-                                  processors=[])
+                                  processors=processors)
         if err is not None:
             hcl_data.add_error(err)
         return hcl_data
-

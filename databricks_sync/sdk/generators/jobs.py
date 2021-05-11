@@ -165,10 +165,6 @@ class JobHCLGenerator(APIGenerator):
         # Existing cluster - there's no need to generate per cloud object
         # New cluster - modify the object, add var.CLOUD and generate an object per cloud
         if "new_cluster" in data.get("settings", []):
-            # TODO: remove this once the provider support it
-            if "azure_attributes" in data.get("settings", []).get("new_cluster", []):
-                del data["settings"]["new_cluster"]["azure_attributes"]
-
             transformed_cluster_spec = ClusterHCLGenerator. \
                 get_cluster_spec(data["settings"]["new_cluster"])
             data["settings"]["new_cluster"] = \

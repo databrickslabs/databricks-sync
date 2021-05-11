@@ -67,8 +67,8 @@ class Terraform:
         if self.is_env_vars_included:
             environ_vars = os.environ.copy()
 
-        p = subprocess.Popen(cmds, stdout=stdout, stderr=stderr,
-                             cwd=working_folder, env=environ_vars)
+        p = subprocess.Popen(cmds, stdout=stdout, stderr=subprocess.STDOUT,
+                             cwd=working_folder, env=environ_vars, close_fds=True)
 
         output = []
         error = []
@@ -78,12 +78,18 @@ class Terraform:
             if print_output is True:
                 log.info(line.decode("utf-8").rstrip("\n"))
 
-        for line in p.stderr:
-            content = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line.decode("utf-8").rstrip("\n"))
-            error.append(content)
-            log.error(line.decode("utf-8").rstrip("\n"))
+        # for line in p.stderr:
+        #     content = re.sub(r'\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))', '', line.decode("utf-8").rstrip("\n"))
+        #     error.append(content)
+        #     log.error(line.decode("utf-8").rstrip("\n"))
 
         p.communicate()
+        # Close buffers
+        try:
+            p.stdout.flush()
+        except:
+            pass
+        p.stdout.close()
         ret_code = p.returncode
         if capture_output is True:
             out = "\n".join(output)
@@ -94,7 +100,7 @@ class Terraform:
 
         if ret_code != 0 and raise_on_error:
             raise TerraformCommandError(
-                ret_code, ' '.join(cmds), out=out, err=err)
+                ret_code, ' '.join(cmds), out=out, err=out)
 
         return ret_code, out, err
 

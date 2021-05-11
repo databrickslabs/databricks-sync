@@ -8,7 +8,7 @@ Check your Databricks CLI access credentials in the file `~/.databrickscfg` to v
 
 ```
 [profile]
-	host = https://<databricks-instance>
+	host = <workspace-URL>
 	token =  <personal-access-token>
 ```
 
@@ -47,6 +47,13 @@ To install manually, find the appropriate [package](https://github.com/databrick
 Execute: `$ pip install git+https://github.com/databrickslabs/databricks-sync.git`
 
 Run `databricks-sync --version` to confirm successful installation.
+
+**Note:** Using [virtualenv](https://docs.python.org/3/library/venv.html) is strongly recommended:
+
+```
+python3 -m venv <venv name>
+source <venv name>/bin/activate
+```
 
 ## Project Support
 

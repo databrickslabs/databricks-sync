@@ -15,9 +15,14 @@ class SingletonNotSetError(Exception):
 # if its a long living interpreter we may want to change config values
 class ExportConfig:
     class __ExportConfigImmutableSingleton:
-        def __init__(self, name, objects: Dict[str, Any] = None):
+        def __init__(self, name, objects: Dict[str, Any] = None, parameterize_permissions=None):
             self.objects = objects
             self.name = name
+            self._parameterize_permissions = parameterize_permissions or False
+
+        @property
+        def parameterize_permissions(self):
+            return self._parameterize_permissions
 
         def contains(self, item: str):
             return item in self.objects
