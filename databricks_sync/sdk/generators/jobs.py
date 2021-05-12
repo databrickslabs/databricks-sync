@@ -4,7 +4,7 @@ from typing import Generator, Dict, Any
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import JobsService
 
-from databricks_sync.sdk.generators import drop_all_but
+from databricks_sync.sdk.generators import drop_all_but, LocalFilterBy
 from databricks_sync.sdk.generators.clusters import ClusterHCLGenerator
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
@@ -23,7 +23,8 @@ class JobHCLGenerator(APIGenerator):
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
                  custom_map_vars=None, convert_existing_cluster_to_var=False,
                  convert_new_cluster_instance_pool_to_var=False,
-                 convert_new_cluster_cluster_policy_to_var=False):
+                 convert_new_cluster_cluster_policy_to_var=False,
+                 by=None):
         super().__init__(api_client, base_path, patterns=patterns)
         # TODO: support node type id to be swapped out as a map
         default_custom_map_vars = {"new_cluster.node_type_id": None,
@@ -34,6 +35,7 @@ class JobHCLGenerator(APIGenerator):
         self.__convert_existing_cluster_to_var = convert_existing_cluster_to_var
         self.__convert_new_cluster_instance_pool_to_var = convert_new_cluster_instance_pool_to_var
         self.__convert_new_cluster_cluster_policy_to_var = convert_new_cluster_cluster_policy_to_var
+        self.__local_filter_by = LocalFilterBy(by, ResourceCatalog.JOB_RESOURCE, self.__get_job_raw_id)
 
     def __create_job_data(self, job_data: Dict[str, Any]):
         resource_vars = []
@@ -78,7 +80,7 @@ class JobHCLGenerator(APIGenerator):
         jobs = self.__service.list_jobs().get("jobs", [])
 
         # TODO: This shouldnt be aws jobs, there is no gurantee that all jobs are aws.
-        for job in jobs:
+        for job in filter(self.__local_filter_by.is_in_criteria, jobs):
             # Patch for tasks feature to show up
             databricks_job = self.__service.get_job(job["job_id"])
             job_data = self.__create_job_data(databricks_job)

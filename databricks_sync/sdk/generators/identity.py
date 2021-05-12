@@ -31,10 +31,11 @@ class IdentityHCLGenerator(APIGenerator):
     GROUP_MEMBERS_FOREACH_VAR_TEMPLATE = "databricks_group_members_{}_for_each_var"
 
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
-                 custom_map_vars=None):
+                 custom_map_vars=None, set_all_users_active=None):
         super().__init__(api_client, base_path, patterns=patterns)
         self.__custom_map_vars = custom_map_vars or {}
         self.__service = ScimService(self.api_client)
+        self.__set_all_users_active = set_all_users_active
 
     @property
     def folder_name(self) -> str:
@@ -294,18 +295,19 @@ class IdentityHCLGenerator(APIGenerator):
         else:
             return None
 
-    @staticmethod
-    def get_user_dict(user):
+
+    def get_user_dict(self, user):
         entitlements = user.get("entitlements", [])
         allow_cluster_create = any([valuePair["value"] == 'allow-cluster-create' for valuePair in entitlements])
         allow_instance_pool_create = any([valuePair["value"] == 'allow-instance-pool-create'
                                           for valuePair in entitlements])
+        active = user["active"] if self.__set_all_users_active is None else self.__set_all_users_active
         return {
             UserSchema.USER_NAME: user["userName"],
             UserSchema.DISPLAY_NAME: user["displayName"],
             UserSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
             UserSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
-            UserSchema.ACTIVE: user["active"]
+            UserSchema.ACTIVE: active
         }
 
     @staticmethod

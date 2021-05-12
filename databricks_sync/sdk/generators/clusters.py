@@ -6,6 +6,7 @@ from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import ClusterService, ManagedLibraryService
 
 from databricks_sync.sdk.config import export_config
+from databricks_sync.sdk.generators import LocalFilterBy
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData
@@ -25,7 +26,7 @@ class ClusterSourceConstants:
 class ClusterHCLGenerator(APIGenerator):
 
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
-                 custom_map_vars=None, valid_cluster_sources=None, pin_first_20=False):
+                 custom_map_vars=None, valid_cluster_sources=None, pin_first_20=False, by=None):
         super().__init__(api_client, base_path, patterns=patterns)
         default_custom_map_vars = {"node_type_id": None,
                                    "dynamic.[*].library.content.jar": None,
@@ -39,6 +40,7 @@ class ClusterHCLGenerator(APIGenerator):
         self.__pin_first_20 = pin_first_20
         self.__max_pin_count = 20
         self.__valid_cluster_sources = valid_cluster_sources or [ClusterSourceConstants.UI, ClusterSourceConstants.API]
+        self.__local_filter_by = LocalFilterBy(by, ResourceCatalog.CLUSTER_RESOURCE, self.__get_cluster_raw_id)
 
     def __create_cluster_data(self, cluster_data: Dict[str, Any]):
         return self._create_data(
@@ -109,7 +111,7 @@ class ClusterHCLGenerator(APIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         clusters = self.__service.list_clusters().get("clusters", [])
-        for idx, cluster in enumerate(clusters):
+        for idx, cluster in enumerate(filter(self.__local_filter_by.is_in_criteria, clusters)):
             if "cluster_source" in cluster and cluster["cluster_source"] not in self.__valid_cluster_sources:
                 continue
             cluster_spec = self.get_cluster_spec(cluster)

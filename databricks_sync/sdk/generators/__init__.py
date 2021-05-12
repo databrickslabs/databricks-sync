@@ -1,7 +1,9 @@
 import copy
 import fnmatch
 import os
-from typing import List
+from typing import List, Dict, Any
+
+from dotty_dict import Dotty
 
 from databricks_sync import log
 
@@ -120,3 +122,37 @@ class PathExclusionParser(object):
             log.debug(f"[PathExclusion] {self.__resource_type}: {path} path matched the following exclusion patterns: "
                       f"{matched_patterns} from the full set of: {self.__exclude_paths}")
         return is_excluded
+
+class LocalFilterBy:
+
+    def __init__(self, filter_dictionary: Dict[str, Any], resource, raw_id_func):
+        self._filter_dictionary = filter_dictionary
+        self._resource = resource
+        self._raw_id_func = raw_id_func
+
+    def _listify(self, val) -> List[Any]:
+        if isinstance(val, str) or isinstance(val, int) or isinstance(val, float):
+            return [val]
+        elif isinstance(val, list):
+            return val
+        else:
+            return []
+
+    def is_in_criteria(self, input_data: Dict[str, Any]):
+        if self._filter_dictionary is None:
+            return True
+        results = {
+            True: [],
+            False: []
+        }
+        d = Dotty(input_data)
+        for key, value in self._filter_dictionary.items():
+            values = self._listify(value)
+            for pattern in values:
+                actual_value = d.get(key, None)
+                if actual_value is not None and fnmatch.fnmatch(actual_value, pattern) is True:
+                    results[True].append(pattern)
+                else:
+                    results[False].append(pattern)
+            log.debug(f"[{self._resource}][{self._raw_id_func(input_data)}] Key: {key} Matched {results[True]}")
+        return any(results[True])
