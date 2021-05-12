@@ -51,11 +51,14 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         path = Path(path)
         return str(path.parent.absolute())
 
+    def __process_folder(self, path):
+        self.__folder_set[path] = 1
+        log.debug(f"Processing folder: {path} due to seeing for the first time")
+
     def __is_processed_folder(self, path):
         # Function should only be called once, calling it more than once will yield that path as a duplicate
         if path not in self.__folder_set:
-            self.__folder_set[path] = 1
-            log.debug(f"Processing folder: {path} due to seeing for the first time")
+            log.debug(f"Able to process folder: {path}")
             return False
         else:
             log.debug(f"Not processing folder: {path} due to being processed already")
@@ -64,18 +67,20 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     def _get_notebooks_recursive(self, path: str):
         resp = self.__service.list(path)
         if self.__path_exclusion.is_path_excluded(path) or not self.__path_inclusion.is_path_included(path):
-            return []
+            return [], []
         log.info(f"Fetched all files & folders from path: {path}")
         if "objects" not in resp:
-            return []
+            return [], []
         objects = resp["objects"]
+        first_notebook = True
         for obj in objects:
             workspace_obj = WorkspaceFileInfo.from_json(obj)
             if self.__path_exclusion.is_path_excluded(workspace_obj.path):
                 continue
             if workspace_obj.is_notebook is True and self.__path_inclusion.is_path_included(workspace_obj.path):
                 # we need object id for permissions so we cant use workspace file info object
-                yield obj
+                yield obj, first_notebook
+                first_notebook = False
             if workspace_obj.is_dir is True:
                 yield from self._get_notebooks_recursive(workspace_obj.path)
 
@@ -142,21 +147,38 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                                  self.map_processors(self.__custom_map_vars),
                                  human_readable_name_func=self.__notebook_name)
 
-    def __handle_folder_permissions(self, notebook_obj):
-        # Handle Folder permissions
+    def __folder_iter(self, notebook_obj):
         notebook_path = notebook_obj["path"]
-        folder_path = self.__get_parent_folder(notebook_path)
-        if folder_path == "/":
-            log.debug("Cannot copy permissions for '/' folder path!")
-            return None
+        folder_path = notebook_path
+        for parent in Path(folder_path).parents:
+            if self.__is_processed_folder(parent):
+                continue
+            elif str(parent) == "/":
+                log.debug("Cannot copy permissions for '/' folder path!")
+                continue
+            elif str(parent) == "/Shared":
+                log.debug("Cannot modify or copy permissions for '/Shared' folder path!")
+                continue
+            yield parent
+
+    def __handle_folder_permissions(self, folder_path, notebook_obj):
+        # # Handle Folder permissions
         if self.__is_processed_folder(folder_path):
             return None
+        elif folder_path == "/":
+            log.debug("Cannot copy permissions for '/' folder path!")
+            return None
+        elif folder_path == "/Shared":
+            log.debug("Cannot modify or copy permissions for '/Shared' folder path!")
+            return None
         else:
+            log.debug(f"Processing folder permissions: {folder_path}")
             folder_obj = self.__service.get_status(folder_path)
             folder_data = self.__create_folder_data(folder_obj)
             depends_on = [Interpolate.depends_on(ResourceCatalog.NOTEBOOK_RESOURCE,
                                                  self.__notebook_identifier(notebook_obj))]
             try:
+                self.__process_folder(folder_path)
                 return self.__perms.create_permission_data(folder_data, self.get_local_hcl_path,
                                                            self.get_relative_hcl_path, depends_on=depends_on)
             except NoDirectPermissionsError:
@@ -164,8 +186,8 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     async def _generate(self) -> Generator[APIData, None, None]:
         for p in self.__notebook_path:
-            for notebook in self._get_notebooks_recursive(p):
-                # Only create hcl files for notebooks
+            for notebook, first_notebook in self._get_notebooks_recursive(p):
+
                 object_data = self.__create_notebook_data(notebook)
                 yield object_data
 
@@ -175,6 +197,9 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                 except NoDirectPermissionsError:
                     pass
 
-                folder_perms = self.__handle_folder_permissions(notebook)
-                if folder_perms is not None:
-                    yield folder_perms
+                # Create permissions for folders
+                if first_notebook is True:
+                    for folder_path in self.__folder_iter(notebook):
+                        folder_perms = self.__handle_folder_permissions(folder_path, notebook)
+                        if folder_perms is not None:
+                            yield folder_perms

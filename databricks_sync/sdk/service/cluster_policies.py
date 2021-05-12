@@ -7,6 +7,12 @@ class PolicyService(object):
 
         return self.client.perform_query('GET', '/policies/clusters/list', data=_data, headers=headers)
 
+    @staticmethod
+    def policy_to_full_dict(policy):
+        import json
+        policy["definition"] = json.loads(policy["definition"])
+        return policy
+
     def create_policy(self, policy_name, definition, headers=None):
         _data = {}
         if policy_name is not None:

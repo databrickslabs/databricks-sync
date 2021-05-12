@@ -33,7 +33,7 @@ class GeneratorCatalog:
     NOTEBOOK = "notebook"
     INSTANCE_PROFILE = "instance_profile"
     INSTANCE_POOL = "instance_pool"
-    SECRETS = "secrets"
+    SECRET = "secret"
     CLUSTER = "cluster"
     JOB = "job"
     GLOBAL_INIT_SCRIPT = "global_init_script"
