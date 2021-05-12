@@ -48,6 +48,13 @@ Execute: `$ pip install git+https://github.com/databrickslabs/databricks-sync.gi
 
 Run `databricks-sync --version` to confirm successful installation.
 
+**Note:** Using [virtualenv](https://docs.python.org/3/library/venv.html) is strongly recommended:
+
+```
+python3 -m venv <venv name>
+source <venv name>/bin/activate
+```
+
 ## Project Support
 
 **Important:** Projects in the `databrickslabs` GitHub account, including the Databricks Terraform Provider, are not formally supported by Databricks. They are maintained by Databricks Field teams and provided as-is. There is no service level agreement (SLA). Databricks makes no guarantees of any kind. If you discover an issue with the provider, please file a GitHub Issue on the repo, and it will be reviewed by project maintainers as time permits.
