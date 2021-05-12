@@ -1,5 +1,8 @@
 #Name the configuration set, this can be used to track multiple configurations runs and changes
 name: test
+# Add this value if you want all the groups, users and service principals to be parameterized so you can map
+# them to another value using tf_vars
+#parameterize_permissions: true
 objects:
   notebook:
     # Notebook path can be a string, a list or a YAML items collection (multiple subgroups starting with - )
