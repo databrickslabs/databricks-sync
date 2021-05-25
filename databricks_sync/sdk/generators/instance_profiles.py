@@ -66,7 +66,6 @@ class InstanceProfileHCLGenerator(APIGenerator):
 
     def __make_instance_profile_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(ResourceCatalog.INSTANCE_PROFILE_RESOURCE). \
-            add_required("skip_validation", lambda: False). \
             add_for_each(lambda: self.INSTANCE_PROFILE_FOR_EACH, get_members(InstanceProfileSchema),
                          cloud=CloudConstants.AWS). \
             to_dict()

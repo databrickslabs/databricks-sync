@@ -88,21 +88,25 @@ class APIGenerator(abc.ABC):
             self.source.emit(item)
 
     async def generate(self):
-        async for item in self._generate():
-            item: HCLConvertData
-            if len(item.for_each_var_id_name_pairs) > 0:
-                for id_name_pairs in item.for_each_var_id_name_pairs:
+        try:
+            async for item in self._generate():
+                item: HCLConvertData
+                if len(item.for_each_var_id_name_pairs) > 0:
+                    for id_name_pairs in item.for_each_var_id_name_pairs:
+                        log.info(
+                            f"Processing: {item.resource_name} with name: {id_name_pairs[1]} and id: {id_name_pairs[0]}")
+                        event_manager.make_start_record(item.workspace_url, id_name_pairs[0],
+                                                        item.resource_name, id_name_pairs[0],
+                                                        id_name_pairs[1])
+                else:
                     log.info(
-                        f"Processing: {item.resource_name} with name: {id_name_pairs[1]} and id: {id_name_pairs[0]}")
-                    event_manager.make_start_record(item.workspace_url, id_name_pairs[0],
-                                                    item.resource_name, id_name_pairs[0],
-                                                    id_name_pairs[1])
-            else:
-                log.info(
-                    f"Processing: {item.resource_name} with name: {item.human_readable_name} and id: {item.raw_id}")
-                event_manager.make_start_record(item.workspace_url, item.hcl_resource_identifier, item.resource_name,
-                                                item.raw_id, item.human_readable_name)
-            yield item
+                        f"Processing: {item.resource_name} with name: {item.human_readable_name} and id: {item.raw_id}")
+                    event_manager.make_start_record(item.workspace_url, item.hcl_resource_identifier, item.resource_name,
+                                                    item.raw_id, item.human_readable_name)
+                yield item
+        except:
+            log.exception("Found exception when running generate.")
+            raise
 
     @abc.abstractmethod
     async def _generate(self) -> Generator[APIData, None, None]:
