@@ -393,7 +393,7 @@ class IdentityHCLGenerator(APIGenerator):
         return {
             UserSchema.USER_NAME: user["userName"],
             # Alternative display name for the user if it does not exist is the username
-            UserSchema.DISPLAY_NAME: user.get("displayName", user["userName"]),
+            UserSchema.DISPLAY_NAME: user.get("displayName", None),
             UserSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
             UserSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
             UserSchema.ACTIVE: active
