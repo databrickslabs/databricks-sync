@@ -135,17 +135,20 @@ class PermissionsHelper:
                                                            f'"{this_principal_owner}"')
         return tdb.to_dict()
 
-    def __filter_inherited_users_dir(self, acl, src_obj_data: HCLConvertData):
+    def __filter_inherited_users_dir(self, acl, src_obj_data: HCLConvertData, all_acls):
         u_name = acl.get("user_name", "None")
         path = src_obj_data.latest_version.get("path", "None")
-        is_inherited_user_dir = (Path("/Users") / u_name) == Path(path)
-        if is_inherited_user_dir:
+        is_user_home_dir = (Path("/Users") / u_name) == Path(path)
+        acls_for_dir = len(all_acls)
+        # The default 2 acls are for the user an admins group
+        if is_user_home_dir and acls_for_dir == 2:
             log.debug(f"Filtering inherited user directory: {path} for user: {u_name}")
-        return not is_inherited_user_dir
+        return not (is_user_home_dir and acls_for_dir == 2)
 
     def __get_perm_acls(self, src_obj_data: HCLConvertData, perm_data):
         if src_obj_data.resource_name == ResourceCatalog.DIRECTORY_RESOURCE:
-            return list(filter(lambda x: self.__filter_inherited_users_dir(x, src_obj_data),
+            return list(filter(lambda x: self.__filter_inherited_users_dir(x, src_obj_data,
+                                                                           perm_data["access_control_list"]),
                                perm_data["access_control_list"]))
         else:
             return perm_data["access_control_list"]
