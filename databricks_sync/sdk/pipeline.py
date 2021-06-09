@@ -6,7 +6,7 @@ import json
 import traceback
 from functools import reduce, singledispatch
 from pathlib import Path
-from typing import List, Callable, Generator, Any, Dict, Union, Tuple
+from typing import List, Callable, Generator, Any, Dict, Union, Tuple, Optional
 
 from databricks_cli.sdk import ApiClient
 from streamz import Stream
@@ -52,16 +52,16 @@ class APIGenerator(abc.ABC):
     def __add_tf_suffix(file_name: str) -> str:
         return file_name + ".tf.json"
 
-    def get_relative_hcl_path(self, file_name) -> str:
+    def get_relative_hcl_path(self, file_name, custom_folder_path: str = None) -> str:
         return str(ExportFileUtils.make_relative_path(
-            self.folder_name,
+            str(Path(self.folder_name) / (custom_folder_path or "")),
             self.__add_tf_suffix(file_name)
         ))
 
-    def get_local_hcl_path(self, file_name) -> Path:
+    def get_local_hcl_path(self, file_name, custom_folder_path: str = None) -> Path:
         return ExportFileUtils.make_local_path(
             self._base_path,
-            self.folder_name,
+            str(Path(self.folder_name) / (custom_folder_path or "")),
             self.__add_tf_suffix(file_name)
         )
 
@@ -121,23 +121,29 @@ class APIGenerator(abc.ABC):
                      make_dict_func: Callable[[Dict[str, Any]], Dict[str, Any]],
                      processors,
                      human_readable_name_func: Callable[[Dict[str, Any]], str] = None,
+                     custom_folder_path_func: Callable[[Dict[str, Any]], Optional[str]] = None,
+                     custom_file_name_func: Callable[[Dict[str, Any]], Optional[str]] = None,
                      ) -> HCLConvertData:
         if filter_func():
             return None
         identifier = identifier_func(data)  # normalizes the identifier
         err = None
         try:
+            custom_file_name = custom_file_name_func(data) if custom_folder_path_func is not None else None
+            custom_folder_path = custom_folder_path_func(data) if custom_folder_path_func is not None else None
             terraform_dict = make_dict_func(data)
         except Exception as e:
             terraform_dict = data
+            custom_file_name = None
+            custom_folder_path = None
             err = e
         api_data = APIData(
             self.get_raw_id(data, raw_id_func),
             self.api_client.url,
             identifier,
             terraform_dict,
-            self.get_local_hcl_path(identifier),
-            relative_save_path=self.get_relative_hcl_path(identifier),
+            self.get_local_hcl_path(custom_file_name or identifier, custom_folder_path),
+            relative_save_path=self.get_relative_hcl_path(custom_file_name or identifier, custom_folder_path),
             human_readable_name=human_readable_name_func(data) if human_readable_name_func is not None else None
         )
         processed_api_data = self.post_process_api_data_hook(data, api_data)
@@ -244,8 +250,8 @@ class ExportFileUtils:
         return dir_path / "databricks_spark_env.sh"
 
     @staticmethod
-    def make_local_data_path(base_path: Path, sub_dir: str, file_name) -> Path:
-        dir_path = base_path / ExportFileUtils.BASE_DIRECTORY / sub_dir / "data"
+    def make_local_data_path(base_path: Path, base_folder: str, sub_dir: str, file_name) -> Path:
+        dir_path = base_path / ExportFileUtils.BASE_DIRECTORY / base_folder / "data" / sub_dir
         ExportFileUtils.__ensure_parent_dirs(dir_path)
         return dir_path / file_name
 
@@ -278,10 +284,11 @@ class DownloaderAPIGenerator(APIGenerator, abc.ABC):
             ExportFileUtils.add_file(artifact.local_path, content)
         return hcl_convert_data
 
-    def get_local_download_path(self, file_name):
+    def get_local_download_path(self, file_name, custom_folder_path: str = None) -> Path:
         return ExportFileUtils.make_local_data_path(
             self._base_path,
-            self.resource_folder_name,
+            self.folder_name,
+            custom_folder_path or "",
             file_name
         )
 

@@ -1,7 +1,7 @@
 import functools
 import json
 from pathlib import Path
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import requests
 
@@ -153,13 +153,18 @@ class PermissionsHelper:
         else:
             return perm_data["access_control_list"]
 
-    def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str], Path],
-                               rel_path_func: Callable[[str], str] = None, depends_on=None):
+    def create_permission_data(self, src_obj_data: HCLConvertData, path_func: Callable[[str, Optional[str]], Path],
+                               rel_path_func: Callable[[str, Optional[str]], str] = None, depends_on=None, ):
         if is_acls_enabled(self._permissions_service) is False:
             raise NoDirectPermissionsError("ACLS are disabled no permissions available")
 
         identifier = self._make_identifier(src_obj_data.resource_name, src_obj_data.raw_id)
         permissions_name = self.__make_name(src_obj_data)
+        parent_local_path = src_obj_data.local_save_path.parent / (identifier + ".tf.json")
+        parent_rel_path = str(Path(src_obj_data.relative_save_path).parent / (identifier + ".tf.json")) \
+            if src_obj_data.relative_save_path is not None else ""
+        log.debug(f"Fetched local parent path for {src_obj_data.resource_name} perms: {parent_local_path}")
+        log.debug(f"Fetched relative parent path for {src_obj_data.resource_name} perms: {parent_rel_path}")
         err = None
         try:
             perm_data = self._permissions_service.get_object_permissions(
@@ -170,21 +175,21 @@ class PermissionsHelper:
                 self.api_client.url,
                 identifier,
                 self._create_permission_dictionary(src_obj_data, permission_acls, depends_on),
-                path_func(identifier),
-                relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
+                local_save_path=parent_local_path,
+                relative_save_path=parent_rel_path,
                 human_readable_name=permissions_name
             )
         except NoDirectPermissionsError as ndpe:
             raise ndpe
         except Exception as e:
-
+            log.exception("Failed to get permisisons")
             api_data = APIData(
                 identifier,
                 self.api_client.url,
                 identifier,
                 src_obj_data,
-                path_func(identifier),
-                relative_save_path=rel_path_func(identifier) if rel_path_func is not None else "",
+                local_save_path=parent_local_path,
+                relative_save_path=parent_rel_path,
                 human_readable_name=permissions_name
             )
             err = e

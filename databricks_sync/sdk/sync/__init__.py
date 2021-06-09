@@ -23,6 +23,7 @@ def validate_dict(api_client: ApiClient):
         found_exception = True
     else:
         # validate token & admin privileges
+        user_info = None
         try:
             user_info = ScimService(api_client).me()
 
