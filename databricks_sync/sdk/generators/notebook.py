@@ -10,8 +10,9 @@ from databricks_sync.sdk.generators import PathExclusionParser, PathInclusionPar
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import Artifact, APIData
-from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
+from databricks_sync.sdk.pipeline import DownloaderAPIGenerator, ExportFileUtils
 from databricks_sync.sdk.sync.constants import ResourceCatalog, GeneratorCatalog
+from databricks_sync.sdk.utils import normalize_identifier
 
 
 class NotebookArtifact(Artifact):
@@ -86,7 +87,10 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def construct_artifacts(self, data: Dict[str, Any]) -> List[Artifact]:
         return [NotebookArtifact(remote_path=data['path'],
-                                 local_path=self.get_local_download_path(self.__notebook_file_name(data)),
+                                 local_path=self.get_local_download_path(
+                                     self.__notebook_file_name(data),
+                                     self.__create_custom_folder_path(data)
+                                 ),
                                  service=self.__service)]
 
     def __notebook_file_name(self, data: Dict[str, Any]) -> str:
@@ -98,12 +102,13 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         }
         lang = data.get("language", None)
         if lang is not None:
-            return self.__notebook_identifier(data) + extmap[lang]
+            return self.__create_custom_file_name(data) + extmap[lang]
         else:
-            return self.__notebook_identifier(data)
+            return self.__create_custom_file_name(data)
 
     def __notebook_identifier(self, data: Dict[str, Any]) -> str:
-        return self.get_identifier(data, lambda d: f"databricks_notebook-{d['path']}")
+        return self.get_identifier(data, lambda d: f"databricks_notebook-{d['path']}"
+                                                   f"-{NotebookHCLGenerator.__notebook_raw_id(data)}")
 
     @staticmethod
     def __notebook_raw_id(data: Dict[str, Any]) -> str:
@@ -112,6 +117,32 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     @staticmethod
     def __notebook_name(data: Dict[str, Any]) -> str:
         return data.get("path", None)
+
+    @staticmethod
+    def __create_custom_hcl_path(data: Dict[str, Any]):
+        folder_path = NotebookHCLGenerator.__create_custom_folder_path(data)
+        if folder_path is None:
+            return None
+        return str(Path("hcl") / folder_path)
+
+    @staticmethod
+    def __create_custom_folder_path(data: Dict[str, Any]):
+        path_s: str = data.get("path", None)
+        if path_s is None:
+            return None
+        path: Path = Path(path_s.lstrip("/"))
+        if len(path.parents) <= 1:
+            return None
+        return str(path.parent)
+
+    @staticmethod
+    def __create_custom_file_name(data: Dict[str, Any]):
+        nbook_id = NotebookHCLGenerator.__notebook_raw_id(data)
+        path_s: str = data.get("path", None)
+        if path_s is None:
+            return None
+        path: Path = Path(path_s)
+        return normalize_identifier(f"{path.name}_{nbook_id}")
 
     def __make_notebook_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         tdb = TerraformDictBuilder(ResourceCatalog.NOTEBOOK_RESOURCE,
@@ -132,7 +163,9 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                                  self.__notebook_raw_id,
                                  self.__make_notebook_dict,
                                  self.map_processors(self.__custom_map_vars),
-                                 human_readable_name_func=self.__notebook_name)
+                                 human_readable_name_func=self.__notebook_name,
+                                 custom_folder_path_func=self.__create_custom_hcl_path,
+                                 custom_file_name_func=self.__create_custom_file_name)
 
     def __create_folder_data(self, dir_data: Dict[str, Any]):
         # This is a temporary stub just for permissions
