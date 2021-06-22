@@ -163,7 +163,7 @@ class IdentityHCLGenerator(APIGenerator):
         identifier = lambda x: f"{resource_type}/{display_name}/arn/{arn}"
         res = {"arn": arn}
         uipd = self._create_data(
-            ResourceCatalog.USER_INSTANCE_PROFILE_RESOURCE,
+            resource_type,
             res,
             lambda: False,
             identifier,
