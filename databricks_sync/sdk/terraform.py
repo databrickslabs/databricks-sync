@@ -152,13 +152,25 @@ class Terraform:
         plan_cmd += ["-input=false"]
         return self._cmd(plan_cmd)
 
+    @staticmethod
+    def __get_backup_path(state_file_abs_path: Path = None):
+        now_str = datetime.datetime.utcnow().strftime("%Y_%m_%d_%H_%M_%S_%f")
+        if state_file_abs_path is None:
+            return None
+        parent = state_file_abs_path.parent
+        file = state_file_abs_path.name
+        return parent / f"{str(file)}.{now_str}.bckup"
+
     def apply(self, plan_file: Path = None, state_file_abs_path: Path = None, refresh=None):
         apply_cmd = self.BASE_COMMAND + ["apply"]
+        backup_path = self.__get_backup_path(state_file_abs_path)
         apply_cmd += [f"-lock={self.is_import_lock()}"]
         if self.get_import_apply_parallelism() > 0:
             apply_cmd += [f"-parallelism={str(self.get_import_apply_parallelism())}"]
         if state_file_abs_path is not None:
             apply_cmd += ["-state", str(state_file_abs_path.absolute())]
+        if backup_path is not None:
+            apply_cmd += ["-backup", str(backup_path.absolute())]
         if refresh is not None and refresh is False:
             apply_cmd += ["-refresh=false"]
         if plan_file is not None:
