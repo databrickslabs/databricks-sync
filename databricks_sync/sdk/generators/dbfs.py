@@ -64,7 +64,7 @@ class DbfsFileHCLGenerator(DownloaderAPIGenerator):
 
     def __get_dbfs_file_data_recrusive(self, service: DbfsService, path):
         # is the base path allowed
-        if self.__path_exclusion.is_path_excluded(path) or not self.__path_inclusion.is_path_included(path):
+        if self.__path_exclusion.is_path_excluded(path):
             return []
         resp = service.list(path)
         if "files" not in resp:
