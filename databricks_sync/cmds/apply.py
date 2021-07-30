@@ -8,13 +8,13 @@ from databricks_cli.sdk import ApiClient
 from databricks_sync import CONTEXT_SETTINGS
 from databricks_sync.cmds.config import git_url_option, ssh_key_option, inject_profile_as_env, \
     absolute_path_callback, local_git_option, validate_git_params, handle_additional_debug, \
-    wrap_with_user_agent
-from databricks_sync.sdk.sync.constants import GeneratorCatalog
+    wrap_with_user_agent, branch_option, revision_option, backend_file_option, \
+    databricks_object_type_option
 from databricks_sync.sdk.sync.import_ import TerraformExecution
 
-SUPPORTED_IMPORTS = GeneratorCatalog.list_catalog()
-
 # TODO: Custom state back ends using aws environment variables
+@click.option("--artifact-dir", "-a", required=True, type=click.Path(exists=True), callback=absolute_path_callback,
+              help='Will be where the plan/state file be saved, required unless backend state is specified.')
 @click.command(context_settings=CONTEXT_SETTINGS, help="Import selected resources.")
 @click.option("--plan", is_flag=True, help='This will generate the terraform plan to your infrastructure.')
 @click.option("--apply", is_flag=True, help='This will apply the plan and will make modifications to your '
@@ -24,17 +24,10 @@ SUPPORTED_IMPORTS = GeneratorCatalog.list_catalog()
 @click.option("--skip-refresh", is_flag=True,
               help='This is to determine whether you need to refresh remote state or not',
               default=False)
-@click.option("--artifact-dir", required=True, type=click.Path(exists=True), callback=absolute_path_callback,
-              help='Will be where the plan/state file be saved, required unless backend state is specified.')
-@click.option("--revision", type=str, help='This is the git repo revision which can be a branch, commit, tag.')
-@click.option("--branch", type=str, help='This is the git repo branch.', default="master")
-@click.option('--databricks-object-type', type=click.Choice(SUPPORTED_IMPORTS),
-              multiple=True, default=SUPPORTED_IMPORTS,
-              help="This is the databricks object you wish to create a plan for. By default we will plan for "
-                   "all objects.")
-@click.option("--backend-file", type=click.Path(exists=True, resolve_path=True),
-              help='Please provide this as this is where your backend configuration at which your terraform file '
-                   'will be saved.')
+@databricks_object_type_option
+@revision_option
+@branch_option
+@backend_file_option
 @debug_option
 @profile_option
 # @eat_exceptions

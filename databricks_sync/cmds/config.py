@@ -8,10 +8,12 @@ from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
 from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import InvalidConfigurationError
+from databricks_sync.sdk.sync.constants import GeneratorCatalog
 
 from databricks_sync import log
 from databricks_sync.cmds.version import version
 
+SUPPORTED_IMPORTS = GeneratorCatalog.list_catalog()
 
 def absolute_path_callback(ctx, param, value):  # NOQA
     if value is not None:
@@ -53,6 +55,28 @@ def config_path_option(f):
                         help="This is the path to the config file for the export.")(f)
 
 
+def branch_option(f):
+    return click.option('--branch', '-b', type=str, help='This is the git repo branch.', default="master")(f)
+
+
+def backend_file_option(f):
+    return click.option('--backend-file', '-bf', type=click.Path(exists=True, resolve_path=True),
+              help='Please provide this as this is where your backend configuration at which your terraform file '
+                   'will be saved.')(f)
+
+
+def revision_option(f):
+    return click.option('--revision', '-r', type=str, help='This is the git repo revision which can be a branch, commit, tag.')(f)
+
+
+def databricks_object_type_option(f):
+    return click.option('--databricks-object-type', '-dot', type=click.Choice(SUPPORTED_IMPORTS),
+              multiple=True, default=SUPPORTED_IMPORTS,
+              help="This is the databricks object you wish to create a plan for. By default we will plan for "
+                   "all objects.")(f)
+
+
+
 def handle_additional_debug(ctx):
     log.info("Setting debug flags on.")
     context_object: ContextObject = ctx.ensure_object(ContextObject)
@@ -88,7 +112,7 @@ def excel_report_option(f):
             log.info("===EXCEL REPORT ENABLED===")
         return value
 
-    return click.option('--excel-report', is_flag=True, callback=callback,
+    return click.option('--excel-report', '-r', is_flag=True, callback=callback,
                         help="This will allow you to output the export full report into an excel(.xlsx) file.")(f)
 
 

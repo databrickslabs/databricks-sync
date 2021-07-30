@@ -5,7 +5,7 @@ from typing import Optional
 from databricks_cli.sdk import ApiClient
 
 from databricks_sync import log
-from databricks_sync.cmds.apply import SUPPORTED_IMPORTS
+from databricks_sync.cmds.config import SUPPORTED_IMPORTS
 from databricks_sync.sdk.config import export_config
 from databricks_sync.sdk.generators.factory import GeneratorFactory
 from databricks_sync.sdk.git_handler import GitHandler, LocalGitHandler, RemoteGitHandler
