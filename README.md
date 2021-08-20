@@ -6,11 +6,6 @@
 
 Databricks Sync is an object synchronization tool to backup, restore, and sync Databricks workspaces.
 
-High level use cases include:
-- Disaster Recovery
-- CI/CD
-- Workspace migration
-
 This package uses credentials from the [Databricks CLI](https://docs.databricks.com/user-guide/dev-tools/databricks-cli.html)
 
 ## Table of Contents
@@ -47,7 +42,6 @@ See the [Databricks Sync Documentation](https://github.com/databrickslabs/databr
 * Export object permissions and import them to the target with the object
 * Add examples for different scenarios:
   * Backup and Restore
-  * CI/CD
   * Disaster Recovery Sync
   * Batch modification (will require Terraform Object Import support)
 
