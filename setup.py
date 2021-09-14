@@ -1,9 +1,9 @@
-import setuptools
+from setuptools import setup, find_packages
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf8") as fh:
     long_description = fh.read()
 
-setuptools.setup(
+setup(
     name="databricks-sync",
     version="1.0.0",
     author="Itai Weiss",
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/databrickslabs/databricks-sync",
     license="https://github.com/databrickslabs/databricks-sync/blob/master/LICENSE",
-    packages=setuptools.find_packages(exclude=['tests', 'tests.*', ]),
+    packages=find_packages(exclude=['tests', 'tests.*', ]),
     install_requires=[
         'PyYAML==5.4',
         'requests>=2.17.3',

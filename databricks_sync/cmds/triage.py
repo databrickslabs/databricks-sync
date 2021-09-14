@@ -8,31 +8,24 @@ from databricks_cli.sdk import ApiClient
 from databricks_sync import CONTEXT_SETTINGS
 from databricks_sync.cmds.config import git_url_option, ssh_key_option, inject_profile_as_env, \
     local_git_option, validate_git_params, handle_additional_debug, \
-    wrap_with_user_agent
-from databricks_sync.sdk.sync.constants import GeneratorCatalog
+    wrap_with_user_agent, branch_option, revision_option, backend_file_option, \
+    databricks_object_type_option
 from databricks_sync.sdk.sync.import_ import TerraformExecution
-
-SUPPORTED_IMPORTS = GeneratorCatalog.list_catalog()
 
 # TODO: Custom state back ends using aws environment variables
 @click.command(context_settings=CONTEXT_SETTINGS, help="Run custom commands on the resources.")
-@click.option("--revision", type=str, help='This is the git repo revision which can be a branch, commit, tag.')
-@click.option("--branch", type=str, help='This is the git repo branch.', default="master")
-@click.option("--command", type=str, help='This is the raw command you want to run.', multiple=True)
-@click.option('--databricks-object-type', type=click.Choice(SUPPORTED_IMPORTS),
-              multiple=True, default=SUPPORTED_IMPORTS,
-              help="This is the databricks object you wish to create a plan for. By default we will plan for "
-                   "all objects.")
-@click.option("--backend-file", type=click.Path(exists=True, resolve_path=True),
-              help='Please provide this as this is where your backend configuration at which your terraform file '
-                   'will be saved.')
-@debug_option
+@databricks_object_type_option
 @profile_option
-# @eat_exceptions
+@click.option("--command", type=str, help='This is the raw command you want to run.', multiple=True)
+@backend_file_option
 @local_git_option
-@wrap_with_user_agent(provide_api_client)
 @git_url_option
+@revision_option
+@branch_option
+# @eat_exceptions
+@wrap_with_user_agent(provide_api_client)
 @ssh_key_option
+@debug_option
 @inject_profile_as_env
 @click.pass_context
 def triage_cli(ctx, git_ssh_url, local_git_path, databricks_object_type, backend_file,
