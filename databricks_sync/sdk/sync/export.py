@@ -1,4 +1,5 @@
 import tempfile
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -101,6 +102,7 @@ class ExportCoordinator:
                                                       f_validation_tbs)
         except Exception as e:
             err = e
+            traceback.print_exc()
             pass
         finally:
             event_manager.make_validation_records(api_client.url, [], [],

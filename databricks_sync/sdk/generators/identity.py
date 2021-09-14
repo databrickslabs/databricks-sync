@@ -231,6 +231,8 @@ class IdentityHCLGenerator(APIGenerator):
         groups_data = groups["Resources"]
         for group in groups_data:
             if group.get("displayName", None) == "users":
+                if group.get("roles", None) is None:
+                    return []
                 user_roles = [role.get("value", None) for role in group.get("roles")]
                 return user_roles
         return []

@@ -1,6 +1,7 @@
 import copy
 import fnmatch
 import os
+import re
 from typing import List, Dict, Any
 
 from dotty_dict import Dotty
@@ -19,6 +20,7 @@ def drop_all_but(dictionary, *fields, dictionary_name=None):
         result.pop(invalid_key)
     return result
 
+
 def match_patterns(string, patterns) -> (bool, List[str]):
     matched_patterns = []
     match_results = []
@@ -29,6 +31,7 @@ def match_patterns(string, patterns) -> (bool, List[str]):
             matched_patterns.append(ex_path)
 
     return any(match_results), matched_patterns
+
 
 class PathInclusionParser(object):
 
@@ -70,7 +73,7 @@ class PathInclusionParser(object):
         if path.startswith("dbfs:"):
             return "dbfs:/" + "/".join(actual_path_parts)
         else:
-            return "/"+"/".join(actual_path_parts)
+            return "/" + "/".join(actual_path_parts)
 
     def get_base_paths(self):
         return [self.__get_base_path(path) for path in self.__path_patterns]
@@ -100,6 +103,7 @@ class PathInclusionParser(object):
     def base_paths(self):
         return self.__base_paths
 
+
 class PathExclusionParser(object):
     def __init__(self, exclude_path, resource_type):
         self.__resource_type = resource_type
@@ -123,12 +127,30 @@ class PathExclusionParser(object):
                       f"{matched_patterns} from the full set of: {self.__exclude_paths}")
         return is_excluded
 
+class RegexFilterCompileError(ValueError):
+    pass
+
 class LocalFilterBy:
 
     def __init__(self, filter_dictionary: Dict[str, Any], resource, raw_id_func):
         self._filter_dictionary = filter_dictionary
+        self._compiled_dictionary = {}
         self._resource = resource
         self._raw_id_func = raw_id_func
+        self.__compile()
+
+    def __compile(self):
+        if self._filter_dictionary is None:
+            return
+        for key, value in self._filter_dictionary.items():
+            self._compiled_dictionary[key] = []
+            values = self._listify(value)
+            for pattern in values:
+                try:
+                    self._compiled_dictionary[key].append(re.compile(pattern))
+                except re.error as e:
+                    raise RegexFilterCompileError(f'Failed to compile "{pattern}" for key: "{key}"')
+
 
     def _listify(self, val) -> List[Any]:
         if isinstance(val, str) or isinstance(val, int) or isinstance(val, float):
@@ -146,11 +168,11 @@ class LocalFilterBy:
             False: []
         }
         d = Dotty(input_data)
-        for key, value in self._filter_dictionary.items():
+        for key, value in self._compiled_dictionary.items():
             values = self._listify(value)
             for pattern in values:
                 actual_value = d.get(key, None)
-                if actual_value is not None and fnmatch.fnmatch(actual_value, pattern) is True:
+                if actual_value is not None and re.fullmatch(pattern, actual_value):
                     results[True].append(pattern)
                 else:
                     results[False].append(pattern)

@@ -67,7 +67,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def _get_notebooks_recursive(self, path: str):
         resp = self.__service.list(path)
-        if self.__path_exclusion.is_path_excluded(path) or not self.__path_inclusion.is_path_included(path):
+        if self.__path_exclusion.is_path_excluded(path):
             return [], []
         log.info(f"Fetched all files & folders from path: {path}")
         if "objects" not in resp:

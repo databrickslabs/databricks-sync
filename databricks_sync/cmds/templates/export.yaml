@@ -56,10 +56,10 @@ objects:
     # This can help prevent your clusters from disappearing after 30 days if they are in terminated state.
 #    pin_first_20: false
 
-#    Filter by certain fields using glob patterns on cluster_spec fields to select a set of clusters
+#   Filter by certain fields using regular expressions on cluster_spec fields to select a set of clusters
 #    by:
 #      cluster_name:
-#        - "*fun*"
+#        - ".*fun.*"
 
   job:
     # pattern will be implemented in the future - make sure you have "*" in here
@@ -71,10 +71,10 @@ objects:
     #convert_new_cluster_instance_pool_to_var: true
     #convert_new_cluster_cluster_policy_to_var: true
 
-#    Filter by certain fields using glob patterns on job settings to select a set of jobs
+#    Filter by certain fields using regular expressions on job settings to select a set of jobs
 #    by:
 #      settings.existing_cluster_id:
-#        - "*fun*"
+#        - ".*fun.*"
 
   identity:
     # pattern will be implemented in the future - make sure you have "*" in here
