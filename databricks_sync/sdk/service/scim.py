@@ -12,6 +12,7 @@ class ScimService(object):
         return self.client.perform_query('GET', f"/preview/scim/v2/Me", data=_data,
                                          headers=headers)
 
+    @functools.lru_cache(maxsize=None)
     def list_users(self, headers=None):
         _data = {}
         log.info("Fetching all of the users in the workspace.")

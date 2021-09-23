@@ -1,3 +1,4 @@
+import functools
 from base64 import b64decode
 from pathlib import Path
 from typing import List, Generator, Dict, Any, Union, Optional
@@ -10,7 +11,8 @@ from databricks_sync.sdk.generators import PathExclusionParser, PathInclusionPar
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import Artifact, APIData
-from databricks_sync.sdk.pipeline import DownloaderAPIGenerator, ExportFileUtils
+from databricks_sync.sdk.pipeline import DownloaderAPIGenerator
+from databricks_sync.sdk.service.scim import ScimService
 from databricks_sync.sdk.sync.constants import ResourceCatalog, GeneratorCatalog
 from databricks_sync.sdk.utils import normalize_identifier
 
@@ -28,7 +30,8 @@ class NotebookArtifact(Artifact):
 class NotebookHCLGenerator(DownloaderAPIGenerator):
 
     def __init__(self, api_client: ApiClient, base_path: Path, notebook_path: Union[str, List], patterns=None,
-                 custom_map_vars=None, exclude_path: Optional[Union[str, List]] = None):
+                 custom_map_vars=None, exclude_path: Optional[Union[str, List]] = None,
+                 exclude_deleted_users: bool = False):
         super().__init__(api_client, base_path, patterns=patterns)
 
         if isinstance(notebook_path, str):
@@ -38,11 +41,13 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         self.__path_inclusion = PathInclusionParser(self.__notebook_path_patterns,
                                                     ResourceCatalog.NOTEBOOK_RESOURCE)
         self.__notebook_path = self.__path_inclusion.base_paths
+        self.__scim_service = ScimService(self.api_client)
         self.__service = WorkspaceService(self.api_client)
         self.__custom_map_vars = custom_map_vars or {}
         self.__perms = PermissionsHelper(self.api_client)
         self.__folder_set = {}
         self.__path_exclusion = PathExclusionParser(exclude_path, ResourceCatalog.NOTEBOOK_RESOURCE)
+        self.__exclude_deleted_users = exclude_deleted_users
 
     @property
     def folder_name(self) -> str:
@@ -65,10 +70,35 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
             log.debug(f"Not processing folder: {path} due to being processed already")
             return True
 
+    @functools.lru_cache(maxsize=None)
+    def _get_valid_user_paths(self):
+        users = self.__scim_service.list_users().get("Resources", [])
+        return [f"/Users/{user['userName']}" for user in users]
+
+    def _is_valid_user_path(self, path: str) -> bool:
+        # Feature is disabled and move on
+        if self.__exclude_deleted_users is False:
+            return True
+        # if its not users path move on
+        if path.startswith("/Users") is False:
+            return True
+        # if it is just /Users or /Users/ move on
+        if path == "/Users" or path == "/Users/":
+            return True
+        valid_user_paths = self._get_valid_user_paths()
+        if any([path.startswith(user_path) for user_path in valid_user_paths]):
+            return True
+
+        return False
+
     def _get_notebooks_recursive(self, path: str):
         resp = self.__service.list(path)
         if self.__path_exclusion.is_path_excluded(path):
             return [], []
+        if self._is_valid_user_path(path) is False:
+            log.debug(f"[InvalidUserPath]: {path} is a user path for a user who is removed from the workspace.")
+            return [], []
+
         log.info(f"Fetched all files & folders from path: {path}")
         if "objects" not in resp:
             return [], []

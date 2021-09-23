@@ -16,6 +16,7 @@ from databricks_sync.sdk.sync.constants import DefaultDatabricksGroups, Generato
 
 def validate_dict(api_client: ApiClient):
     found_exception = False
+    root_cause_list = []
     export_objects = export_config.objects
     user_is_admin = False
 
@@ -33,6 +34,7 @@ def validate_dict(api_client: ApiClient):
 
         except Exception as e:
             found_exception = True
+            root_cause_list.append(e)
             log.error(f"Invalid token, please get a new one.")
             log.debug(f"Error stack:{str(e)}")
 
@@ -42,6 +44,8 @@ def validate_dict(api_client: ApiClient):
                 log.error(
                     f"Cannot export admin objects w/o admin privileges, Remove the identity or use an admin user token")
                 found_exception = True
+                root_cause_list.append(Exception("Cannot export admin objects w/o admin privileges, "
+                                                 "Remove the identity or use an admin user token"))
             if object_name == GeneratorCatalog.CLUSTER and ClusterApi(api_client).list_clusters().get("clusters",
                                                                                                       []) == []:
                 log.warning(f"There are no clusters to export")
@@ -66,6 +70,7 @@ def validate_dict(api_client: ApiClient):
                             log.warning(f"There are no notebooks to export in {p}")
                     except Exception as e:
                         found_exception = True
+                        root_cause_list.append(e)
                         log.error(f"At least one Notebook path ({p}) does not exists")
                         log.debug(f"Error stack:{str(e)}")
             if object_name == GeneratorCatalog.DBFS_FILE:
@@ -76,9 +81,11 @@ def validate_dict(api_client: ApiClient):
                             log.warning(f"There are no files to export from {p}")
                     except Exception as e:
                         found_exception = True
+                        root_cause_list.append(e)
                         log.error(f"At least one DBFS files path ({p}) does not exists")
                         log.debug(f"Error stack:{str(e)}")
 
     if found_exception is True:
-        error_message = "Config file is not valid - will abort export"
+        list_of_errors = "\n".join([f"\tError Msg: {str(e)}" for e in root_cause_list])
+        error_message = f"Config file is not valid - will abort export; Root Cause List: \n{list_of_errors}"
         raise ClickException(error_message)
