@@ -8,7 +8,7 @@ Check your Databricks CLI access credentials in the file `~/.databrickscfg` to v
 
 ```
 [profile]
-	host = https://<databricks-instance>
+	host = <workspace-URL>
 	token =  <personal-access-token>
 ```
 
