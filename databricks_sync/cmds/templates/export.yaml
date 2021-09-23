@@ -7,6 +7,10 @@ objects:
   notebook:
     # Notebook path can be a string, a list or a YAML items collection (multiple subgroups starting with - )
     notebook_path: "/Users"
+    # In workspacse you may have deleted users who leave behind a trail of created notebooks. Enabling this to true
+    # prevents them from being exported. This is optional and will default to false. Please set to true if you want the
+    # sync tool to skip them.
+    exclude_deleted_users: true
     # Use Custom map var to setup a new location
 #    custom_map_vars:
 #      path: "/Users/%{DATA:variable}/%{GREEDYDATA}"
@@ -15,6 +19,7 @@ objects:
 #    exclude_path:
 #      - "/Users/**" # Ignore all paths within the users folder
 #      - "/tmp/**" # Ignore all files in the tmp directory
+
 
   global_init_script:
     # pattern will be implemented in the future - make sure you have "*" in here

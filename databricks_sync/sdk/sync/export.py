@@ -40,6 +40,8 @@ class ExportCoordinator:
                git_ssh_url: str = None, local_git_path=None, branch="master", excel_report=False):
         err = None
         client = None
+        # set to false to not print the output anymore
+        pre_run_error = True
         if dask_mode is True:
             from distributed import Client
             client = Client(processes=True)
@@ -67,6 +69,8 @@ class ExportCoordinator:
                                base_path=base_path,
                                dask_client=client)
                 exp.wire()
+                # set to false to start printing report output
+                pre_run_error = False
                 exp.run()
 
             if dry_run is False:
@@ -107,10 +111,12 @@ class ExportCoordinator:
         finally:
             event_manager.make_validation_records(api_client.url, [], [],
                                                   [])
-            report_manager_results = report_manager.fetch_and_gather_results(api_client.url)
-            report_manager_results.print_to_console()
-            if excel_report is True:
-                report_manager_results.print_to_xlsx()
+            if pre_run_error is False:
+                report_manager_results = report_manager.fetch_and_gather_results(api_client.url)
+                report_manager_results.print_to_console()
+                if excel_report is True:
+                    report_manager_results.print_to_xlsx()
+
             tmp_dir.cleanup()
 
         return err
