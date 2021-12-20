@@ -1,4 +1,4 @@
-version = '0.2.0'
+version = '0.2.1'
 
 
 def print_version_callback(ctx, param, value):
