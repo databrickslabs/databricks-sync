@@ -28,7 +28,7 @@ setup(
         'pandas==1.1.1',
         'SQLAlchemy==1.3.22',
         'styleframe==3.0.6',
-        'dask==2.23.0',
+        'dask==2021.10.0',
         'distributed==2.23.0',
         'setuptools==45'
     ],
