@@ -1,13 +1,10 @@
 from setuptools import setup, find_packages
 
-from databricks_sync.cmds.version import version
-
 with open("README.md", "r", encoding="utf8") as fh:
     long_description = fh.read()
 
 setup(
     name="databricks-sync",
-    version=version,
     author="Itai Weiss",
     author_email="itai@databricks.com",
     description="Databricks Sync CLI",
@@ -16,6 +13,10 @@ setup(
     url="https://github.com/databrickslabs/databricks-sync",
     license="https://github.com/databrickslabs/databricks-sync/blob/master/LICENSE",
     packages=find_packages(exclude=['tests', 'tests.*', ]),
+    use_scm_version={
+        "local_scheme": "dirty-tag"
+    },
+    setup_requires=['setuptools_scm'],
     install_requires=[
         'PyYAML==5.4',
         'requests>=2.17.3',
