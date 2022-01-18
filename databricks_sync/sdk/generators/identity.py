@@ -4,8 +4,8 @@ from typing import Generator, Dict, Any, Callable, List, Tuple
 
 import requests as requests
 from databricks_cli.sdk import ApiClient
-from databricks_sync import log
 
+from databricks_sync import log
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData
 from databricks_sync.sdk.pipeline import APIGenerator
@@ -174,7 +174,6 @@ class IdentityHCLGenerator(APIGenerator):
         )
         uipd.add_error(ValueError(err_msg))
         return uipd
-
 
     def __create_user_instance_profile_data(self,
                                             user_name: str,
@@ -385,7 +384,6 @@ class IdentityHCLGenerator(APIGenerator):
         else:
             return None, errored_arns
 
-
     def get_user_dict(self, user):
         entitlements = user.get("entitlements", [])
         allow_cluster_create = any([valuePair["value"] == 'allow-cluster-create' for valuePair in entitlements])
@@ -409,7 +407,8 @@ class IdentityHCLGenerator(APIGenerator):
                                           for valuePair in entitlements])
         return {
             ServicePrincipalSchema.APPLICATION_ID: sp["applicationId"],
-            ServicePrincipalSchema.DISPLAY_NAME: sp["displayName"],
+            # default display name to application id if display name is not provided
+            ServicePrincipalSchema.DISPLAY_NAME: sp.get("displayName", sp["applicationId"]),
             ServicePrincipalSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
             ServicePrincipalSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
             ServicePrincipalSchema.ACTIVE: sp["active"]
@@ -445,7 +444,6 @@ class IdentityHCLGenerator(APIGenerator):
             else:
                 log.error("Service principals failed to be retrieved unknown reason. Please investigate.")
                 service_principals = []
-
 
         # Dictionary to create one hcl json file with foreach for groups and users
         user_data = {}
