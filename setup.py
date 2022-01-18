@@ -1,11 +1,13 @@
 from setuptools import setup, find_packages
 
+from databricks_sync.cmds.version import version
+
 with open("README.md", "r", encoding="utf8") as fh:
     long_description = fh.read()
 
 setup(
     name="databricks-sync",
-    version="1.0.0",
+    version=version,
     author="Itai Weiss",
     author_email="itai@databricks.com",
     description="Databricks Sync CLI",
