@@ -24,7 +24,7 @@ setup(
         'click-log==0.3.2',
         'databricks-cli==0.11.0',
         'gitpython==3.1.11',
-        'streamz==0.5.5',
+        'streamz==0.6.3',
         'tenacity==6.2.0',
         'dotty_dict==1.3.0',
         'pygrok==1.0.0',
@@ -32,7 +32,7 @@ setup(
         'SQLAlchemy==1.3.22',
         'styleframe==3.0.6',
         'dask==2021.10.0',
-        'distributed==2.23.0',
+        'distributed==2021.10.0',
         'setuptools==45'
     ],
     package_data={'': ['export.yaml']},
