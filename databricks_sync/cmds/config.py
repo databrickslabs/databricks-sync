@@ -8,10 +8,10 @@ from databricks_cli.configure.config import get_profile_from_context
 from databricks_cli.configure.provider import ProfileConfigProvider
 from databricks_cli.sdk import ApiClient
 from databricks_cli.utils import InvalidConfigurationError
-from databricks_sync.sdk.sync.constants import GeneratorCatalog
 
 from databricks_sync import log
-from databricks_sync.cmds.version import version
+from databricks_sync.cmds.version import get_version
+from databricks_sync.sdk.sync.constants import GeneratorCatalog
 
 SUPPORTED_IMPORTS = GeneratorCatalog.list_catalog()
 
@@ -165,7 +165,7 @@ def inject_profile_as_env(function):
 
 
 def get_user_agent():
-    return f'databricks-sync-{version}'
+    return f'databricks-sync-{get_version()}'
 
 def wrap_with_user_agent(api_client_provider_func):
     def wrap_client(function):

@@ -1,13 +1,15 @@
+import collections
+
 import click as click
 import click_log
-import collections
 
 from databricks_sync import log, CONTEXT_SETTINGS
 from databricks_sync.cmds.apply import import_cli
 from databricks_sync.cmds.export import export_cli
 from databricks_sync.cmds.init import init_cli
 from databricks_sync.cmds.triage import triage_cli
-from databricks_sync.cmds.version import print_version_callback, version
+from databricks_sync.cmds.version import print_version_callback, get_version
+
 
 class OrderedGroup(click.Group):
     def __init__(self, name=None, commands=None, **attrs):
@@ -20,7 +22,7 @@ class OrderedGroup(click.Group):
 
 @click.group(cls=OrderedGroup, context_settings=CONTEXT_SETTINGS)
 @click.option('--version', is_flag=True, callback=print_version_callback,
-              expose_value=False, is_eager=True, help=version)
+              expose_value=False, is_eager=True, help=get_version())
 @click_log.simple_verbosity_option(log, '--verbosity', '-v')
 def cli():
     pass

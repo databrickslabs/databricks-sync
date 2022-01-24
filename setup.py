@@ -5,7 +5,6 @@ with open("README.md", "r", encoding="utf8") as fh:
 
 setup(
     name="databricks-sync",
-    version="1.0.0",
     author="Itai Weiss",
     author_email="itai@databricks.com",
     description="Databricks Sync CLI",
@@ -14,6 +13,10 @@ setup(
     url="https://github.com/databrickslabs/databricks-sync",
     license="https://github.com/databrickslabs/databricks-sync/blob/master/LICENSE",
     packages=find_packages(exclude=['tests', 'tests.*', ]),
+    use_scm_version={
+        "local_scheme": "dirty-tag"
+    },
+    setup_requires=['setuptools_scm'],
     install_requires=[
         'PyYAML==5.4',
         'requests>=2.17.3',
@@ -21,7 +24,7 @@ setup(
         'click-log==0.3.2',
         'databricks-cli==0.11.0',
         'gitpython==3.1.11',
-        'streamz==0.5.5',
+        'streamz==0.6.3',
         'tenacity==6.2.0',
         'dotty_dict==1.3.0',
         'pygrok==1.0.0',
@@ -29,7 +32,7 @@ setup(
         'SQLAlchemy==1.3.22',
         'styleframe==3.0.6',
         'dask==2021.10.0',
-        'distributed==2.23.0',
+        'distributed==2021.10.0',
         'setuptools==45'
     ],
     package_data={'': ['export.yaml']},
