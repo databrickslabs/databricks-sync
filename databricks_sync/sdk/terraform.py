@@ -88,7 +88,7 @@ class Terraform:
         # Close buffers
         try:
             p.stdout.flush()
-        except:
+        except Exception:
             pass
         p.stdout.close()
         ret_code = p.returncode

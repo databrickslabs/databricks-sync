@@ -269,7 +269,6 @@ class IdentityHCLGenerator(APIGenerator):
                 return True
         except Exception:
             log.exception("Failed to check if user group has profile")
-            pass
         return False
 
     def _is_instance_profile_arn(self, arn: str):
