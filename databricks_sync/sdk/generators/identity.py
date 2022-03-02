@@ -267,8 +267,8 @@ class IdentityHCLGenerator(APIGenerator):
                 log.debug(
                     f"Group users has role: {role_arn} can skip mapping to user!")
                 return True
-        except Exception:
-            log.exception("Failed to check if user group has profile")
+        except Exception as e:
+            log.exception(f"Failed to check if user group has profile with error {str(e)}")
         return False
 
     def _is_instance_profile_arn(self, arn: str):
