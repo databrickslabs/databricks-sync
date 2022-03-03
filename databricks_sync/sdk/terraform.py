@@ -88,9 +88,10 @@ class Terraform:
         # Close buffers
         try:
             p.stdout.flush()
-        except Exception:
-            pass
-        p.stdout.close()
+        except Exception as e:
+            log.debug(str(e))
+        finally:
+            p.stdout.close()
         ret_code = p.returncode
         if capture_output is True:
             out = "\n".join(output)
