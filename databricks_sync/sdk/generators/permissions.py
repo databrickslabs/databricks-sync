@@ -143,7 +143,8 @@ class PermissionsHelper:
         # The default 2 acls are for the user an admins group
         if is_user_home_dir is True and acls_for_dir == 2:
             log.debug(f"Filtering inherited user directory: {path} for user: {u_name}")
-        return not (is_user_home_dir or acls_for_dir == 2)
+            return False
+        return True
 
     def __get_perm_acls(self, src_obj_data: HCLConvertData, perm_data):
         if src_obj_data.resource_name == ResourceCatalog.DIRECTORY_RESOURCE:

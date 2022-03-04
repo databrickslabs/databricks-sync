@@ -244,7 +244,8 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
                 self.__process_folder(folder_path)
                 return self.__perms.create_permission_data(folder_data, self.get_local_hcl_path,
                                                            self.get_relative_hcl_path, depends_on=depends_on)
-            except NoDirectPermissionsError:
+            except NoDirectPermissionsError as e:
+                log.debug(f"Failed folder permissions for path {folder_path} with error {str(e)}")
                 return None
 
     async def _generate(self) -> Generator[APIData, None, None]:

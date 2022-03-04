@@ -107,7 +107,6 @@ class ExportCoordinator:
         except Exception as e:
             err = e
             traceback.print_exc()
-            pass
         finally:
             event_manager.make_validation_records(api_client.url, [], [],
                                                   [])

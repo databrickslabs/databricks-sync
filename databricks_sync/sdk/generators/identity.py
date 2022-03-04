@@ -107,6 +107,12 @@ class IdentityHCLGenerator(APIGenerator):
         return Interpolate.ternary(f'"{user_name}" == {MeConstants.USERNAME_VAR}', '"something temp will be skipped"',
                                    member_interpolation)
 
+    def __interpolate_service_principal_id(self, service_principal_id):
+        return Interpolate.resource(ResourceCatalog.SERVICE_PRINCIPAL_RESOURCE,
+                                    f'{ForEachBaseIdentifierCatalog.SERVICE_PRINCIPALS_BASE_IDENTIFIER}'
+                                    f'["{service_principal_id}"]',
+                                    'id')
+
     def __interpolate_scim_group_id(self, group_name):
         if group_name == self.ADMIN_GROUP:
             return Interpolate.data_source(ResourceCatalog.GROUP_RESOURCE,
@@ -261,9 +267,8 @@ class IdentityHCLGenerator(APIGenerator):
                 log.debug(
                     f"Group users has role: {role_arn} can skip mapping to user!")
                 return True
-        except Exception:
-            log.exception("Failed to check if user group has profile")
-            pass
+        except Exception as e:
+            log.exception(f"Failed to check if user group has profile with error {str(e)}")
         return False
 
     def _is_instance_profile_arn(self, arn: str):
@@ -333,7 +338,7 @@ class IdentityHCLGenerator(APIGenerator):
                     (f'group/{group_id}/service-principal/{service_principal_dict[member["value"]]["id"]}',
                      f'group/{group_name}/service-principal/'
                      f'{service_principal_dict[member["value"]]["applicationId"]}'))
-                member_data[GroupMemberSchema.MEMBER_ID] = self.__interpolate_scim_user_id(application_id)
+                member_data[GroupMemberSchema.MEMBER_ID] = self.__interpolate_service_principal_id(application_id)
             else:
                 id_ = f"group-{member['display']}"
                 this_member_group_name = member["display"]

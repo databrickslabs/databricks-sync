@@ -123,21 +123,23 @@ class EventManager(DBManager):
         stmt = update(ReportRecord) \
             .where(and_(ReportRecord.run_id == self.run_id,
                         ReportRecord.workspace_url == workspace_url,
-                        ReportRecord.validation_msg == None,
-                        ReportRecord.validation_traceback == None,
-                        ReportRecord.error_msg == None,
-                        ReportRecord.error_traceback == None,
+                        ReportRecord.validation_msg is None,
+                        ReportRecord.validation_traceback is None,
+                        ReportRecord.error_msg is None,
+                        ReportRecord.error_traceback is None,
                         ReportRecord.status == ReportConstants.OBJECT_EXPORT_SUCCEEDED)) \
             .values(validation_msg=ReportConstants.OBJECT_VALIDATION_PASSED,
                     validation_traceback=ReportConstants.OBJECT_VALIDATION_PASSED)
         self._session.execute(stmt)
         self._session.commit()
 
+
 class ReportConstants:
     OBJECT_EXPORT_SUCCEEDED = "SUCCEEDED"
     OBJECT_EXPORT_ERROR = "EXPORT ERROR"
     OBJECT_VALIDATION_ERROR = "VALIDATION ERROR"
     OBJECT_VALIDATION_PASSED = "PASSED"
+
 
 class ReportManager(DBManager):
 

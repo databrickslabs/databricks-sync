@@ -28,9 +28,9 @@ setup(
         'tenacity==6.2.0',
         'dotty_dict==1.3.0',
         'pygrok==1.0.0',
-        'pandas==1.1.1',
+        'pandas==1.4.1',
         'SQLAlchemy==1.3.22',
-        'styleframe==3.0.6',
+        'styleframe==4.0.0',
         'dask==2021.10.0',
         'distributed==2021.10.0',
         'setuptools==45'
