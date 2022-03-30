@@ -122,31 +122,33 @@ alias dbt='docker run -it --rm --name docker-databricks-sync --env-file <(env | 
 
 ### Support Matrix for Import and Export Operations:
 
-| Component                    | Export to HCL | Import to Workspace |Comments     |
-| -----------------------------|---------------|---------------------|-------------|
-| | **User Objects** |
-| cluster policy               | ✅           |  ✅              | |
-| cluster                      |  ✅            | ✅               | |
-| dbfs file                    |  ✅           |  ✅              | |
-| instance pool                |  ✅           |  ✅              | |
-| instance profile             |  ✅           |  ✅              | |
-| job                          |  ✅           |  ✅               | |
-| notebook                     |  ✅           |  ✅              | |
-| | **Administrator Setup** |
-| aws s3 mount                 | ⬜️            | ⬜️               | |
-| azure adls gen1 mount        | ⬜️            | ⬜️               | |
-| azure adls gen2 mount        | ⬜️            | ⬜️               | |
-| azure blob mount             | ⬜️            | ⬜️               | |
-| secret                       |  ✅           |  ✅               | |
-| secret acl                   |  ✅           |  ✅              | |
-| secret scope                 |  ✅           |  ✅              | |
-| metastore tables             | ⬜️            | ⬜️               | |
-| metastore table ACLs         | ⬜️            | ⬜️               | |
-| | **Users Management** |
-| group                        |  ✅            |  ✅               | |
-| group instance profile       |  ✅            |  ✅               | |
-| group member                 |  ✅            |  ✅               | |
-| scim user                    |  ✅            |  ✅               | |
+| Component              | Export to HCL | Import to Workspace |Comments     |
+|------------------------|---------------|---------------------|-------------|
+|                        | **User Objects** |
+| cluster policy         | ✅           |  ✅              | |
+| cluster                |  ✅            | ✅               | |
+| dbfs file              |  ✅           |  ✅              | |
+| instance pool          |  ✅           |  ✅              | |
+| instance profile       |  ✅           |  ✅              | |
+| job                    |  ✅           |  ✅               | |
+| multi task job         |  ⬜           |  ⬜               | |
+| repos                  |  ⬜           |  ⬜               | |
+| notebook               |  ✅           |  ✅              | |
+|                        | **Administrator Setup** |
+| aws s3 mount           | ⬜️            | ⬜️               | |
+| azure adls gen1 mount  | ⬜️            | ⬜️               | |
+| azure adls gen2 mount  | ⬜️            | ⬜️               | |
+| azure blob mount       | ⬜️            | ⬜️               | |
+| secret                 |  ✅           |  ✅               | |
+| secret acl             |  ✅           |  ✅              | |
+| secret scope           |  ✅           |  ✅              | |
+| metastore tables       | ⬜️            | ⬜️               | |
+| metastore table ACLs   | ⬜️            | ⬜️               | |
+|                        | **Users Management** |
+| group                  |  ✅            |  ✅               | |
+| group instance profile |  ✅            |  ✅               | |
+| group member           |  ✅            |  ✅               | |
+| scim user              |  ✅            |  ✅               | |
 
 ## Project Support
 Please note that all projects in the /databrickslabs github account are provided for your exploration only, and are not formally supported by Databricks with Service Level Agreements (SLAs).  They are provided AS-IS and we do not make any guarantees of any kind.  Please do not submit a support ticket relating to any issues arising from the use of these projects.

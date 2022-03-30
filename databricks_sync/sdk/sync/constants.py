@@ -43,6 +43,7 @@ class GeneratorCatalog:
         return [getattr(GeneratorCatalog, attr) for attr in dir(GeneratorCatalog)
                 if not callable(getattr(GeneratorCatalog, attr)) and not attr.startswith("__")]
 
+
 class ForEachBaseIdentifierCatalog:
     USERS_BASE_IDENTIFIER = "databricks_scim_users"
     SERVICE_PRINCIPALS_BASE_IDENTIFIER = "databricks_scim_service_principals"
@@ -87,6 +88,7 @@ class GlobalInitScriptSchema(TfJsonSchema):
 class UserSchema(TfJsonSchema):
     USER_NAME = "user_name"
     DISPLAY_NAME = "display_name"
+    FORCE = "force"
     ALLOW_CLUSTER_CREATE = "allow_cluster_create"
     ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
     ACTIVE = "active"
@@ -94,8 +96,10 @@ class UserSchema(TfJsonSchema):
 
 class GroupSchema(TfJsonSchema):
     DISPLAY_NAME = "display_name"
+    FORCE = "force"
     ALLOW_CLUSTER_CREATE = "allow_cluster_create"
     ALLOW_INSTANCE_POOL_CREATE = "allow_instance_pool_create"
+
 
 class ServicePrincipalSchema(TfJsonSchema):
     APPLICATION_ID = "application_id"
@@ -155,9 +159,11 @@ class MeConstants:
         }
         return output
 
+
 class SparkEnvConstants:
     SPARK_ENV_INTERNAL_KEY = "@internal:env_var"
     SPARK_ENV_INTERNAL_VALUE = "@internal:env_val"
+
 
 class CloudConstants:
     AWS = "AWS"
@@ -165,6 +171,7 @@ class CloudConstants:
     GCP = "GCP"
     CLOUD = "CLOUD"
     CLOUD_VARIABLE = f"upper(var.{CLOUD})"
+
 
 class DrConstants:
     PASSIVE_MODE = "PASSIVE_MODE"
@@ -190,7 +197,7 @@ ENTRYPOINT_MAIN_TF = {
                 "source": "databrickslabs/databricks",
                 # This should be fixed to not impact this tools behavior when downstream changes are made to the
                 # RP. This should be consciously upgraded. Maybe in the future can be passed in as optional
-                "version": os.getenv("DATABRICKS_TERRAFORM_PROVIDER_VERSION", "0.3.2")
+                "version": os.getenv("DATABRICKS_TERRAFORM_PROVIDER_VERSION", "0.5.4")
             }
         }
     },
