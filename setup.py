@@ -8,10 +8,10 @@ import sys
 if sys.version_info < (3, 6):
     sys.exit('Sorry, Python < 3.6 is not supported')
 
-pandas = ['pandas==1.4.1']
+python_versioned_libraries = ['pandas==1.4.1', 'styleframe==4.0.0']
 
 if (3, 6) <= sys.version_info < (3, 8):
-    pandas = ['pandas==1.3.5']
+    python_versioned_libraries = ['pandas==1.1.1', 'styleframe==3.0.6']
 
 setup(
     name="databricks-sync",
@@ -39,11 +39,10 @@ setup(
         'dotty_dict==1.3.0',
         'pygrok==1.0.0',
         'SQLAlchemy==1.3.22',
-        'styleframe==4.0.0',
         'dask==2021.10.0',
         'distributed==2021.10.0',
         'setuptools==45'
-    ] + pandas,
+    ] + python_versioned_libraries,
     package_data={'': ['export.yaml']},
     entry_points='''
         [console_scripts]
