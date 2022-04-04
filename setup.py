@@ -3,6 +3,16 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf8") as fh:
     long_description = fh.read()
 
+import sys
+
+if sys.version_info < (3, 6):
+    sys.exit('Sorry, Python < 3.6 is not supported')
+
+pandas = ['pandas==1.4.1']
+
+if (3, 6) <= sys.version_info < (3, 8):
+    pandas = ['pandas==1.3.5']
+
 setup(
     name="databricks-sync",
     author="Itai Weiss",
@@ -28,13 +38,12 @@ setup(
         'tenacity==6.2.0',
         'dotty_dict==1.3.0',
         'pygrok==1.0.0',
-        'pandas==1.4.1',
         'SQLAlchemy==1.3.22',
         'styleframe==4.0.0',
         'dask==2021.10.0',
         'distributed==2021.10.0',
         'setuptools==45'
-    ],
+    ] + pandas,
     package_data={'': ['export.yaml']},
     entry_points='''
         [console_scripts]
