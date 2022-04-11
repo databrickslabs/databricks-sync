@@ -264,3 +264,4 @@ dask-worker-space/**
 *.tfstate.*
 
 *.xlsx
+databricks-sync-test.sh

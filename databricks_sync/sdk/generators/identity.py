@@ -399,6 +399,7 @@ class IdentityHCLGenerator(APIGenerator):
             UserSchema.USER_NAME: user["userName"],
             # Alternative display name for the user if it does not exist is the username
             UserSchema.DISPLAY_NAME: user.get("displayName", None),
+            UserSchema.FORCE: True,
             UserSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
             UserSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
             UserSchema.ACTIVE: active
@@ -427,6 +428,7 @@ class IdentityHCLGenerator(APIGenerator):
                                           for valuePair in entitlements])
         return {
             GroupSchema.DISPLAY_NAME: group["displayName"],
+            GroupSchema.FORCE: True,
             GroupSchema.ALLOW_CLUSTER_CREATE: allow_cluster_create,
             GroupSchema.ALLOW_INSTANCE_POOL_CREATE: allow_instance_pool_create,
         }
