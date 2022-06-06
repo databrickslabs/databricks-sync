@@ -53,10 +53,6 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     def folder_name(self) -> str:
         return GeneratorCatalog.NOTEBOOK
 
-    def __get_parent_folder(self, path):
-        path = PosixPath(path)
-        return str(path.parent.absolute())
-
     def __process_folder(self, path):
         self.__folder_set[path] = 1
         log.debug(f"Processing folder: {path} due to seeing for the first time")
