@@ -1,3 +1,4 @@
+import base64
 import json
 from pathlib import Path
 from typing import Generator, Dict, Any, Tuple
@@ -85,10 +86,15 @@ class ClusterPolicyHCLGenerator(APIGenerator):
         return data.get('name', None)
 
     @staticmethod
+    def __encode_definition(definition: str):
+        encoded_data = base64.b64encode(definition.encode("utf-8")).decode("utf-8")
+        return f'${{base64decode("{encoded_data}")}}'
+
+    @staticmethod
     def __make_cluster_policy_dict(data: Dict[str, Any]) -> Dict[str, Any]:
         return TerraformDictBuilder(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
                                     data, object_id=ClusterPolicyHCLGenerator.__get_cluster_policy_raw_id,
                                     object_name=ClusterPolicyHCLGenerator.__get_cluster_policy_name). \
-            add_required("definition", lambda: data["definition"]). \
+            add_required("definition", lambda: ClusterPolicyHCLGenerator.__encode_definition(data["definition"])). \
             add_required("name", lambda: data["name"]). \
             to_dict()
