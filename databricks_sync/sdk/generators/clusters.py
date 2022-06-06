@@ -26,7 +26,8 @@ class ClusterSourceConstants:
 class ClusterHCLGenerator(APIGenerator):
 
     def __init__(self, api_client: ApiClient, base_path: Path, patterns=None,
-                 custom_map_vars=None, valid_cluster_sources=None, pin_first_20=False, by=None):
+                 custom_map_vars=None, valid_cluster_sources=None, pin_first_20=False, by=None,
+                 use_cluster_id_for_idempotency=False):
         super().__init__(api_client, base_path, patterns=patterns)
         default_custom_map_vars = {"node_type_id": None,
                                    "dynamic.[*].library.content.jar": None,
@@ -39,6 +40,7 @@ class ClusterHCLGenerator(APIGenerator):
         self.__perms = PermissionsHelper(self.api_client)
         self.__pin_first_20 = pin_first_20
         self.__max_pin_count = 20
+        self.__use_cluster_id_for_idempotency = use_cluster_id_for_idempotency
         self.__valid_cluster_sources = valid_cluster_sources or [ClusterSourceConstants.UI, ClusterSourceConstants.API]
         self.__local_filter_by = LocalFilterBy(by, ResourceCatalog.CLUSTER_RESOURCE, self.__get_cluster_raw_id)
 
@@ -148,12 +150,10 @@ class ClusterHCLGenerator(APIGenerator):
     def __get_cluster_name(data: Dict[str, Any]) -> Optional[str]:
         return data.get('cluster_name', None)
 
-    @staticmethod
-    def __get_cluster_dict(data: Dict[str, Any]):
-        return ClusterHCLGenerator.make_cluster_dict(data, depends_on=True)
+    def __get_cluster_dict(self, data: Dict[str, Any]):
+        return self.make_cluster_dict(data, depends_on=True)
 
-    @staticmethod
-    def make_cluster_dict(data: Dict[str, Any], depends_on=False, is_job=False) -> Dict[str, Any]:
+    def make_cluster_dict(self, data: Dict[str, Any], depends_on=False, is_job=False) -> Dict[str, Any]:
         id_field = "id"
         tdb = TerraformDictBuilder(ResourceCatalog.CLUSTER_RESOURCE,
                                    data, job_mode=f"{is_job}", object_id=ClusterHCLGenerator.__get_cluster_raw_id,
@@ -205,5 +205,7 @@ class ClusterHCLGenerator(APIGenerator):
             tdb.add_optional("node_type_id", lambda: data["node_type_id"])
         else:
             tdb.add_required("node_type_id", lambda: data["node_type_id"])
+        if is_job is False and self.__use_cluster_id_for_idempotency is True:
+            tdb.add_optional("idempotency_token", lambda: data["cluster_id"])
 
         return tdb.to_dict()
