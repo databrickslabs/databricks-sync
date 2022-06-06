@@ -57,7 +57,7 @@ def validate_dict(api_client: ApiClient):
                 log.warning(f"There are no pools to export")
             if object_name == GeneratorCatalog.GLOBAL_INIT_SCRIPT and \
                     GlobalInitScriptsService(api_client).list_global_init_scripts().get("scripts", []) == []:
-                log.warning(f"There are no pools to export")
+                log.warning(f"There are no global init scripts to export")
             if object_name == GeneratorCatalog.SECRET and SecretApi(api_client).list_scopes().get("scopes", []) == []:
                 log.warning(f"There are no secrets to export")
             if object_name == GeneratorCatalog.JOB and JobsApi(api_client).list_jobs().get("jobs", []) == []:
