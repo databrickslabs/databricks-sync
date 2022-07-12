@@ -164,6 +164,10 @@ class JobHCLGenerator(APIGenerator):
             del data["settings"]["notebook_task"]["revision_timestamp"]
             # del azure_job["settings"]["notebook_task"]["revision_timestamp"]
 
+        # artifact from git integration for notebook tasks
+        if "source" in data.get("settings", []).get("notebook_task", []):
+            del data["settings"]["notebook_task"]["source"]
+
         # Existing cluster - there's no need to generate per cloud object
         # New cluster - modify the object, add var.CLOUD and generate an object per cloud
         if "new_cluster" in data.get("settings", []):

@@ -1,6 +1,6 @@
 import functools
 from base64 import b64decode
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import List, Generator, Dict, Any, Union, Optional
 
 from databricks_cli.sdk import WorkspaceService, ApiClient
@@ -52,10 +52,6 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     @property
     def folder_name(self) -> str:
         return GeneratorCatalog.NOTEBOOK
-
-    def __get_parent_folder(self, path):
-        path = Path(path)
-        return str(path.parent.absolute())
 
     def __process_folder(self, path):
         self.__folder_set[path] = 1
@@ -160,7 +156,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         path_s: str = data.get("path", None)
         if path_s is None:
             return None
-        path: Path = Path(path_s.lstrip("/"))
+        path: PurePosixPath = PurePosixPath(path_s.lstrip("/"))
         if len(path.parents) <= 1:
             return None
         return str(path.parent)
@@ -171,7 +167,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
         path_s: str = data.get("path", None)
         if path_s is None:
             return None
-        path: Path = Path(path_s)
+        path: PurePosixPath = PurePosixPath(path_s)
         return normalize_identifier(f"{path.name}_{nbook_id}")
 
     def __make_notebook_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -213,7 +209,7 @@ class NotebookHCLGenerator(DownloaderAPIGenerator):
     def __folder_iter(self, notebook_obj):
         notebook_path = notebook_obj["path"]
         folder_path = notebook_path
-        for parent in Path(folder_path).parents:
+        for parent in PurePosixPath(folder_path).parents:
             if self.__is_processed_folder(parent):
                 continue
             elif str(parent) == "/":

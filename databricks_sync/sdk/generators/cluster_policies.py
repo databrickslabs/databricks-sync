@@ -31,8 +31,11 @@ class ClusterPolicyHCLGenerator(APIGenerator):
         self.__perms = PermissionsHelper(self.api_client)
 
     def __pre_process_custom_map_vars(self, cluster_policy_data) -> (Dict[str, Any], Tuple[str, str]):
+        # preprocess remove all ${ symbols with ${{ to allow for ignoring of terraform interpolation
+        # we do not expect user to provide definitions with intended interpolation (safe assumption to make)
+        processed_definition = cluster_policy_data["definition"].replace("${", "$${")
         return MappedGrokVariableBasicAnnotationProcessor("cluster_policy_definition", self.__custom_map_vars)\
-            .process_dict(json.loads(cluster_policy_data["definition"]))
+            .process_dict(json.loads(processed_definition))
 
     def __create_cluster_policy_data(self, cluster_policy_data: Dict[str, Any]):
         new_definition, variables = self.__pre_process_custom_map_vars(cluster_policy_data)

@@ -5,12 +5,14 @@ from typing import Generator, Dict, Any, Optional
 from databricks_cli.sdk import ApiClient
 from databricks_cli.sdk import ClusterService, ManagedLibraryService
 
+from databricks_sync import log
 from databricks_sync.sdk.config import export_config
 from databricks_sync.sdk.generators import LocalFilterBy
 from databricks_sync.sdk.generators.permissions import PermissionsHelper, NoDirectPermissionsError
 from databricks_sync.sdk.hcl.json_to_hcl import TerraformDictBuilder, Interpolate
 from databricks_sync.sdk.message import APIData
 from databricks_sync.sdk.pipeline import APIGenerator
+from databricks_sync.sdk.service.global_init_scripts import GlobalInitScriptsService
 from databricks_sync.sdk.sync.constants import ResourceCatalog, CloudConstants, GeneratorCatalog, \
     ForEachBaseIdentifierCatalog
 from databricks_sync.sdk.utils import normalize_identifier, handle_azure_libraries, \
@@ -22,6 +24,7 @@ class ClusterSourceConstants:
     UI = "UI"
     JOB = "JOB"
     API = "API"
+
 
 class ClusterHCLGenerator(APIGenerator):
 
@@ -36,6 +39,7 @@ class ClusterHCLGenerator(APIGenerator):
         self.__custom_map_vars = {**default_custom_map_vars, **(custom_map_vars or {})}
         self.__service = ClusterService(self.api_client)
         self.__lib_service = ManagedLibraryService(self.api_client)
+        self.__global_init_scripts_service = GlobalInitScriptsService(self.api_client)
         self.__perms = PermissionsHelper(self.api_client)
         self.__pin_first_20 = pin_first_20
         self.__max_pin_count = 20
@@ -55,14 +59,14 @@ class ClusterHCLGenerator(APIGenerator):
         )
 
     @staticmethod
-    def _handle_depends_on(tdb: TerraformDictBuilder):
+    def _handle_depends_on(tdb: TerraformDictBuilder, has_global_init_scripts):
         depends_on = []
         # If user configures dbfs files wait for that with regards to init scripts
         if export_config.contains(GeneratorCatalog.DBFS_FILE) is True:
             depends_on.append(Interpolate.depends_on(ResourceCatalog.DBFS_FILE_RESOURCE,
                                                      ForEachBaseIdentifierCatalog.DBFS_FILES_BASE_IDENTIFIER))
         # Wait for all global init scripts to be created before starting clusters
-        if export_config.contains(GeneratorCatalog.GLOBAL_INIT_SCRIPT) is True:
+        if export_config.contains(GeneratorCatalog.GLOBAL_INIT_SCRIPT) is True and has_global_init_scripts is True:
             depends_on.append(Interpolate.depends_on(ResourceCatalog.GLOBAL_INIT_SCRIPTS_RESOURCE,
                                                      ForEachBaseIdentifierCatalog.GLOBAL_INIT_SCRIPTS_BASE_IDENTIFIER))
         if len(depends_on) > 0:
@@ -148,24 +152,64 @@ class ClusterHCLGenerator(APIGenerator):
     def __get_cluster_name(data: Dict[str, Any]) -> Optional[str]:
         return data.get('cluster_name', None)
 
-    @staticmethod
-    def __get_cluster_dict(data: Dict[str, Any]):
-        return ClusterHCLGenerator.make_cluster_dict(data, depends_on=True)
+    def __has_global_init_scripts(self) -> bool:
+        # GIS not configured
+        if export_config.contains(GeneratorCatalog.GLOBAL_INIT_SCRIPT) is False:
+            return False
+        # GIS configured but may be empty
+        resp = self.__global_init_scripts_service.list_global_init_scripts()
+        log.info(f"Fetched all global init scripts")
+        if "scripts" not in resp:
+            return False
+        scripts = resp["scripts"]
+        return len(scripts) > 0
+
+    def __get_cluster_dict(self, data: Dict[str, Any]):
+        return ClusterHCLGenerator.make_cluster_dict(data, depends_on=True,
+                                                     has_global_init_scripts=self.__has_global_init_scripts())
 
     @staticmethod
-    def make_cluster_dict(data: Dict[str, Any], depends_on=False, is_job=False) -> Dict[str, Any]:
+    def _handle_instance_pool(tdb: TerraformDictBuilder, data: Dict[str, Any]) -> Optional['TerraformDictBuilder']:
+        if "instance_pool_id" in data:
+            return tdb.add_optional("instance_pool_id",
+                                    lambda: Interpolate.resource(ResourceCatalog.INSTANCE_POOL_RESOURCE,
+                                                                 f"databricks_instance_pool"
+                                                                 f"{normalize_identifier(data['instance_pool_id'])}",
+                                                                 "id")). \
+                add_optional("driver_instance_pool_id",
+                             lambda: Interpolate.resource(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
+                                                          f"databricks_cluster_policy_{data['policy_id']}",
+                                                          "id"))
+
+    @staticmethod
+    def _handle_nodes_types(tdb: TerraformDictBuilder, data: Dict[str, Any], is_job=False) -> \
+            Optional['TerraformDictBuilder']:
+        if "instance_pool_id" in data:
+            return tdb.add_optional("instance_pool_id",
+                                    lambda: Interpolate.resource(ResourceCatalog.INSTANCE_POOL_RESOURCE,
+                                                                 f"databricks_instance_pool"
+                                                                 f"{normalize_identifier(data['instance_pool_id'])}",
+                                                                 "id")). \
+                add_optional("driver_instance_pool_id",
+                             lambda: Interpolate.resource(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
+                                                          f"databricks_cluster_policy_{data['policy_id']}",
+                                                          "id"))
+        if is_job is True:
+            return tdb.add_optional("node_type_id", lambda: data["node_type_id"]). \
+                add_optional("driver_node_type_id", lambda: data["driver_node_type_id"])
+
+        return tdb.add_required("node_type_id", lambda: data["node_type_id"]). \
+            add_optional("driver_node_type_id", lambda: data["driver_node_type_id"])
+
+    @staticmethod
+    def make_cluster_dict(data: Dict[str, Any], depends_on=False, is_job=False,
+                          has_global_init_scripts=False) -> Dict[str, Any]:
         id_field = "id"
         tdb = TerraformDictBuilder(ResourceCatalog.CLUSTER_RESOURCE,
                                    data, job_mode=f"{is_job}", object_id=ClusterHCLGenerator.__get_cluster_raw_id,
                                    object_name=ClusterHCLGenerator.__get_cluster_name). \
             add_required("cluster_name", lambda: data.get("cluster_name", "")). \
             add_required("spark_version", lambda: data["spark_version"]). \
-            add_optional("driver_node_type_id", lambda: data["driver_node_type_id"]). \
-            add_optional("instance_pool_id",
-                         lambda: Interpolate.resource(ResourceCatalog.INSTANCE_POOL_RESOURCE,
-                                                      f"databricks_instance_pool"
-                                                      f"{normalize_identifier(data['instance_pool_id'])}",
-                                                      id_field)). \
             add_optional("policy_id",
                          lambda: Interpolate.resource(ResourceCatalog.CLUSTER_POLICY_RESOURCE,
                                                       f"databricks_cluster_policy_{data['policy_id']}",
@@ -200,10 +244,8 @@ class ClusterHCLGenerator(APIGenerator):
             add_dynamic_blocks("cluster_log_conf", lambda: data["azure_cluster_log_conf"], CloudConstants.AZURE). \
             add_dynamic_blocks("cluster_log_conf", lambda: data["cloud_agnostic_cluster_log_conf"])
         if depends_on is True:
-            ClusterHCLGenerator._handle_depends_on(tdb)
-        if is_job is True:
-            tdb.add_optional("node_type_id", lambda: data["node_type_id"])
-        else:
-            tdb.add_required("node_type_id", lambda: data["node_type_id"])
+            ClusterHCLGenerator._handle_depends_on(tdb, has_global_init_scripts=has_global_init_scripts)
+
+        tdb = ClusterHCLGenerator._handle_nodes_types(tdb, data, is_job)
 
         return tdb.to_dict()
