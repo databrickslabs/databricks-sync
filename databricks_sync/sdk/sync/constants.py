@@ -194,7 +194,7 @@ ENTRYPOINT_MAIN_TF = {
         "required_version": ">= 0.13.0",
         "required_providers": {
             "databricks": {
-                "source": "databrickslabs/databricks",
+                "source": "databricks/databricks",
                 # This should be fixed to not impact this tools behavior when downstream changes are made to the
                 # RP. This should be consciously upgraded. Maybe in the future can be passed in as optional
                 "version": os.getenv("DATABRICKS_TERRAFORM_PROVIDER_VERSION", "0.5.4")
