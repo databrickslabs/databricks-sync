@@ -47,7 +47,7 @@ tblib==1.7.0
 tenacity==6.2.0
 tomli==2.0.1
 toolz==0.11.2
-tornado==6.1
+tornado==6.3.2
 urllib3==1.26.9
 xlrd==1.2.0
 zict==2.1.0
