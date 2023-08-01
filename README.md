@@ -1,5 +1,7 @@
 # Databricks Sync (dbSync)
 
+> **NOTE:** For a more extensive and maintained cross-workload migration solution, please use the [Databricks Terraform Exporter](https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/experimental-exporter), which creates Infrastructure-as-a-Code replicas for the entire manually-configured Databricks Workspaces.
+
 ![Reference Architecture for Databricks-Sync](docs/solution-arch.png?raw=true)
 
 ## Introduction
