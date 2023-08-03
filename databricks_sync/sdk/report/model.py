@@ -57,7 +57,7 @@ class ReportRecord(Base):
     __table_args__ = (UniqueConstraint("run_id", "object_id", "object_type", name="_unique_record"),)
 
     def __repr__(self):
-        return "test"
+        return str({k: v for k, v in self.__dict__.items() if not k.startswith("_")})
 
 
 class DBManager:
@@ -120,13 +120,14 @@ class EventManager(DBManager):
                 self._session.commit()
 
         # Update rest stmt
+        # sql alchemy requires == because of operator overloading will not work with is
         stmt = update(ReportRecord) \
             .where(and_(ReportRecord.run_id == self.run_id,
                         ReportRecord.workspace_url == workspace_url,
-                        ReportRecord.validation_msg is None,
-                        ReportRecord.validation_traceback is None,
-                        ReportRecord.error_msg is None,
-                        ReportRecord.error_traceback is None,
+                        ReportRecord.validation_msg == None,
+                        ReportRecord.validation_traceback == None,
+                        ReportRecord.error_msg == None,
+                        ReportRecord.error_traceback == None,
                         ReportRecord.status == ReportConstants.OBJECT_EXPORT_SUCCEEDED)) \
             .values(validation_msg=ReportConstants.OBJECT_VALIDATION_PASSED,
                     validation_traceback=ReportConstants.OBJECT_VALIDATION_PASSED)
