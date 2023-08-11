@@ -33,7 +33,7 @@ setup(
         'click>=6.7',
         'click-log==0.3.2',
         'databricks-cli==0.11.0',
-        'gitpython==3.1.11',
+        'gitpython==3.1.32',
         'streamz==0.6.3',
         'tenacity==6.2.0',
         'dotty_dict==1.3.0',
