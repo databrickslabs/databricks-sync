@@ -28,7 +28,7 @@ setup(
     },
     setup_requires=['setuptools_scm'],
     install_requires=[
-        'PyYAML==5.4',
+        'PyYAML==5.6',
         'requests>=2.17.3',
         'click>=6.7',
         'click-log==0.3.2',
